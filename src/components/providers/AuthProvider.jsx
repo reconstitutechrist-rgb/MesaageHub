@@ -44,6 +44,12 @@ export function AuthProvider({ children }) {
     return { success: true }
   }
 
+  const updateProfile = (profileData) => {
+    const updatedUser = { ...user, ...profileData }
+    setUser(updatedUser)
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser))
+  }
+
   const value = {
     user,
     isLoading,
@@ -51,6 +57,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     register,
+    updateProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
