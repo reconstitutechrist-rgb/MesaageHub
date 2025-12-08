@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
       try {
         setUser(JSON.parse(storedUser))
         setIsAuthenticated(true)
-      } catch (_e) {
+      } catch {
         localStorage.removeItem(STORAGE_KEYS.USER)
       }
     }

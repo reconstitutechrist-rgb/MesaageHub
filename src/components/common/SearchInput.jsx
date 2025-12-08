@@ -16,7 +16,8 @@ export function SearchInput({
   showClear = true,
 }) {
   const [localValue, setLocalValue] = useState(value || '')
-  const debouncedValue = useDebounce(localValue, debounceMs)
+  // Debounced value could be used for API calls in the future
+  const _debouncedValue = useDebounce(localValue, debounceMs)
 
   const handleChange = useCallback(
     (e) => {

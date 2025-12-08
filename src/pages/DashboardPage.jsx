@@ -175,8 +175,8 @@ export default function DashboardPage() {
     }
   }
 
-  const handleContactClick = (contact) => {
-    // In a real app, you'd find or create a conversation with this contact
+  const handleContactClick = (_contact) => {
+    // TODO: In a real app, find or create a conversation with this contact
     navigate('/conversations')
   }
 

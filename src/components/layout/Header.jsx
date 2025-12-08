@@ -25,8 +25,9 @@ export function Header({ onMenuClick }) {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
-  const debouncedSearch = useDebounce(searchQuery, 300)
+  const [_isSearchFocused, setIsSearchFocused] = useState(false)
+  // Debounced value available for future API integration
+  const _debouncedSearch = useDebounce(searchQuery, 300)
 
   // Mock notification count
   const notificationCount = 3

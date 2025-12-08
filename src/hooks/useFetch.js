@@ -63,7 +63,8 @@ export function useFetch(fetchFn, options = {}) {
         abortControllerRef.current.abort()
       }
     }
-  }, []) // Only run on mount if immediate
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [immediate]) // Only run on mount/immediate change, execute is stable
 
   return {
     data,

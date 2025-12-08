@@ -217,20 +217,18 @@ export default function ChatPage() {
   const handleFileChange = useCallback((e) => {
     const file = e.target.files?.[0]
     if (file) {
-      // In a real app, you would upload the file and send as attachment
-      console.log('File selected:', file.name)
-      // Reset input
+      // TODO: In a real app, upload the file and send as attachment
+      // For now, just reset the input
       e.target.value = ''
     }
   }, [])
 
   // Delete conversation
   const handleDeleteConversation = useCallback(() => {
-    // In a real app, call API to delete
-    console.log('Deleting conversation:', conversationId)
+    // TODO: In a real app, call API to delete conversation
     setShowDeleteDialog(false)
     navigate('/conversations')
-  }, [conversationId, navigate])
+  }, [navigate])
 
   // Toggle mute
   const handleToggleMute = useCallback(() => {

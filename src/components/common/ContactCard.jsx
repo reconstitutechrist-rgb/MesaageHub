@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { UserAvatar } from './UserAvatar'
 import { Button } from '@/components/ui/button'
@@ -13,7 +12,7 @@ import {
 import { MessageSquare, MoreVertical, UserX, Info } from 'lucide-react'
 
 export function ContactCard({ contact, onMessage, onBlock, onViewProfile }) {
-  const { name, email, avatar, isOnline, lastSeen } = contact
+  const { name, email, isOnline, lastSeen } = contact
 
   return (
     <Card className="hover:shadow-md transition-shadow">

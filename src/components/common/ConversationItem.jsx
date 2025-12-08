@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { cn, formatRelativeTime, truncate } from '@/lib/utils'
 import { UserAvatar } from './UserAvatar'
 import { Badge } from '@/components/ui/badge'
-import { Pin, Volume2, VolumeX } from 'lucide-react'
+import { Pin, VolumeX } from 'lucide-react'
 
 export function ConversationItem({ conversation, isActive = false }) {
   const { id, participant, lastMessage, unreadCount, isPinned, isMuted } = conversation

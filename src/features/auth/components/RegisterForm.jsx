@@ -46,7 +46,7 @@ export function RegisterForm({ onSuccess, onError }) {
       } else {
         onError?.(result.error || 'Failed to register')
       }
-    } catch (_error) {
+    } catch {
       onError?.('An unexpected error occurred')
     } finally {
       setIsLoading(false)

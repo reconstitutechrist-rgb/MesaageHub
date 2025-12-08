@@ -35,7 +35,7 @@ export function LoginForm({ onSuccess, onError, onForgotPassword }) {
       } else {
         onError?.(result.error || 'Failed to login')
       }
-    } catch (_error) {
+    } catch {
       onError?.('An unexpected error occurred')
     } finally {
       setIsLoading(false)
