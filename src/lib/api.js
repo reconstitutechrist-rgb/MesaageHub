@@ -1,17 +1,8 @@
-import { createClient } from '@base44/sdk'
-
-// Initialize Base44 client
-// Configure with your Base44 project credentials
-export const base44Client = createClient({
-  // Add your Base44 configuration here
-  // apiKey: import.meta.env.VITE_BASE44_API_KEY,
-  // projectId: import.meta.env.VITE_BASE44_PROJECT_ID,
-})
+// Re-export Supabase client for API operations
+export { supabase, isSupabaseConfigured } from './supabase'
 
 // Export common API utilities
 export const api = {
-  client: base44Client,
-
   // Helper for handling API responses
   async handleResponse(promise) {
     try {

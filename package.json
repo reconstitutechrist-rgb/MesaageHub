@@ -1,5 +1,5 @@
 {
-  "name": "base44-app",
+  "name": "messagehub",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -16,7 +16,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@base44/sdk": "^0.1.2",
+    "@supabase/supabase-js": "^2.47.0",
     "@hookform/resolvers": "^4.1.2",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.15",
