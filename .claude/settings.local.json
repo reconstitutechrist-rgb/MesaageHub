@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /s \"c:\\Users\\willi\\MesaageHub\")",
+      "Bash(tree:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: scaffold organized project structure\n\n- Add core entry files (main.jsx, App.jsx, index.css)\n- Add component organization (ui, layout, common, providers)\n- Add auth feature with AuthGuard, LoginForm, RegisterForm\n- Add page components (Dashboard, Conversations, Chat, Contacts, Settings, Profile)\n- Add custom hooks (useDebounce, useLocalStorage, useMediaQuery)\n- Add configuration (routes, navigation, constants)\n- Install shadcn/ui components (button, input, card, dialog, etc.)\n- Set up theme provider with dark/light mode support\n- Set up auth provider with login/logout context\n- Set up toast notifications with Sonner\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
+      "Bash(npx husky:*)",
+      "Bash(npm run fix:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: add dev tools for linting, formatting, and pre-commit hooks\n\n- Add Prettier for consistent code formatting (.prettierrc)\n- Update ESLint config with stricter rules and Prettier integration\n- Add Husky for git hooks with pre-commit validation\n- Add lint-staged to only lint/format staged files\n- Add npm scripts: lint:fix, format, format:check, check, fix\n- Convert tailwind.config.js to ESM format\n- Fix ESLint errors (unused vars, unescaped entities, unreachable code)\n\nPre-commit hook automatically runs:\n- ESLint --fix on staged .js/.jsx files\n- Prettier --write on staged files\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

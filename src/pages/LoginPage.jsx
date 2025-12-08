@@ -1,7 +1,14 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { LoginForm } from '@/features/auth/components/LoginForm'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { ROUTES } from '@/lib/constants'
 import { MessageSquare } from 'lucide-react'
 
@@ -27,16 +34,14 @@ export default function LoginPage() {
             <MessageSquare className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>
-            Sign in to your MessageHub account
-          </CardDescription>
+          <CardDescription>Sign in to your MessageHub account</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm onSuccess={handleSuccess} onError={handleError} />
         </CardContent>
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link to={ROUTES.REGISTER} className="text-primary hover:underline">
               Sign up
             </Link>

@@ -11,27 +11,20 @@ export default function SettingsPage() {
 
   return (
     <PageContainer>
-      <PageHeader
-        title="Settings"
-        description="Manage your account and preferences"
-      />
+      <PageHeader title="Settings" description="Manage your account and preferences" />
 
       <div className="space-y-6">
         {/* Appearance */}
         <Card>
           <CardHeader>
             <CardTitle>Appearance</CardTitle>
-            <CardDescription>
-              Customize how MessageHub looks on your device
-            </CardDescription>
+            <CardDescription>Customize how MessageHub looks on your device</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Dark Mode</Label>
-                <p className="text-sm text-muted-foreground">
-                  Toggle dark mode on or off
-                </p>
+                <p className="text-sm text-muted-foreground">Toggle dark mode on or off</p>
               </div>
               <Switch
                 checked={theme === 'dark'}
@@ -45,9 +38,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Notifications</CardTitle>
-            <CardDescription>
-              Configure how you receive notifications
-            </CardDescription>
+            <CardDescription>Configure how you receive notifications</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -63,9 +54,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Email Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive email for important updates
-                </p>
+                <p className="text-sm text-muted-foreground">Receive email for important updates</p>
               </div>
               <Switch defaultChecked />
             </div>
@@ -76,9 +65,7 @@ export default function SettingsPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">Danger Zone</CardTitle>
-            <CardDescription>
-              Irreversible actions for your account
-            </CardDescription>
+            <CardDescription>Irreversible actions for your account</CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="destructive">Delete Account</Button>

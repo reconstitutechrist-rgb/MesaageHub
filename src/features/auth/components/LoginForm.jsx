@@ -33,7 +33,7 @@ export function LoginForm({ onSuccess, onError }) {
       } else {
         onError?.(result.error || 'Failed to login')
       }
-    } catch (error) {
+    } catch (_error) {
       onError?.('An unexpected error occurred')
     } finally {
       setIsLoading(false)
@@ -44,29 +44,16 @@ export function LoginForm({ onSuccess, onError }) {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="name@example.com"
-          {...form.register('email')}
-        />
+        <Input id="email" type="email" placeholder="name@example.com" {...form.register('email')} />
         {form.formState.errors.email && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.email.message}
-          </p>
+          <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
         )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          {...form.register('password')}
-        />
+        <Input id="password" type="password" {...form.register('password')} />
         {form.formState.errors.password && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.password.message}
-          </p>
+          <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
         )}
       </div>
       <Button type="submit" className="w-full" disabled={isLoading}>

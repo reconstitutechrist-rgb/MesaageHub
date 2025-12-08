@@ -1,5 +1,5 @@
-import { clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs))
@@ -9,7 +9,7 @@ export function formatDate(date, options = {}) {
   return new Intl.DateTimeFormat('en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
-    ...options
+    ...options,
   }).format(new Date(date))
 }
 
@@ -30,7 +30,7 @@ export function getInitials(name) {
   if (!name) return '?'
   return name
     .split(' ')
-    .map(part => part[0])
+    .map((part) => part[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)

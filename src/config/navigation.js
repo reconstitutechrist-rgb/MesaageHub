@@ -1,10 +1,4 @@
-import {
-  MessageSquare,
-  Users,
-  LayoutDashboard,
-  Settings,
-  User,
-} from 'lucide-react'
+import { MessageSquare, Users, LayoutDashboard, Settings, User } from 'lucide-react'
 import { ROUTES } from '@/lib/constants'
 
 export const mainNavigation = [

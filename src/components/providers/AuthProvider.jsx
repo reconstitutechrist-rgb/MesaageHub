@@ -15,24 +15,20 @@ export function AuthProvider({ children }) {
       try {
         setUser(JSON.parse(storedUser))
         setIsAuthenticated(true)
-      } catch (e) {
+      } catch (_e) {
         localStorage.removeItem(STORAGE_KEYS.USER)
       }
     }
     setIsLoading(false)
   }, [])
 
-  const login = async (credentials) => {
-    // Implement login logic with Base44 SDK
-    try {
-      // const response = await base44Client.auth.login(credentials)
-      // setUser(response.user)
-      // setIsAuthenticated(true)
-      // localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user))
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
+  const login = async (_credentials) => {
+    // TODO: Implement login logic with Base44 SDK
+    // const response = await base44Client.auth.login(credentials)
+    // setUser(response.user)
+    // setIsAuthenticated(true)
+    // localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user))
+    return { success: true }
   }
 
   const logout = async () => {
@@ -42,14 +38,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
   }
 
-  const register = async (userData) => {
-    // Implement registration logic
-    try {
-      // const response = await base44Client.auth.register(userData)
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
+  const register = async (_userData) => {
+    // TODO: Implement registration logic
+    // const response = await base44Client.auth.register(userData)
+    return { success: true }
   }
 
   const value = {
@@ -61,11 +53,7 @@ export function AuthProvider({ children }) {
     register,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

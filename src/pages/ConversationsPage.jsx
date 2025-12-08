@@ -9,10 +9,7 @@ export default function ConversationsPage() {
 
   return (
     <PageContainer>
-      <PageHeader
-        title="Conversations"
-        description="Manage your message threads"
-      >
+      <PageHeader title="Conversations" description="Manage your message threads">
         <Button>
           <Plus className="mr-2 h-4 w-4" />
           New Conversation
@@ -36,9 +33,7 @@ export default function ConversationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
-          {/* Conversation list would go here */}
-        </div>
+        <div className="space-y-2">{/* Conversation list would go here */}</div>
       )}
     </PageContainer>
   )

@@ -21,7 +21,7 @@ export const api = {
       console.error('API Error:', error)
       return { data: null, error: error.message || 'An error occurred' }
     }
-  }
+  },
 }
 
 export default api

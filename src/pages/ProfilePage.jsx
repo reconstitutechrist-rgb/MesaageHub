@@ -12,19 +12,14 @@ export default function ProfilePage() {
 
   return (
     <PageContainer>
-      <PageHeader
-        title="Profile"
-        description="Manage your personal information"
-      />
+      <PageHeader title="Profile" description="Manage your personal information" />
 
       <div className="space-y-6">
         {/* Avatar */}
         <Card>
           <CardHeader>
             <CardTitle>Profile Picture</CardTitle>
-            <CardDescription>
-              Upload a new profile picture
-            </CardDescription>
+            <CardDescription>Upload a new profile picture</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center gap-4">
             <div className="relative">
@@ -39,9 +34,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <Button variant="outline">Upload Image</Button>
-              <p className="mt-1 text-xs text-muted-foreground">
-                JPG, PNG or GIF. Max 2MB.
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">JPG, PNG or GIF. Max 2MB.</p>
             </div>
           </CardContent>
         </Card>
@@ -50,19 +43,13 @@ export default function ProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
-            <CardDescription>
-              Update your personal details
-            </CardDescription>
+            <CardDescription>Update your personal details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  defaultValue={user?.name}
-                  placeholder="Your name"
-                />
+                <Input id="name" defaultValue={user?.name} placeholder="Your name" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -76,10 +63,7 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
-              <Input
-                id="bio"
-                placeholder="Tell us about yourself"
-              />
+              <Input id="bio" placeholder="Tell us about yourself" />
             </div>
             <Button>Save Changes</Button>
           </CardContent>

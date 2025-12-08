@@ -29,11 +29,7 @@ export function Header() {
       {/* Search */}
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search messages..."
-          className="pl-8 bg-muted/50"
-        />
+        <Input type="search" placeholder="Search messages..." className="pl-8 bg-muted/50" />
       </div>
 
       <div className="flex items-center gap-2">
@@ -68,15 +64,11 @@ export function Header() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{user?.name}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email}
-                </p>
+                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>
-              Log out
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

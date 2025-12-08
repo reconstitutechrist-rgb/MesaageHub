@@ -1,7 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { ROUTES } from '@/lib/constants'
 import { MessageSquare } from 'lucide-react'
 
@@ -25,9 +32,7 @@ export default function RegisterPage() {
             <MessageSquare className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Create an account</CardTitle>
-          <CardDescription>
-            Get started with MessageHub
-          </CardDescription>
+          <CardDescription>Get started with MessageHub</CardDescription>
         </CardHeader>
         <CardContent>
           <RegisterForm onSuccess={handleSuccess} onError={handleError} />
