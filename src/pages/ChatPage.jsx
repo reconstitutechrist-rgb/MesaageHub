@@ -262,19 +262,19 @@ export default function ChatPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Chat header */}
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between border-b px-3 py-2 sm:px-4 sm:py-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             size="icon"
             className="md:hidden"
             onClick={() => navigate('/conversations')}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft />
           </Button>
           <UserAvatar user={participant} showStatus status={participant.status} />
-          <div>
-            <h2 className="font-semibold">{participant.name}</h2>
+          <div className="min-w-0">
+            <h2 className="truncate font-semibold">{participant.name}</h2>
             <OnlineStatus
               isOnline={participant.status === 'online'}
               lastSeen={participant.lastSeen}
@@ -283,12 +283,12 @@ export default function ChatPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" title="Voice call">
-            <Phone className="h-5 w-5" />
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" title="Voice call" className="hidden sm:flex">
+            <Phone />
           </Button>
-          <Button variant="ghost" size="icon" title="Video call">
-            <Video className="h-5 w-5" />
+          <Button variant="ghost" size="icon" title="Video call" className="hidden sm:flex">
+            <Video />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -372,8 +372,8 @@ export default function ChatPage() {
       </ScrollArea>
 
       {/* Message input */}
-      <div className="border-t p-4">
-        <form onSubmit={handleSendMessage} className="flex gap-2">
+      <div className="border-t p-3 pb-safe sm:p-4">
+        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
           <input
             type="file"
             ref={fileInputRef}
@@ -387,19 +387,25 @@ export default function ChatPage() {
             size="icon"
             onClick={handleAttachment}
             title="Attach file"
+            className="shrink-0"
           >
-            <Paperclip className="h-5 w-5" />
+            <Paperclip />
           </Button>
           <Input
             ref={inputRef}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1"
+            className="h-11 flex-1"
             disabled={isSending}
           />
-          <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending}>
-            <Send className="h-4 w-4" />
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!newMessage.trim() || isSending}
+            className="shrink-0"
+          >
+            <Send />
             <span className="sr-only">Send message</span>
           </Button>
         </form>

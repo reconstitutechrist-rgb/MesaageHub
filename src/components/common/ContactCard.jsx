@@ -34,7 +34,7 @@ export function ContactCard({ contact, onMessage, onBlock, onViewProfile }) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -73,8 +73,7 @@ export function ContactCard({ contact, onMessage, onBlock, onViewProfile }) {
 
             <Button
               variant="outline"
-              size="sm"
-              className="w-full mt-3"
+              className="w-full mt-3 h-11"
               onClick={() => onMessage?.(contact)}
             >
               <MessageSquare className="mr-2 h-4 w-4" />

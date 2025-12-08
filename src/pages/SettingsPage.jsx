@@ -40,12 +40,12 @@ const DEFAULT_SETTINGS = {
 
 function SettingRow({ label, description, children }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="space-y-0.5">
-        <Label>{label}</Label>
+    <div className="flex items-center justify-between gap-4 min-h-[56px] py-2">
+      <div className="space-y-0.5 flex-1 min-w-0">
+        <Label className="text-base sm:text-sm">{label}</Label>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
-      {children}
+      <div className="flex-shrink-0">{children}</div>
     </div>
   )
 }

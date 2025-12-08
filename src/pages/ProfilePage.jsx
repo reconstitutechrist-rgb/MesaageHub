@@ -251,7 +251,7 @@ export default function ProfilePage() {
             <CardTitle>Profile Picture</CardTitle>
             <CardDescription>Upload a new profile picture</CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center gap-4">
+          <CardContent className="flex flex-col items-center gap-4 sm:flex-row">
             <input
               type="file"
               ref={fileInputRef}
@@ -297,7 +297,7 @@ export default function ProfilePage() {
             <CardDescription>Update your personal details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name *</Label>
                 <Input
@@ -305,6 +305,7 @@ export default function ProfilePage() {
                   value={profile.name}
                   onChange={(e) => handleChange('name', e.target.value)}
                   placeholder="Your name"
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -315,10 +316,11 @@ export default function ProfilePage() {
                   value={profile.email}
                   onChange={(e) => handleChange('email', e.target.value)}
                   placeholder="your@email.com"
+                  className="h-11"
                 />
               </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
@@ -326,6 +328,7 @@ export default function ProfilePage() {
                   value={profile.phone}
                   onChange={(e) => handleChange('phone', e.target.value)}
                   placeholder="+1 (555) 123-4567"
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -335,6 +338,7 @@ export default function ProfilePage() {
                   value={profile.bio}
                   onChange={(e) => handleChange('bio', e.target.value)}
                   placeholder="Tell us about yourself"
+                  className="h-11"
                 />
               </div>
             </div>

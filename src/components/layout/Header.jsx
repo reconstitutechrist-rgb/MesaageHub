@@ -25,6 +25,7 @@ export function Header({ onMenuClick }) {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
   const [_isSearchFocused, setIsSearchFocused] = useState(false)
   // Debounced value available for future API integration
   const _debouncedSearch = useDebounce(searchQuery, 300)
@@ -37,8 +38,8 @@ export function Header({ onMenuClick }) {
     (e) => {
       e.preventDefault()
       if (searchQuery.trim()) {
-        // In a real app, navigate to search results page
         navigate(`/conversations?search=${encodeURIComponent(searchQuery)}`)
+        setShowMobileSearch(false)
       }
     },
     [searchQuery, navigate]
@@ -54,16 +55,16 @@ export function Header({ onMenuClick }) {
   })
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
+    <header className="flex h-14 items-center gap-2 border-b bg-background px-3 sm:gap-4 sm:px-4 lg:px-6">
       {/* Mobile menu button */}
       <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
-        <Menu className="h-5 w-5" />
+        <Menu />
         <span className="sr-only">Toggle menu</span>
       </Button>
 
-      {/* Search */}
-      <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      {/* Search - Desktop */}
+      <form onSubmit={handleSearch} className="relative hidden flex-1 sm:block sm:max-w-md">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           id="global-search"
           type="search"
@@ -71,15 +72,15 @@ export function Header({ onMenuClick }) {
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => setIsSearchFocused(true)}
           onBlur={() => setIsSearchFocused(false)}
-          placeholder="Search messages... (Ctrl+K)"
-          className="pl-8 pr-8 bg-muted/50"
+          placeholder="Search... (Ctrl+K)"
+          className="h-10 pl-9 pr-9 bg-muted/50"
         />
         {searchQuery && (
           <Button
             type="button"
             variant="ghost"
-            size="icon"
-            className="absolute right-0 top-0 h-full w-8"
+            size="sm"
+            className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 p-0"
             onClick={clearSearch}
           >
             <X className="h-4 w-4" />
@@ -87,21 +88,35 @@ export function Header({ onMenuClick }) {
         )}
       </form>
 
-      <div className="flex items-center gap-2">
+      {/* Search - Mobile toggle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="sm:hidden"
+        onClick={() => setShowMobileSearch(!showMobileSearch)}
+      >
+        <Search />
+        <span className="sr-only">Search</span>
+      </Button>
+
+      {/* Spacer for mobile */}
+      <div className="flex-1 sm:hidden" />
+
+      <div className="flex items-center gap-1 sm:gap-2">
         {/* Theme toggle */}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         >
-          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <Sun className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
 
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+          <Bell />
           {notificationCount > 0 && (
             <Badge
               variant="destructive"
@@ -116,8 +131,8 @@ export function Header({ onMenuClick }) {
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Avatar className="h-9 w-9">
                 <AvatarImage src={user?.avatar} alt={user?.name} />
                 <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
               </Avatar>
@@ -133,22 +148,53 @@ export function Header({ onMenuClick }) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/profile')}>
+            <DropdownMenuItem onClick={() => navigate('/profile')} className="py-3">
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/settings')}>
+            <DropdownMenuItem onClick={() => navigate('/settings')} className="py-3">
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>
+            <DropdownMenuItem onClick={logout} className="py-3">
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Mobile search overlay */}
+      {showMobileSearch && (
+        <div className="absolute inset-x-0 top-0 z-50 flex h-14 items-center gap-2 border-b bg-background px-3 sm:hidden">
+          <form onSubmit={handleSearch} className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              autoFocus
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+              className="h-10 pl-9 pr-9 bg-muted/50"
+            />
+            {searchQuery && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 p-0"
+                onClick={clearSearch}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </form>
+          <Button variant="ghost" size="sm" onClick={() => setShowMobileSearch(false)}>
+            Cancel
+          </Button>
+        </div>
+      )}
     </header>
   )
 }

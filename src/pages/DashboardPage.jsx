@@ -104,9 +104,9 @@ function ActivityItem({ activity, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted/50"
+      className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted/50 min-h-[60px] touch-manipulation"
     >
-      <UserAvatar user={activity.user} size="sm" />
+      <UserAvatar user={activity.user} />
       <div className="flex-1 overflow-hidden">
         <div className="flex items-center justify-between">
           <span className="font-medium">{activity.user.name}</span>
@@ -116,7 +116,7 @@ function ActivityItem({ activity, onClick }) {
         </div>
         <p className="truncate text-sm text-muted-foreground">{getActivityText()}</p>
       </div>
-      {activity.conversationId && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+      {activity.conversationId && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
     </button>
   )
 }
@@ -185,13 +185,13 @@ export default function DashboardPage() {
       <PageHeader title="Dashboard" description="Welcome back! Here's your messaging overview." />
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
           <StatCard key={stat.title} {...stat} />
         ))}
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid gap-4 sm:mt-6 lg:grid-cols-3">
         {/* Recent Activity */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -232,7 +232,7 @@ export default function DashboardPage() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <QuickActionButton
                   icon={Plus}
                   label="New Chat"
@@ -270,14 +270,14 @@ export default function DashboardPage() {
               {mockData.onlineContacts.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground">No contacts online</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {mockData.onlineContacts.slice(0, 4).map((contact) => (
                     <button
                       key={contact.id}
                       onClick={() => handleContactClick(contact)}
-                      className="flex w-full items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted/50"
+                      className="flex w-full items-center gap-3 rounded-lg p-3 transition-colors hover:bg-muted/50 min-h-[52px] touch-manipulation"
                     >
-                      <UserAvatar user={contact} size="sm" showStatus status="online" />
+                      <UserAvatar user={contact} showStatus status="online" />
                       <div className="flex-1 text-left">
                         <span className="text-sm font-medium">{contact.name}</span>
                         <OnlineStatus isOnline className="text-xs" />

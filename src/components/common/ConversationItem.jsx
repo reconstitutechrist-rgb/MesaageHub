@@ -11,7 +11,7 @@ export function ConversationItem({ conversation, isActive = false }) {
     <Link
       to={`/conversations/${id}`}
       className={cn(
-        'flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-muted/50',
+        'flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-muted/50 min-h-[64px] touch-manipulation',
         isActive && 'bg-muted',
         unreadCount > 0 && 'bg-muted/30'
       )}

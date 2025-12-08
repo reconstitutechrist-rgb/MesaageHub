@@ -15,7 +15,12 @@ export function MessageBubble({ message, isOwn = false, showAvatar = true, showT
   const StatusIcon = statusIcons[message.status] || Check
 
   return (
-    <div className={cn('flex gap-2 max-w-[80%]', isOwn ? 'ml-auto flex-row-reverse' : '')}>
+    <div
+      className={cn(
+        'flex gap-2 max-w-[85%] sm:max-w-[75%] md:max-w-[65%]',
+        isOwn ? 'ml-auto flex-row-reverse' : ''
+      )}
+    >
       {showAvatar && !isOwn && (
         <UserAvatar user={message.sender} size="sm" className="mt-1 flex-shrink-0" />
       )}
@@ -31,7 +36,7 @@ export function MessageBubble({ message, isOwn = false, showAvatar = true, showT
             isOwn ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'
           )}
         >
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          <p className="text-base sm:text-sm whitespace-pre-wrap">{message.content}</p>
 
           {message.attachment && (
             <div className="mt-2">
