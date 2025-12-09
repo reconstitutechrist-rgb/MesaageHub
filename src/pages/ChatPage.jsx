@@ -19,6 +19,7 @@ import {
   EmptyState,
 } from '@/components/common'
 import { useKeyboardShortcut, SHORTCUTS } from '@/hooks'
+import { useCall } from '@/components/providers/CallProvider'
 import { groupMessagesByDate, formatMessageDate, generateId } from '@/lib/utils'
 import {
   Send,
@@ -116,6 +117,7 @@ const mockConversations = {
 export default function ChatPage() {
   const { id: conversationId } = useParams()
   const navigate = useNavigate()
+  const { startCall } = useCall()
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -284,7 +286,13 @@ export default function ChatPage() {
         </div>
 
         <div className="flex items-center">
-          <Button variant="ghost" size="icon" title="Voice call" className="hidden sm:flex">
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Voice call"
+            className="hidden sm:flex"
+            onClick={() => startCall(participant)}
+          >
             <Phone />
           </Button>
           <Button variant="ghost" size="icon" title="Video call" className="hidden sm:flex">

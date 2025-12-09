@@ -14,88 +14,39 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { EmptyState, ContactCard, ConfirmDialog, SearchInput } from '@/components/common'
-import { useDebounce } from '@/hooks'
+import { useDebounce, useLocalStorage } from '@/hooks'
 import { isValidEmail } from '@/lib/utils'
 import { Users, Plus, Search, UserX } from 'lucide-react'
 import { toast } from 'sonner'
-
-// Mock contacts data - would come from API
-const mockContacts = [
-  {
-    id: 'c1',
-    name: 'Alice Johnson',
-    email: 'alice@example.com',
-    phone: '+1 (555) 123-4567',
-    avatar: null,
-    status: 'online',
-    lastSeen: null,
-    isBlocked: false,
-  },
-  {
-    id: 'c2',
-    name: 'Bob Smith',
-    email: 'bob@example.com',
-    phone: '+1 (555) 234-5678',
-    avatar: null,
-    status: 'offline',
-    lastSeen: new Date(Date.now() - 1800000),
-    isBlocked: false,
-  },
-  {
-    id: 'c3',
-    name: 'Carol Williams',
-    email: 'carol@example.com',
-    phone: '+1 (555) 345-6789',
-    avatar: null,
-    status: 'online',
-    lastSeen: null,
-    isBlocked: false,
-  },
-  {
-    id: 'c4',
-    name: 'David Brown',
-    email: 'david@example.com',
-    phone: '+1 (555) 456-7890',
-    avatar: null,
-    status: 'away',
-    lastSeen: new Date(Date.now() - 600000),
-    isBlocked: false,
-  },
-  {
-    id: 'c5',
-    name: 'Emma Davis',
-    email: 'emma@example.com',
-    phone: '+1 (555) 567-8901',
-    avatar: null,
-    status: 'online',
-    lastSeen: null,
-    isBlocked: false,
-  },
-  {
-    id: 'c6',
-    name: 'Frank Miller',
-    email: 'frank@example.com',
-    phone: '+1 (555) 678-9012',
-    avatar: null,
-    status: 'offline',
-    lastSeen: new Date(Date.now() - 86400000),
-    isBlocked: true,
-  },
-]
+import { initialContacts } from '@/data/mockData'
 
 export default function ContactsPage() {
   const navigate = useNavigate()
 
   // State
-  const [contacts, setContacts] = useState(mockContacts)
+  // Use localStorage to persist contacts and share with other pages
+  const [contacts, setContacts] = useLocalStorage('contacts', initialContacts)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('all')
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showBlockDialog, setShowBlockDialog] = useState(false)
   const [selectedContact, setSelectedContact] = useState(null)
-  const [newContact, setNewContact] = useState({ name: '', email: '', phone: '' })
+  const [newContact, setNewContact] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    interests: '',
+    preferredMethod: 'email',
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Debounced search
@@ -148,6 +99,13 @@ export default function ContactsPage() {
     // Simulate API call
     await new Promise((r) => setTimeout(r, 500))
 
+    const contactInterests = newContact.interests
+      ? newContact.interests
+          .split(',')
+          .map((i) => i.trim())
+          .filter(Boolean)
+      : []
+
     const contact = {
       id: `c${Date.now()}`,
       name: newContact.name.trim(),
@@ -157,14 +115,16 @@ export default function ContactsPage() {
       status: 'offline',
       lastSeen: null,
       isBlocked: false,
+      interests: contactInterests,
+      preferredMethod: newContact.preferredMethod,
     }
 
     setContacts((prev) => [...prev, contact])
     setShowAddDialog(false)
-    setNewContact({ name: '', email: '', phone: '' })
+    setNewContact({ name: '', email: '', phone: '', interests: '', preferredMethod: 'email' })
     setIsSubmitting(false)
     toast.success(`${contact.name} added to contacts`)
-  }, [newContact])
+  }, [newContact, setContacts])
 
   const handleDeleteContact = useCallback(() => {
     if (!selectedContact) return
@@ -173,7 +133,7 @@ export default function ContactsPage() {
     setShowDeleteDialog(false)
     toast.success(`${selectedContact.name} removed from contacts`)
     setSelectedContact(null)
-  }, [selectedContact])
+  }, [selectedContact, setContacts])
 
   const handleBlockContact = useCallback(() => {
     if (!selectedContact) return
@@ -188,7 +148,7 @@ export default function ContactsPage() {
         : `${selectedContact.name} blocked`
     )
     setSelectedContact(null)
-  }, [selectedContact])
+  }, [selectedContact, setContacts])
 
   const handleStartConversation = useCallback(
     (contact) => {
@@ -335,6 +295,32 @@ export default function ContactsPage() {
                 onChange={(e) => setNewContact((prev) => ({ ...prev, phone: e.target.value }))}
                 placeholder="+1 (555) 123-4567"
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="interests">Interests</Label>
+              <Input
+                id="interests"
+                value={newContact.interests}
+                onChange={(e) => setNewContact((prev) => ({ ...prev, interests: e.target.value }))}
+                placeholder="rings, watches, gold (comma separated)"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="preferredMethod">Preferred Contact Method</Label>
+              <Select
+                value={newContact.preferredMethod}
+                onValueChange={(value) =>
+                  setNewContact((prev) => ({ ...prev, preferredMethod: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone / SMS</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

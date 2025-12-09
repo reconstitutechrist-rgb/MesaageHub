@@ -1,6 +1,7 @@
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { UserAvatar } from './UserAvatar'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   DropdownMenu,
@@ -9,10 +10,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MessageSquare, MoreVertical, UserX, Info } from 'lucide-react'
+import { useCall } from '@/components/providers/CallProvider'
+import { MessageSquare, MoreVertical, UserX, Info, Flame, Phone } from 'lucide-react'
 
 export function ContactCard({ contact, onMessage, onBlock, onViewProfile }) {
-  const { name, email, isOnline, lastSeen } = contact
+  const { startCall } = useCall()
+  const { name, email, isOnline, lastSeen, engagementScore = 0 } = contact
+
+  const getEngagementColor = (score) => {
+    if (score >= 80) return 'text-red-500 fill-red-500'
+    if (score >= 50) return 'text-orange-500 fill-orange-500'
+    return 'text-gray-300'
+  }
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -28,7 +37,13 @@ export function ContactCard({ contact, onMessage, onBlock, onViewProfile }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-semibold truncate">{name}</h3>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-semibold truncate">{name}</h3>
+                  <Flame
+                    className={cn('h-4 w-4', getEngagementColor(engagementScore))}
+                    title={`Engagement Score: ${engagementScore}`}
+                  />
+                </div>
                 {email && <p className="text-sm text-muted-foreground truncate">{email}</p>}
               </div>
 
@@ -59,6 +74,16 @@ export function ContactCard({ contact, onMessage, onBlock, onViewProfile }) {
               </DropdownMenu>
             </div>
 
+            {contact.interests && contact.interests.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {contact.interests.map((interest, index) => (
+                  <Badge key={index} variant="secondary" className="text-[10px] px-1 py-0 h-5">
+                    {interest}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center gap-2 mt-3">
               <span
                 className={cn('text-xs', isOnline ? 'text-green-600' : 'text-muted-foreground')}
@@ -71,14 +96,20 @@ export function ContactCard({ contact, onMessage, onBlock, onViewProfile }) {
               </span>
             </div>
 
-            <Button
-              variant="outline"
-              className="w-full mt-3 h-11"
-              onClick={() => onMessage?.(contact)}
-            >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Message
-            </Button>
+            <div className="flex gap-2 mt-3">
+              <Button
+                variant="outline"
+                className="flex-1 h-11"
+                onClick={() => onMessage?.(contact)}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Message
+              </Button>
+              <Button variant="outline" className="flex-1 h-11" onClick={() => startCall(contact)}>
+                <Phone className="mr-2 h-4 w-4" />
+                Call
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

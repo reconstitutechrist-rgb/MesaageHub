@@ -17,7 +17,7 @@ import { ConfirmDialog } from '@/components/common'
 import { useLocalStorage } from '@/hooks'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { Download, Trash2, Bell, Volume2, Shield, Monitor, Loader2 } from 'lucide-react'
+import { Download, Trash2, Bell, Volume2, Shield, Monitor, Loader2, Palette } from 'lucide-react'
 import { toast } from 'sonner'
 
 const DEFAULT_SETTINGS = {
@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS = {
   appearance: {
     fontSize: 'medium',
     compactMode: false,
+    colorTheme: 'default',
   },
 }
 
@@ -68,9 +69,19 @@ export default function SettingsPage() {
   // Initialize from localStorage
   useEffect(() => {
     if (savedSettings) {
-      setSettings({ ...DEFAULT_SETTINGS, ...savedSettings })
+      setSettings((prev) => ({ ...DEFAULT_SETTINGS, ...savedSettings }))
     }
   }, [savedSettings])
+
+  // Apply color theme
+  useEffect(() => {
+    // Remove all theme classes
+    document.body.classList.remove('theme-blue', 'theme-green', 'theme-purple', 'theme-orange')
+    // Add current theme class if not default
+    if (settings.appearance?.colorTheme && settings.appearance.colorTheme !== 'default') {
+      document.body.classList.add(`theme-${settings.appearance.colorTheme}`)
+    }
+  }, [settings.appearance?.colorTheme])
 
   // Save settings whenever they change
   const updateSetting = useCallback(
@@ -167,6 +178,26 @@ export default function SettingsPage() {
                 checked={theme === 'dark'}
                 onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
               />
+            </SettingRow>
+
+            <Separator />
+
+            <SettingRow label="Theme Color" description="Choose your preferred accent color">
+              <Select
+                value={settings.appearance.colorTheme}
+                onValueChange={(value) => updateSetting('appearance', 'colorTheme', value)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default</SelectItem>
+                  <SelectItem value="blue">Blue</SelectItem>
+                  <SelectItem value="green">Green</SelectItem>
+                  <SelectItem value="purple">Purple</SelectItem>
+                  <SelectItem value="orange">Orange</SelectItem>
+                </SelectContent>
+              </Select>
             </SettingRow>
 
             <Separator />
