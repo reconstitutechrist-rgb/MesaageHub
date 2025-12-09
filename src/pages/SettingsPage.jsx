@@ -17,8 +17,21 @@ import { ConfirmDialog } from '@/components/common'
 import { useLocalStorage } from '@/hooks'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { Download, Trash2, Bell, Volume2, Shield, Monitor, Loader2, Palette } from 'lucide-react'
+import { Download, Trash2, Bell, Volume2, Shield, Monitor, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+
+// Color theme options with their display colors
+const colorThemes = [
+  { value: 'default', label: 'Default', color: 'bg-foreground' },
+  { value: 'blue', label: 'Blue', color: 'bg-blue-500' },
+  { value: 'green', label: 'Green', color: 'bg-green-500' },
+  { value: 'purple', label: 'Purple', color: 'bg-purple-500' },
+  { value: 'orange', label: 'Orange', color: 'bg-orange-500' },
+  { value: 'pink', label: 'Pink', color: 'bg-pink-500' },
+  { value: 'cyan', label: 'Cyan', color: 'bg-cyan-500' },
+  { value: 'red', label: 'Red', color: 'bg-red-500' },
+]
 
 const DEFAULT_SETTINGS = {
   notifications: {
@@ -73,15 +86,38 @@ export default function SettingsPage() {
     }
   }, [savedSettings])
 
-  // Apply color theme
+  // Apply color theme, font size, and compact mode
   useEffect(() => {
     // Remove all theme classes
-    document.body.classList.remove('theme-blue', 'theme-green', 'theme-purple', 'theme-orange')
+    document.body.classList.remove(
+      'theme-blue',
+      'theme-green',
+      'theme-purple',
+      'theme-orange',
+      'theme-pink',
+      'theme-cyan',
+      'theme-red'
+    )
     // Add current theme class if not default
     if (settings.appearance?.colorTheme && settings.appearance.colorTheme !== 'default') {
       document.body.classList.add(`theme-${settings.appearance.colorTheme}`)
     }
-  }, [settings.appearance?.colorTheme])
+
+    // Apply font size
+    document.body.classList.remove('font-size-small', 'font-size-medium', 'font-size-large')
+    document.body.classList.add(`font-size-${settings.appearance?.fontSize || 'medium'}`)
+
+    // Apply compact mode
+    if (settings.appearance?.compactMode) {
+      document.body.classList.add('compact-mode')
+    } else {
+      document.body.classList.remove('compact-mode')
+    }
+  }, [
+    settings.appearance?.colorTheme,
+    settings.appearance?.fontSize,
+    settings.appearance?.compactMode,
+  ])
 
   // Save settings whenever they change
   const updateSetting = useCallback(
@@ -187,15 +223,27 @@ export default function SettingsPage() {
                 value={settings.appearance.colorTheme}
                 onValueChange={(value) => updateSetting('appearance', 'colorTheme', value)}
               >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
+                <SelectTrigger className="w-36">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        'w-3 h-3 rounded-full',
+                        colorThemes.find((t) => t.value === settings.appearance.colorTheme)
+                          ?.color || 'bg-foreground'
+                      )}
+                    />
+                    <SelectValue />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="default">Default</SelectItem>
-                  <SelectItem value="blue">Blue</SelectItem>
-                  <SelectItem value="green">Green</SelectItem>
-                  <SelectItem value="purple">Purple</SelectItem>
-                  <SelectItem value="orange">Orange</SelectItem>
+                  {colorThemes.map((theme) => (
+                    <SelectItem key={theme.value} value={theme.value}>
+                      <div className="flex items-center gap-2">
+                        <div className={cn('w-3 h-3 rounded-full', theme.color)} />
+                        {theme.label}
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </SettingRow>

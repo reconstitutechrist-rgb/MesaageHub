@@ -15,13 +15,34 @@ function ThemeManager({ children }) {
       if (saved) {
         const settings = JSON.parse(saved)
         const colorTheme = settings.appearance?.colorTheme || 'default'
+        const fontSize = settings.appearance?.fontSize || 'medium'
+        const compactMode = settings.appearance?.compactMode || false
 
         // Remove all theme classes
-        document.body.classList.remove('theme-blue', 'theme-green', 'theme-purple', 'theme-orange')
+        document.body.classList.remove(
+          'theme-blue',
+          'theme-green',
+          'theme-purple',
+          'theme-orange',
+          'theme-pink',
+          'theme-cyan',
+          'theme-red'
+        )
 
         // Add current theme class
         if (colorTheme !== 'default') {
           document.body.classList.add(`theme-${colorTheme}`)
+        }
+
+        // Apply font size
+        document.body.classList.remove('font-size-small', 'font-size-medium', 'font-size-large')
+        document.body.classList.add(`font-size-${fontSize}`)
+
+        // Apply compact mode
+        if (compactMode) {
+          document.body.classList.add('compact-mode')
+        } else {
+          document.body.classList.remove('compact-mode')
         }
       }
     } catch (e) {
