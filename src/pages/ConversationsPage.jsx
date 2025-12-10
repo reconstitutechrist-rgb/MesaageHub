@@ -12,7 +12,6 @@ import {
   Image as ImageIcon,
   Mail,
   Phone,
-  Trash2,
   Sparkles,
   FileText,
   Calendar,

@@ -17,7 +17,7 @@ import { ConfirmDialog } from '@/components/common'
 import { useLocalStorage } from '@/hooks'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { Download, Trash2, Bell, Volume2, Shield, Monitor, Loader2 } from 'lucide-react'
+import { Download, Trash2, Bell, Volume2, Shield, Monitor, Loader2, Palette } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +31,22 @@ const colorThemes = [
   { value: 'pink', label: 'Pink', color: 'bg-pink-500' },
   { value: 'cyan', label: 'Cyan', color: 'bg-cyan-500' },
   { value: 'red', label: 'Red', color: 'bg-red-500' },
+]
+
+// Layout theme options
+const layoutThemes = [
+  {
+    value: 'cyan',
+    label: 'Cyan Blue',
+    description: 'Modern cyan/teal accents with cool tones',
+    preview: 'bg-gradient-to-r from-cyan-500 to-blue-500',
+  },
+  {
+    value: 'purple',
+    label: 'Purple Glow',
+    description: 'Vibrant purple/fuchsia with glowing effects',
+    preview: 'bg-gradient-to-r from-purple-500 to-fuchsia-500',
+  },
 ]
 
 const DEFAULT_SETTINGS = {
@@ -49,6 +65,7 @@ const DEFAULT_SETTINGS = {
     fontSize: 'medium',
     compactMode: false,
     colorTheme: 'default',
+    layoutTheme: 'cyan',
   },
 }
 
@@ -82,7 +99,7 @@ export default function SettingsPage() {
   // Initialize from localStorage
   useEffect(() => {
     if (savedSettings) {
-      setSettings((prev) => ({ ...DEFAULT_SETTINGS, ...savedSettings }))
+      setSettings(() => ({ ...DEFAULT_SETTINGS, ...savedSettings }))
     }
   }, [savedSettings])
 
@@ -134,6 +151,27 @@ export default function SettingsPage() {
         return updated
       })
       toast.success('Setting saved')
+    },
+    [setSavedSettings]
+  )
+
+  // Update layout theme and dispatch event
+  const updateLayoutTheme = useCallback(
+    (value) => {
+      setSettings((_prev) => {
+        const updated = {
+          ..._prev,
+          appearance: {
+            ..._prev.appearance,
+            layoutTheme: value,
+          },
+        }
+        setSavedSettings(updated)
+        // Dispatch custom event to notify PhoneLayout of the change
+        window.dispatchEvent(new CustomEvent('layout-theme-changed'))
+        return updated
+      })
+      toast.success('Layout theme updated')
     },
     [setSavedSettings]
   )
@@ -247,6 +285,65 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
             </SettingRow>
+
+            <Separator />
+
+            <SettingRow label="Layout Theme" description="Choose your preferred app layout style">
+              <Select
+                value={settings.appearance.layoutTheme || 'cyan'}
+                onValueChange={updateLayoutTheme}
+              >
+                <SelectTrigger className="w-40">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        'w-4 h-4 rounded-full',
+                        layoutThemes.find((t) => t.value === settings.appearance.layoutTheme)
+                          ?.preview || 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                      )}
+                    />
+                    <SelectValue />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {layoutThemes.map((layout) => (
+                    <SelectItem key={layout.value} value={layout.value}>
+                      <div className="flex items-center gap-2">
+                        <div className={cn('w-4 h-4 rounded-full', layout.preview)} />
+                        <div className="flex flex-col">
+                          <span>{layout.label}</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </SettingRow>
+
+            {/* Layout Preview */}
+            <div className="mt-4 p-4 rounded-xl border border-border/50 bg-muted/30">
+              <div className="flex items-center gap-3 mb-3">
+                <Palette className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Layout Preview</span>
+              </div>
+              <div className="flex gap-3">
+                {layoutThemes.map((layout) => (
+                  <button
+                    key={layout.value}
+                    onClick={() => updateLayoutTheme(layout.value)}
+                    className={cn(
+                      'flex-1 p-3 rounded-xl border-2 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]',
+                      settings.appearance.layoutTheme === layout.value
+                        ? 'border-primary shadow-lg'
+                        : 'border-transparent hover:border-border'
+                    )}
+                  >
+                    <div className={cn('w-full h-20 rounded-lg mb-2', layout.preview)} />
+                    <p className="text-xs font-medium text-center">{layout.label}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <Separator />
 

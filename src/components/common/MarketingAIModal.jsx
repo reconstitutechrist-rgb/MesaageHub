@@ -5,13 +5,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Loader2, Send, Upload, Sparkles } from 'lucide-react'
-import { toast } from 'sonner'
 
 export function MarketingAIModal({ open, onOpenChange, onImageGenerated }) {
   const [messages, setMessages] = useState([
