@@ -21,12 +21,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { EmptyState, ContactCard, ConfirmDialog, SearchInput } from '@/components/common'
+import {
+  EmptyState,
+  ContactCard,
+  ConfirmDialog,
+  SearchInput,
+  VirtualList,
+} from '@/components/common'
 import { useDebounce, useLocalStorage } from '@/hooks'
 import { isValidEmail } from '@/lib/utils'
 import { Users, Plus, Search, UserX } from 'lucide-react'
 import { toast } from 'sonner'
 import { initialContacts } from '@/data/mockData'
+
+// Constants for virtualization
+const CONTACT_CARD_HEIGHT = 120 // Approximate height of ContactCard + padding
+const LIST_HEIGHT = 500 // Height of the virtual list container
 
 export default function ContactsPage() {
   const navigate = useNavigate()
@@ -168,6 +178,77 @@ export default function ContactsPage() {
   const blockedCount = contacts.filter((c) => c.isBlocked).length
   const allCount = contacts.filter((c) => !c.isBlocked).length
 
+  // Render function for VirtualList
+  const renderContactItem = useCallback(
+    (contact) => (
+      <div className="px-2 py-1">
+        <ContactCard
+          contact={contact}
+          onMessage={() => handleStartConversation(contact)}
+          onBlock={() => {
+            setSelectedContact(contact)
+            setShowBlockDialog(true)
+          }}
+          onDelete={() => {
+            setSelectedContact(contact)
+            setShowDeleteDialog(true)
+          }}
+          onViewProfile={() => handleViewProfile(contact)}
+        />
+      </div>
+    ),
+    [handleStartConversation, handleViewProfile]
+  )
+
+  // Empty state component based on current context
+  const renderEmptyState = () => {
+    if (searchQuery) {
+      return (
+        <EmptyState
+          icon={Search}
+          title="No contacts found"
+          description={`No contacts match "${searchQuery}"`}
+          action={
+            <Button variant="outline" onClick={() => setSearchQuery('')}>
+              Clear search
+            </Button>
+          }
+        />
+      )
+    }
+    if (activeTab === 'blocked') {
+      return (
+        <EmptyState
+          icon={UserX}
+          title="No blocked contacts"
+          description="You haven't blocked anyone yet."
+        />
+      )
+    }
+    if (activeTab === 'online') {
+      return (
+        <EmptyState
+          icon={Users}
+          title="No contacts online"
+          description="None of your contacts are currently online."
+        />
+      )
+    }
+    return (
+      <EmptyState
+        icon={Users}
+        title="No contacts yet"
+        description="Add your first contact to get started."
+        action={
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Contact
+          </Button>
+        }
+      />
+    )
+  }
+
   return (
     <PageContainer>
       <PageHeader title="Contacts" description="Manage your contact list">
@@ -195,64 +276,21 @@ export default function ContactsPage() {
           <TabsContent value={activeTab} className="mt-4">
             {filteredContacts.length === 0 ? (
               <Card>
-                <CardContent className="py-8">
-                  {searchQuery ? (
-                    <EmptyState
-                      icon={Search}
-                      title="No contacts found"
-                      description={`No contacts match "${searchQuery}"`}
-                      action={
-                        <Button variant="outline" onClick={() => setSearchQuery('')}>
-                          Clear search
-                        </Button>
-                      }
-                    />
-                  ) : activeTab === 'blocked' ? (
-                    <EmptyState
-                      icon={UserX}
-                      title="No blocked contacts"
-                      description="You haven't blocked anyone yet."
-                    />
-                  ) : activeTab === 'online' ? (
-                    <EmptyState
-                      icon={Users}
-                      title="No contacts online"
-                      description="None of your contacts are currently online."
-                    />
-                  ) : (
-                    <EmptyState
-                      icon={Users}
-                      title="No contacts yet"
-                      description="Add contacts to start messaging with people."
-                      action={
-                        <Button onClick={() => setShowAddDialog(true)}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Contact
-                        </Button>
-                      }
-                    />
-                  )}
-                </CardContent>
+                <CardContent className="py-8">{renderEmptyState()}</CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-                {filteredContacts.map((contact) => (
-                  <ContactCard
-                    key={contact.id}
-                    contact={contact}
-                    onMessage={() => handleStartConversation(contact)}
-                    onViewProfile={() => handleViewProfile(contact)}
-                    onBlock={() => {
-                      setSelectedContact(contact)
-                      setShowBlockDialog(true)
-                    }}
-                    onDelete={() => {
-                      setSelectedContact(contact)
-                      setShowDeleteDialog(true)
-                    }}
+              <Card>
+                <CardContent className="p-2">
+                  {/* Use VirtualList for performance with large contact lists */}
+                  <VirtualList
+                    items={filteredContacts}
+                    height={LIST_HEIGHT}
+                    itemHeight={CONTACT_CARD_HEIGHT}
+                    renderItem={renderContactItem}
+                    className="scrollbar-thin"
                   />
-                ))}
-              </div>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
@@ -260,7 +298,7 @@ export default function ContactsPage() {
 
       {/* Add Contact Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Add New Contact</DialogTitle>
             <DialogDescription>
@@ -341,8 +379,8 @@ export default function ContactsPage() {
         title="Delete Contact"
         description={`Are you sure you want to remove ${selectedContact?.name} from your contacts? This action cannot be undone.`}
         confirmText="Delete"
+        confirmVariant="destructive"
         onConfirm={handleDeleteContact}
-        variant="destructive"
       />
 
       {/* Block Confirmation */}
@@ -352,12 +390,12 @@ export default function ContactsPage() {
         title={selectedContact?.isBlocked ? 'Unblock Contact' : 'Block Contact'}
         description={
           selectedContact?.isBlocked
-            ? `Are you sure you want to unblock ${selectedContact?.name}? They will be able to message you again.`
-            : `Are you sure you want to block ${selectedContact?.name}? You won't receive messages from them anymore.`
+            ? `Are you sure you want to unblock ${selectedContact?.name}?`
+            : `Are you sure you want to block ${selectedContact?.name}? They won't be able to message you.`
         }
         confirmText={selectedContact?.isBlocked ? 'Unblock' : 'Block'}
+        confirmVariant={selectedContact?.isBlocked ? 'default' : 'destructive'}
         onConfirm={handleBlockContact}
-        variant={selectedContact?.isBlocked ? 'default' : 'destructive'}
       />
     </PageContainer>
   )

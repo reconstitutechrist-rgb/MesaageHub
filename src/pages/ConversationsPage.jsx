@@ -2,22 +2,21 @@ import { useState, useEffect, useRef } from 'react'
 import { PageContainer, PageHeader } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { EmptyState } from '@/components/common/EmptyState'
-import { MarketingAIModal } from '@/components/common/MarketingAIModal'
+import { EmptyState, MarketingAIModal, RecipientSelector } from '@/components/common'
 import {
   MessageSquare,
   Plus,
   X,
   Paperclip,
   Image as ImageIcon,
-  Mail,
-  Phone,
   Sparkles,
   FileText,
   Calendar,
   Clock,
   Mic,
   Square,
+  Users,
+  Megaphone,
 } from 'lucide-react'
 import {
   Dialog,
@@ -38,22 +37,28 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { useLocalStorage, useDebounce } from '@/hooks'
+import { useLocalStorage } from '@/hooks'
 import { initialContacts, initialTemplates } from '@/data/mockData'
 import { toast } from 'sonner'
+import { twilioService } from '@/services/TwilioService'
 
 export default function ConversationsPage() {
-  const conversations = [] // This would come from your API
+  const conversations = []
 
   // State
   const [contacts] = useLocalStorage('contacts', initialContacts)
   const [showComposeDialog, setShowComposeDialog] = useState(false)
+  const [showRecipientSelector, setShowRecipientSelector] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
   const [showScheduleDialog, setShowScheduleDialog] = useState(false)
+
+  // Compose State
+  const [mode, setMode] = useState('direct') // 'direct' or 'campaign'
   const [message, setMessage] = useState('')
   const [recipients, setRecipients] = useState([])
   const [attachments, setAttachments] = useState([])
   const [scheduledDate, setScheduledDate] = useState('')
+  const [isSending, setIsSending] = useState(false)
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false)
@@ -62,42 +67,78 @@ export default function ConversationsPage() {
 
   const fileInputRef = useRef(null)
 
-  const debouncedMessage = useDebounce(message, 500)
+  // -- Workflow Handlers --
 
-  // Auto-targeting logic: scan message for interests
-  useEffect(() => {
-    if (!debouncedMessage) return
+  const handleStartCampaign = () => {
+    setMode('campaign')
+    setRecipients([]) // Reset recipients
+    setMessage('')
+    setShowRecipientSelector(true)
+  }
 
-    const lowerMessage = debouncedMessage.toLowerCase()
+  const handleNewDirectMessage = () => {
+    setMode('direct')
+    setRecipients([])
+    setMessage('')
+    setShowComposeDialog(true)
+  }
 
-    // Find contacts whose interests match the message content
-    const matchedContacts = contacts.filter((contact) => {
-      if (!contact.interests || contact.interests.length === 0) return false
-      // Check if any interest keyword appears in the message
-      return contact.interests.some((interest) => lowerMessage.includes(interest.toLowerCase()))
-    })
+  const handleRecipientsConfirmed = (selectedContacts) => {
+    setRecipients(selectedContacts)
+    setShowComposeDialog(true)
 
-    // Add new matches to recipients list
-    setRecipients((prev) => {
-      const currentIds = new Set(prev.map((c) => c.id))
-      const newRecipients = matchedContacts.filter((c) => !currentIds.has(c.id))
+    // Suggest templates based on common interests if in campaign mode
+    if (mode === 'campaign' && selectedContacts.length > 0) {
+      const allInterests = selectedContacts.flatMap((c) => c.interests || [])
+      if (allInterests.includes('gold')) {
+        toast.info("Tip: You selected contacts interested in Gold. Try the 'Sale Alert' template.")
+      }
+    }
+  }
 
-      if (newRecipients.length === 0) return prev
+  const handleSendMessage = async () => {
+    if (recipients.length === 0) {
+      toast.error('Please add at least one recipient')
+      return
+    }
+    if (!message.trim() && attachments.length === 0) {
+      toast.error('Please enter a message or attach a file')
+      return
+    }
 
-      // Notify user of auto-added recipients
-      if (newRecipients.length === 1) {
-        toast.info(`Auto-added ${newRecipients[0].name} based on interest match`)
+    setIsSending(true)
+    try {
+      if (mode === 'campaign') {
+        const campaignId = `camp_${Date.now()}`
+        const recipientIds = recipients.map((r) => r.id)
+
+        await twilioService.launchCampaign(campaignId, recipientIds, {})
+
+        const recipientCount = recipients.length
+        toast.success(`Campaign started! Sending to ${recipientCount} recipients...`)
       } else {
-        toast.info(`Auto-added ${newRecipients.length} recipients based on interest match`)
+        for (const recipient of recipients) {
+          const phoneNumber = recipient.phone || '+15550000000'
+          await twilioService.sendMessage(phoneNumber, message)
+        }
+
+        toast.success(`Message sent to ${recipients[0].name}`)
       }
 
-      return [...prev, ...newRecipients]
-    })
-  }, [debouncedMessage, contacts])
-
-  const handleRemoveRecipient = (id) => {
-    setRecipients((prev) => prev.filter((c) => c.id !== id))
+      setShowComposeDialog(false)
+      setMessage('')
+      setRecipients([])
+      setAttachments([])
+      setScheduledDate('')
+    } catch (error) {
+      toast.error('Failed to send message. Please try again.')
+      console.error(error)
+    } finally {
+      setIsSending(false)
+    }
   }
+
+  // -- Attachment & Recording Handlers --
 
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -133,7 +174,6 @@ export default function ConversationsPage() {
     toast.success('Voice note attached')
   }
 
-  // Cleanup timer
   useEffect(() => {
     return () => {
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
@@ -142,59 +182,44 @@ export default function ConversationsPage() {
 
   const handleAIImageGenerated = (file, targetingText) => {
     setAttachments([file])
-    // Pre-fill message with targeting text to trigger auto-selection
-    setMessage(targetingText)
+    if (mode === 'campaign' && !message) {
+      setMessage(targetingText)
+    }
     setShowComposeDialog(true)
-    toast.success('AI Image attached and message updated!')
+    toast.success('AI Image attached!')
   }
 
-  const handleSendMessage = () => {
-    if (recipients.length === 0) {
-      toast.error('Please add at least one recipient')
-      return
-    }
-    if (!message.trim() && attachments.length === 0) {
-      toast.error('Please enter a message or attach a file')
-      return
-    }
-
-    if (scheduledDate) {
-      const date = new Date(scheduledDate).toLocaleString()
-      toast.success(`Message scheduled for ${date} to ${recipients.length} recipients`)
-    } else {
-      toast.success(`Message sent to ${recipients.length} recipients`)
-    }
-
-    // Reset state
-    setShowComposeDialog(false)
-    setMessage('')
-    setRecipients([])
-    setAttachments([])
-    setScheduledDate('')
-  }
-
-  const getMethodIcon = (method) => {
-    switch (method) {
-      case 'phone':
-        return <Phone className="h-3 w-3 mr-1" />
-      case 'email':
-      default:
-        return <Mail className="h-3 w-3 mr-1" />
-    }
+  const handleRemoveRecipient = (id) => {
+    setRecipients((prev) => prev.filter((c) => c.id !== id))
   }
 
   return (
     <PageContainer>
-      <PageHeader title="Conversations" description="Manage your message threads">
+      <PageHeader title="Conversations" description="Manage your message threads and campaigns">
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowAIModal(true)}>
             <Sparkles className="mr-2 h-4 w-4 text-purple-500" />
             AI Studio
           </Button>
-          <Button onClick={() => setShowComposeDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Compose Message
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Message
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleNewDirectMessage}>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Direct Message
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleStartCampaign}>
+                <Megaphone className="mr-2 h-4 w-4 text-purple-500" />
+                Start Campaign
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </PageHeader>
 
@@ -204,16 +229,16 @@ export default function ConversationsPage() {
             <EmptyState
               icon={MessageSquare}
               title="No conversations yet"
-              description="Start a new conversation or use the AI Studio to create marketing content."
+              description="Start a new direct chat or launch a marketing campaign."
               action={
                 <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                  <Button variant="outline" onClick={() => setShowAIModal(true)}>
-                    <Sparkles className="mr-2 h-4 w-4 text-purple-500" />
-                    Open AI Studio
+                  <Button variant="outline" onClick={handleStartCampaign}>
+                    <Megaphone className="mr-2 h-4 w-4 text-purple-500" />
+                    New Campaign
                   </Button>
-                  <Button onClick={() => setShowComposeDialog(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Compose Message
+                  <Button onClick={handleNewDirectMessage}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    New Chat
                   </Button>
                 </div>
               }
@@ -223,6 +248,14 @@ export default function ConversationsPage() {
       ) : (
         <div className="space-y-2">{/* Conversation list would go here */}</div>
       )}
+
+      {/* Recipient Selector Modal (Campaign Mode) */}
+      <RecipientSelector
+        open={showRecipientSelector}
+        onOpenChange={setShowRecipientSelector}
+        contacts={contacts}
+        onConfirm={handleRecipientsConfirmed}
+      />
 
       {/* AI Marketing Studio Modal */}
       <MarketingAIModal
@@ -268,40 +301,70 @@ export default function ConversationsPage() {
       <Dialog open={showComposeDialog} onOpenChange={setShowComposeDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Compose Message</DialogTitle>
+            <DialogTitle>{mode === 'campaign' ? 'New Campaign' : 'New Message'}</DialogTitle>
             <DialogDescription>
-              Write your message. Recipients will be automatically added based on their interests.
+              {mode === 'campaign'
+                ? `Draft your blast message to ${recipients.length} recipients.`
+                : 'Send a direct message.'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>Recipients ({recipients.length})</Label>
-              <div className="flex flex-wrap gap-2 min-h-[40px] p-2 border rounded-md bg-background">
-                {recipients.length === 0 && (
-                  <span className="text-muted-foreground text-sm py-1">
-                    Recipients will appear here...
-                  </span>
-                )}
-                {recipients.map((contact) => (
-                  <Badge
-                    key={contact.id}
-                    variant="secondary"
-                    className="h-7 pr-1 flex items-center"
-                  >
-                    {getMethodIcon(contact.preferredMethod)}
-                    {contact.name}
+
+              {/* Recipient Input Area */}
+              {mode === 'direct' && recipients.length === 0 ? (
+                <div className="relative">
+                  <Users className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search for a contact..."
+                    className="pl-9"
+                    onChange={(e) => {
+                      const found = contacts.find((c) =>
+                        c.name.toLowerCase().includes(e.target.value.toLowerCase())
+                      )
+                      if (found && e.target.value.length > 3) {
+                        setRecipients([found])
+                        e.target.value = '' // Reset
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2 min-h-[40px] p-2 border rounded-md bg-background max-h-[100px] overflow-y-auto">
+                  {recipients.map((contact) => (
+                    <Badge
+                      key={contact.id}
+                      variant="secondary"
+                      className="h-7 pr-1 flex items-center"
+                    >
+                      {contact.name}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-4 w-4 ml-1 hover:bg-transparent"
+                        onClick={() => handleRemoveRecipient(contact.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                  {mode === 'campaign' && (
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-4 w-4 ml-1 hover:bg-transparent"
-                      onClick={() => handleRemoveRecipient(contact.id)}
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setShowComposeDialog(false)
+                        setShowRecipientSelector(true)
+                      }}
                     >
-                      <X className="h-3 w-3" />
+                      + Edit List
                     </Button>
-                  </Badge>
-                ))}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -335,10 +398,22 @@ export default function ConversationsPage() {
               <textarea
                 id="message"
                 className="flex min-h-[150px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Type your message here... (e.g., 'We have a sale on gold rings')"
+                placeholder={
+                  mode === 'campaign'
+                    ? 'Hi {name}, check out our sale...'
+                    : 'Type your message here...'
+                }
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
+
+              {/* Campaign Variables Hint */}
+              {mode === 'campaign' && (
+                <p className="text-xs text-muted-foreground">
+                  Tip: Use <span className="font-mono bg-muted px-1 rounded">{'{name}'}</span> to
+                  insert the contact&apos;s name automatically.
+                </p>
+              )}
 
               {/* Attachments List */}
               {attachments.length > 0 && (
@@ -452,14 +527,28 @@ export default function ConversationsPage() {
             <Button variant="outline" onClick={() => setShowComposeDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSendMessage}>
-              {scheduledDate ? (
+            <Button onClick={handleSendMessage} disabled={isSending}>
+              {isSending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                  Sending...
+                </>
+              ) : scheduledDate ? (
                 <>
                   <Calendar className="mr-2 h-4 w-4" />
-                  Schedule Message
+                  Schedule {mode === 'campaign' ? 'Campaign' : 'Message'}
                 </>
               ) : (
-                'Send Message'
+                <>
+                  {mode === 'campaign' ? (
+                    <>
+                      <Megaphone className="mr-2 h-4 w-4" />
+                      Launch Campaign
+                    </>
+                  ) : (
+                    'Send Message'
+                  )}
+                </>
               )}
             </Button>
           </DialogFooter>
