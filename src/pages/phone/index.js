@@ -1,0 +1,4 @@
+export { default as PhoneChatsPage } from './PhoneChatsPage'
+export { default as PhoneContactsPage } from './PhoneContactsPage'
+export { default as PhoneDashboardPage } from './PhoneDashboardPage'
+export { default as PhoneSettingsPage } from './PhoneSettingsPage'

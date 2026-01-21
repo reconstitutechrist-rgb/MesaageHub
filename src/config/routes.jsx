@@ -7,13 +7,16 @@ import RootLayout from '@/components/layout/RootLayout'
 // Pages
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
-import DashboardPage from '@/pages/DashboardPage'
-import ConversationsPage from '@/pages/ConversationsPage'
-import ChatPage from '@/pages/ChatPage'
-import ContactsPage from '@/pages/ContactsPage'
-import SettingsPage from '@/pages/SettingsPage'
 import ProfilePage from '@/pages/ProfilePage'
 import NotFoundPage from '@/pages/NotFoundPage'
+
+// Phone Pages (standalone with built-in frame and theme)
+import {
+  PhoneDashboardPage,
+  PhoneChatsPage,
+  PhoneContactsPage,
+  PhoneSettingsPage,
+} from '@/pages/phone'
 
 // Auth guard component
 import { AuthGuard } from '@/features/auth/components/AuthGuard'
@@ -25,15 +28,15 @@ export function AppRoutes() {
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
 
-      {/* Protected routes */}
+      {/* Protected routes - Phone pages have built-in frame */}
       <Route element={<AuthGuard />}>
+        <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+        <Route path={ROUTES.DASHBOARD} element={<PhoneDashboardPage />} />
+        <Route path={ROUTES.CONVERSATIONS} element={<PhoneChatsPage />} />
+        <Route path={ROUTES.CHAT} element={<PhoneChatsPage />} />
+        <Route path={ROUTES.CONTACTS} element={<PhoneContactsPage />} />
+        <Route path={ROUTES.SETTINGS} element={<PhoneSettingsPage />} />
         <Route element={<RootLayout />}>
-          <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-          <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
-          <Route path={ROUTES.CONVERSATIONS} element={<ConversationsPage />} />
-          <Route path={ROUTES.CHAT} element={<ChatPage />} />
-          <Route path={ROUTES.CONTACTS} element={<ContactsPage />} />
-          <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
           <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
         </Route>
       </Route>
