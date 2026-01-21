@@ -1,6 +1,29 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { useLocalStorage, useToggle } from '@/hooks'
+import { toast } from 'sonner'
+
+// Default settings structure (shared with SettingsPage)
+const DEFAULT_SETTINGS = {
+  notifications: {
+    push: true,
+    email: true,
+    sound: true,
+    messagePreview: true,
+  },
+  privacy: {
+    showOnlineStatus: true,
+    showReadReceipts: true,
+    showTypingIndicator: true,
+  },
+  appearance: {
+    fontSize: 'medium',
+    compactMode: false,
+    colorTheme: 'default',
+    layoutTheme: 'cyan',
+  },
+}
 
 // 4 Theme Options
 const themes = {
@@ -628,7 +651,16 @@ function ThemeSelectionModal({ open, onClose, currentTheme, onSelect, theme: t }
 }
 
 // Confirm Dialog
-function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmText, theme: t }) {
+function ConfirmDialog({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText,
+  theme: t,
+  isLoading = false,
+}) {
   if (!open) return null
 
   return (
@@ -656,18 +688,32 @@ function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmText, 
         }}
       >
         <div style={{ marginBottom: '16px' }}>
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={t.danger}
-            strokeWidth="1.5"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
+          {isLoading ? (
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                border: `3px solid ${t.cardBorder}`,
+                borderTopColor: t.danger,
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto',
+              }}
+            />
+          ) : (
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={t.danger}
+              strokeWidth="1.5"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          )}
         </div>
         <h3 style={{ color: t.text, fontSize: '18px', fontWeight: '600', margin: '0 0 8px' }}>
           {title}
@@ -678,6 +724,7 @@ function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmText, 
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
             onClick={onClose}
+            disabled={isLoading}
             style={{
               flex: 1,
               padding: '12px',
@@ -687,13 +734,15 @@ function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmText, 
               color: t.text,
               fontSize: '15px',
               fontWeight: '600',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.5 : 1,
             }}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
+            disabled={isLoading}
             style={{
               flex: 1,
               padding: '12px',
@@ -703,7 +752,8 @@ function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmText, 
               color: '#fff',
               fontSize: '15px',
               fontWeight: '600',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.7 : 1,
             }}
           >
             {confirmText}
@@ -714,21 +764,51 @@ function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmText, 
   )
 }
 
+// CSS keyframes for spinner (injected once)
+if (typeof document !== 'undefined' && !document.getElementById('phone-settings-spinner-style')) {
+  const style = document.createElement('style')
+  style.id = 'phone-settings-spinner-style'
+  style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }'
+  document.head.appendChild(style)
+}
+
 export default function PhoneSettingsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
 
   const [theme, setTheme] = useState('cyanDark')
-  const [showThemeModal, setShowThemeModal] = useState(false)
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showThemeModal, , { setTrue: openThemeModal, setFalse: closeThemeModal }] =
+    useToggle(false)
+  const [showLogoutConfirm, , { setTrue: openLogoutConfirm, setFalse: closeLogoutConfirm }] =
+    useToggle(false)
+  const [showDeleteConfirm, , { setTrue: openDeleteConfirm, setFalse: closeDeleteConfirm }] =
+    useToggle(false)
 
-  // Settings state
-  const [notifications, setNotifications] = useState(true)
-  const [soundEnabled, setSoundEnabled] = useState(true)
-  const [vibration, setVibration] = useState(true)
-  const [readReceipts, setReadReceipts] = useState(true)
+  // Loading states
+  const [isExporting, , { setTrue: startExporting, setFalse: stopExporting }] = useToggle(false)
+  const [isDeleting, , { setTrue: startDeleting, setFalse: stopDeleting }] = useToggle(false)
+
+  // Settings state with persistence (shared with SettingsPage)
+  const [settings, setSettings] = useLocalStorage('app-settings', DEFAULT_SETTINGS)
+
+  // Helper to update nested settings
+  const updateSetting = useCallback(
+    (category, key, value) => {
+      setSettings((prev) => {
+        const updated = {
+          ...prev,
+          [category]: {
+            ...prev[category],
+            [key]: value,
+          },
+        }
+        return updated
+      })
+      toast.success('Setting saved')
+    },
+    [setSettings]
+  )
 
   const t = themes[theme]
 
@@ -756,25 +836,54 @@ export default function PhoneSettingsPage() {
     },
   ]
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logout()
+    toast.success('Logged out successfully')
     navigate('/login')
-  }
+  }, [logout, navigate])
 
-  const handleExportData = () => {
+  const handleExportData = useCallback(async () => {
+    startExporting()
+
+    // Simulate gathering data
+    await new Promise((r) => setTimeout(r, 1500))
+
     const exportData = {
+      profile: JSON.parse(localStorage.getItem('user-profile') || '{}'),
+      settings: settings,
       theme,
-      settings: { notifications, soundEnabled, vibration, readReceipts },
       exportedAt: new Date().toISOString(),
     }
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `messagehub-settings-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `messagehub-data-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(url)
-  }
+
+    stopExporting()
+    toast.success('Data exported successfully')
+  }, [settings, theme, startExporting, stopExporting])
+
+  const handleDeleteAccount = useCallback(async () => {
+    startDeleting()
+
+    // Simulate API call
+    await new Promise((r) => setTimeout(r, 2000))
+
+    // Clear all local data
+    localStorage.clear()
+
+    stopDeleting()
+    closeDeleteConfirm()
+
+    toast.success('Account deleted')
+    logout()
+    navigate('/login')
+  }, [logout, navigate, startDeleting, stopDeleting, closeDeleteConfirm])
 
   return (
     <div
@@ -938,7 +1047,7 @@ export default function PhoneSettingsPage() {
           {/* Theme Selection Modal */}
           <ThemeSelectionModal
             open={showThemeModal}
-            onClose={() => setShowThemeModal(false)}
+            onClose={closeThemeModal}
             currentTheme={theme}
             onSelect={setTheme}
             theme={t}
@@ -947,9 +1056,9 @@ export default function PhoneSettingsPage() {
           {/* Confirm Dialogs */}
           <ConfirmDialog
             open={showLogoutConfirm}
-            onClose={() => setShowLogoutConfirm(false)}
+            onClose={closeLogoutConfirm}
             onConfirm={() => {
-              setShowLogoutConfirm(false)
+              closeLogoutConfirm()
               handleLogout()
             }}
             title="Log Out"
@@ -959,14 +1068,13 @@ export default function PhoneSettingsPage() {
           />
           <ConfirmDialog
             open={showDeleteConfirm}
-            onClose={() => setShowDeleteConfirm(false)}
-            onConfirm={() => {
-              setShowDeleteConfirm(false)
-            }}
+            onClose={closeDeleteConfirm}
+            onConfirm={handleDeleteAccount}
             title="Delete Account"
             message="This action is permanent and cannot be undone. All your data, messages, and contacts will be permanently removed."
-            confirmText="Delete"
+            confirmText={isDeleting ? 'Deleting...' : 'Delete'}
             theme={t}
+            isLoading={isDeleting}
           />
 
           {/* Main Content */}
@@ -1018,7 +1126,7 @@ export default function PhoneSettingsPage() {
                     icon={Icons.palette}
                     label="App Layout"
                     value={themes[theme].name}
-                    onClick={() => setShowThemeModal(true)}
+                    onClick={openThemeModal}
                     theme={t}
                   />
                 </div>
@@ -1052,8 +1160,8 @@ export default function PhoneSettingsPage() {
                     icon={Icons.bell}
                     label="Push Notifications"
                     description="Receive message alerts"
-                    enabled={notifications}
-                    onChange={setNotifications}
+                    enabled={settings.notifications.push}
+                    onChange={(val) => updateSetting('notifications', 'push', val)}
                     theme={t}
                   />
                   <SettingsToggleRow
@@ -1072,8 +1180,8 @@ export default function PhoneSettingsPage() {
                       </svg>
                     )}
                     label="Sound"
-                    enabled={soundEnabled}
-                    onChange={setSoundEnabled}
+                    enabled={settings.notifications.sound}
+                    onChange={(val) => updateSetting('notifications', 'sound', val)}
                     theme={t}
                   />
                   <SettingsToggleRow
@@ -1093,9 +1201,9 @@ export default function PhoneSettingsPage() {
                         <path d="M18.5 12H22v4h-3.5" />
                       </svg>
                     )}
-                    label="Vibration"
-                    enabled={vibration}
-                    onChange={setVibration}
+                    label="Message Preview"
+                    enabled={settings.notifications.messagePreview}
+                    onChange={(val) => updateSetting('notifications', 'messagePreview', val)}
                     theme={t}
                   />
                 </div>
@@ -1141,8 +1249,8 @@ export default function PhoneSettingsPage() {
                     )}
                     label="Read Receipts"
                     description="Let others know you've read their messages"
-                    enabled={readReceipts}
-                    onChange={setReadReceipts}
+                    enabled={settings.privacy.showReadReceipts}
+                    onChange={(val) => updateSetting('privacy', 'showReadReceipts', val)}
                     theme={t}
                   />
                   <SettingsRow
@@ -1192,8 +1300,8 @@ export default function PhoneSettingsPage() {
                   />
                   <SettingsRow
                     icon={Icons.download}
-                    label="Export Data"
-                    onClick={handleExportData}
+                    label={isExporting ? 'Exporting...' : 'Export Data'}
+                    onClick={isExporting ? undefined : handleExportData}
                     theme={t}
                   />
                 </div>
@@ -1266,7 +1374,7 @@ export default function PhoneSettingsPage() {
                   <SettingsRow
                     icon={Icons.logOut}
                     label="Log Out"
-                    onClick={() => setShowLogoutConfirm(true)}
+                    onClick={openLogoutConfirm}
                     theme={t}
                     showArrow={false}
                     danger
@@ -1274,7 +1382,7 @@ export default function PhoneSettingsPage() {
                   <SettingsRow
                     icon={Icons.trash}
                     label="Delete Account"
-                    onClick={() => setShowDeleteConfirm(true)}
+                    onClick={openDeleteConfirm}
                     theme={t}
                     showArrow={false}
                     danger

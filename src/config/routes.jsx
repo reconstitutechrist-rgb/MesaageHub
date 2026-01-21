@@ -16,6 +16,7 @@ import {
   PhoneChatsPage,
   PhoneContactsPage,
   PhoneSettingsPage,
+  MediaLibraryPage,
 } from '@/pages/phone'
 
 // Auth guard component
@@ -36,6 +37,7 @@ export function AppRoutes() {
         <Route path={ROUTES.CHAT} element={<PhoneChatsPage />} />
         <Route path={ROUTES.CONTACTS} element={<PhoneContactsPage />} />
         <Route path={ROUTES.SETTINGS} element={<PhoneSettingsPage />} />
+        <Route path={ROUTES.MEDIA_LIBRARY} element={<MediaLibraryPage />} />
         <Route element={<RootLayout />}>
           <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
         </Route>

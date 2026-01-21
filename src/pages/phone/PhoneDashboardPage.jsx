@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { mediaLibraryService } from '@/services/MediaLibraryService'
+import { ComposeModal } from '@/components/common/ComposeModal'
 
 // 4 Theme Options
 const themes = {
@@ -536,12 +538,14 @@ const userData = {
 }
 
 // Full Screen AI Studio
-function AIStudioFullScreen({ theme: t, onClose }) {
+function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
   const canvasRef = useRef(null)
   const [image, setImage] = useState(null)
   const [activeTab, setActiveTab] = useState('image')
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [showExportOptions, setShowExportOptions] = useState(false)
+  const [savedMediaAsset, setSavedMediaAsset] = useState(null)
   const [textOverlay, setTextOverlay] = useState({
     text: '',
     x: 400,
@@ -647,25 +651,61 @@ function AIStudioFullScreen({ theme: t, onClose }) {
     }))
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const dataUrl = canvasRef.current.toDataURL('image/png')
+    const fileName = `ai-studio-${Date.now()}.png`
+
+    // Save to media library
+    if (onExport) {
+      const savedAsset = await onExport(dataUrl, fileName)
+      if (savedAsset) {
+        setSavedMediaAsset(savedAsset)
+        setShowExportOptions(true)
+        return
+      }
+    }
+
+    // Fallback: direct download
     canvasRef.current.toBlob((blob) => {
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
-      a.download = 'marketing-image.png'
+      a.download = fileName
       a.click()
     })
+  }
+
+  const handleDownload = () => {
+    canvasRef.current.toBlob((blob) => {
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `ai-studio-${Date.now()}.png`
+      a.click()
+    })
+    setShowExportOptions(false)
+  }
+
+  const handleSendCampaign = () => {
+    if (savedMediaAsset && onSendAsCampaign) {
+      onSendAsCampaign(savedMediaAsset)
+    }
+    setShowExportOptions(false)
   }
 
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         background: t.isDark ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.98)',
         zIndex: 1000,
         display: 'flex',
         flexDirection: 'column',
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+        overflow: 'hidden',
+        borderRadius: 'inherit',
       }}
     >
       <div
@@ -1232,6 +1272,114 @@ function AIStudioFullScreen({ theme: t, onClose }) {
           </div>
         </div>
       </div>
+
+      {/* Export Options Modal */}
+      {showExportOptions && (
+        <>
+          <div
+            onClick={() => setShowExportOptions(false)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0,0,0,0.6)',
+              zIndex: 1001,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: t.isDark ? '#1a1a2e' : '#ffffff',
+              borderRadius: '24px',
+              padding: '24px',
+              zIndex: 1002,
+              width: '320px',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}
+              >
+                {Icons.check('#fff', 28)}
+              </div>
+              <h3 style={{ color: t.text, fontSize: '18px', fontWeight: '700', margin: '0 0 8px' }}>
+                Saved to Media Library!
+              </h3>
+              <p style={{ color: t.textMuted, fontSize: '14px', margin: 0 }}>
+                What would you like to do next?
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button
+                onClick={handleDownload}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  padding: '14px',
+                  borderRadius: '12px',
+                  border: `1px solid ${t.cardBorder}`,
+                  background: t.cardBg,
+                  color: t.text,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                }}
+              >
+                {Icons.download(t.accent, 20)} Download Image
+              </button>
+              <button
+                onClick={handleSendCampaign}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  padding: '14px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  boxShadow: `0 4px 20px ${t.accentGlow}`,
+                }}
+              >
+                {Icons.megaphone('#fff', 20)} Send as Campaign
+              </button>
+              <button
+                onClick={() => setShowExportOptions(false)}
+                style={{
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: t.textMuted,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                }}
+              >
+                Continue Editing
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   )
@@ -1244,7 +1392,44 @@ export default function PhoneDashboardPage() {
 
   const [theme, setTheme] = useState('cyanDark')
   const [showAIStudio, setShowAIStudio] = useState(false)
+  const [mediaLibrary, setMediaLibrary] = useState([])
+  const [showComposeModal, setShowComposeModal] = useState(false)
+  const [composeAttachment, setComposeAttachment] = useState(null)
   const t = themes[theme]
+
+  // Load media library on mount
+  useEffect(() => {
+    loadMediaLibrary()
+  }, [])
+
+  const loadMediaLibrary = async () => {
+    const result = await mediaLibraryService.getMediaLibrary(_user?.id || 'demo-user', { limit: 6 })
+    if (result.success) {
+      setMediaLibrary(result.data)
+    }
+  }
+
+  // Handle AI Studio export - save to media library
+  const handleAIStudioExport = async (dataUrl, fileName) => {
+    const result = await mediaLibraryService.uploadFromDataUrl(
+      dataUrl,
+      fileName,
+      'ai-studio',
+      _user?.id || 'demo-user'
+    )
+    if (result.success) {
+      loadMediaLibrary() // Refresh the library
+      return result.data
+    }
+    return null
+  }
+
+  // Handle sending as campaign from AI Studio
+  const handleSendAsCampaign = (mediaAsset) => {
+    setComposeAttachment(mediaAsset)
+    setShowComposeModal(true)
+    setShowAIStudio(false)
+  }
 
   // Navigation items with routes
   const navItems = [
@@ -1310,7 +1495,43 @@ export default function PhoneDashboardPage() {
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
       }}
     >
-      {showAIStudio && <AIStudioFullScreen theme={t} onClose={() => setShowAIStudio(false)} />}
+      {showAIStudio && (
+        <AIStudioFullScreen
+          theme={t}
+          onClose={() => setShowAIStudio(false)}
+          onExport={handleAIStudioExport}
+          onSendAsCampaign={handleSendAsCampaign}
+        />
+      )}
+
+      {/* Compose Modal for Campaign */}
+      <ComposeModal
+        open={showComposeModal}
+        onClose={() => {
+          setShowComposeModal(false)
+          setComposeAttachment(null)
+        }}
+        theme={t}
+        contacts={userData.recentCampaigns.map((c) => ({ id: c.id, name: c.name, phone: '' }))}
+        mode="campaign"
+        initialAttachments={
+          composeAttachment
+            ? [
+                {
+                  type: 'image',
+                  name: composeAttachment.file_name || 'AI Studio Export',
+                  url: composeAttachment.url,
+                  id: composeAttachment.id,
+                },
+              ]
+            : []
+        }
+        onSend={(data) => {
+          console.log('Campaign sent:', data)
+          setShowComposeModal(false)
+          setComposeAttachment(null)
+        }}
+      />
 
       <div
         style={{
@@ -1622,6 +1843,104 @@ export default function PhoneDashboardPage() {
                   Open Studio {Icons.arrowRight(t.accent)}
                 </div>
               </div>
+            </div>
+
+            {/* Media Library Section */}
+            <div style={{ marginBottom: '20px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '12px',
+                }}
+              >
+                <h3 style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: 0 }}>
+                  My Media
+                </h3>
+                <button
+                  onClick={() => navigate('/media-library')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: t.accent,
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
+                >
+                  See all
+                </button>
+              </div>
+              {mediaLibrary.length === 0 ? (
+                <div
+                  style={{
+                    padding: '24px',
+                    borderRadius: '16px',
+                    background: t.cardBg,
+                    border: `1px solid ${t.cardBorder}`,
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
+                  <p style={{ color: t.textMuted, fontSize: '13px', margin: 0 }}>
+                    No media yet. Create your first with AI Studio!
+                  </p>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '8px',
+                  }}
+                >
+                  {mediaLibrary.slice(0, 6).map((media) => (
+                    <button
+                      key={media.id}
+                      onClick={() => navigate('/media-library')}
+                      style={{
+                        position: 'relative',
+                        aspectRatio: '1',
+                        borderRadius: '12px',
+                        overflow: 'hidden',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        background: t.cardBg,
+                      }}
+                    >
+                      <img
+                        src={media.thumbnail_url || media.url}
+                        alt=""
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                      {media.source === 'ai-studio' && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '4px',
+                            right: '4px',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '4px',
+                            background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {Icons.sparkles('#fff', 12)}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: '20px' }}>

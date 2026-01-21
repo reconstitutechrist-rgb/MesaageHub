@@ -13,6 +13,7 @@ export const ROUTES = {
   CONTACTS: '/contacts',
   SETTINGS: '/settings',
   PROFILE: '/profile',
+  MEDIA_LIBRARY: '/media-library',
 }
 
 // Local storage keys

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { MediaAttachmentSheet } from '@/components/common/MediaAttachmentSheet'
+import { useToggle } from '@/hooks'
 
 // 4 Theme Options
 const themes = {
@@ -312,8 +314,8 @@ const getAvatarColor = (name, colors) => colors[name.charCodeAt(0) % colors.leng
 // Phone Keyboard Component
 function PhoneKeyboard({ onKeyPress, onBackspace, onSend, theme: t, inputValue }) {
   const [activeKey, setActiveKey] = useState(null)
-  const [isShift, setIsShift] = useState(false)
-  const [isSymbols, setIsSymbols] = useState(false)
+  const [isShift, toggleShift, { setFalse: resetShift }] = useToggle(false)
+  const [isSymbols, toggleSymbols] = useToggle(false)
 
   const letterRows = [
     ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -330,7 +332,7 @@ function PhoneKeyboard({ onKeyPress, onBackspace, onSend, theme: t, inputValue }
   const handleKeyPress = (key) => {
     setActiveKey(key)
     onKeyPress(isShift && !isSymbols ? key : key.toLowerCase())
-    if (isShift && !isSymbols) setIsShift(false)
+    if (isShift && !isSymbols) resetShift()
     setTimeout(() => setActiveKey(null), 100)
   }
 
@@ -350,7 +352,7 @@ function PhoneKeyboard({ onKeyPress, onBackspace, onSend, theme: t, inputValue }
         >
           {rowIndex === 2 && !isSymbols && (
             <button
-              onClick={() => setIsShift(!isShift)}
+              onClick={toggleShift}
               style={{
                 width: '42px',
                 height: '42px',
@@ -435,7 +437,7 @@ function PhoneKeyboard({ onKeyPress, onBackspace, onSend, theme: t, inputValue }
       ))}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '5px' }}>
         <button
-          onClick={() => setIsSymbols(!isSymbols)}
+          onClick={toggleSymbols}
           style={{
             width: '55px',
             height: '42px',
@@ -498,9 +500,9 @@ function ComposeModal({ open, onClose, theme: t, contacts, mode, onSend }) {
   const [message, setMessage] = useState('')
   const [recipients, setRecipients] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [showTemplates, setShowTemplates] = useState(false)
+  const [showTemplates, toggleTemplates, { setFalse: hideTemplates }] = useToggle(false)
   const [scheduledDate, setScheduledDate] = useState('')
-  const [isRecording, setIsRecording] = useState(false)
+  const [isRecording, , { setTrue: startRecording, setFalse: stopRecording }] = useToggle(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [attachments, setAttachments] = useState([])
   const fileInputRef = useRef(null)
@@ -514,13 +516,13 @@ function ComposeModal({ open, onClose, theme: t, contacts, mode, onSend }) {
   }, [contacts, searchQuery])
 
   const handleStartRecording = () => {
-    setIsRecording(true)
+    startRecording()
     setRecordingTime(0)
     recordingInterval.current = setInterval(() => setRecordingTime((t) => t + 1), 1000)
   }
 
   const handleStopRecording = () => {
-    setIsRecording(false)
+    stopRecording()
     clearInterval(recordingInterval.current)
     setAttachments((prev) => [
       ...prev,
@@ -538,7 +540,7 @@ function ComposeModal({ open, onClose, theme: t, contacts, mode, onSend }) {
 
   const handleTemplateSelect = (template) => {
     setMessage(template.text)
-    setShowTemplates(false)
+    hideTemplates()
   }
 
   const handleSendMessage = () => {
@@ -945,7 +947,7 @@ function ComposeModal({ open, onClose, theme: t, contacts, mode, onSend }) {
               {Icons.paperclip(t.accent)} Attach
             </button>
             <button
-              onClick={() => setShowTemplates(!showTemplates)}
+              onClick={toggleTemplates}
               style={{
                 padding: '8px 12px',
                 borderRadius: '8px',
@@ -999,9 +1001,13 @@ export default function PhoneChatsPage() {
   const [selectedChat, setSelectedChat] = useState(null)
   const [conversations, setConversations] = useState(mockConversations)
   const [inputValue, setInputValue] = useState('')
-  const [showKeyboard, setShowKeyboard] = useState(false)
-  const [showCompose, setShowCompose] = useState(false)
+  const [showKeyboard, , { setTrue: openKeyboard, setFalse: hideKeyboard }] = useToggle(false)
+  const [showCompose, , { setTrue: openComposeModal, setFalse: closeComposeModal }] =
+    useToggle(false)
   const [composeMode, setComposeMode] = useState('direct')
+  const [showMediaSheet, , { setTrue: openMediaSheet, setFalse: closeMediaSheet }] =
+    useToggle(false)
+  const [chatAttachments, setChatAttachments] = useState([])
   const messagesEndRef = useRef(null)
 
   const t = themes[theme]
@@ -1052,13 +1058,14 @@ export default function PhoneChatsPage() {
   }, [selectedChat, selectedConversation?.messages])
 
   const handleSendMessage = () => {
-    if (!inputValue.trim() || !selectedChat) return
+    if ((!inputValue.trim() && chatAttachments.length === 0) || !selectedChat) return
     const newMessage = {
       id: Date.now(),
       text: inputValue.trim(),
       sent: true,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'sent',
+      attachments: chatAttachments.length > 0 ? [...chatAttachments] : undefined,
     }
     setConversations((prev) =>
       prev.map((c) =>
@@ -1066,7 +1073,10 @@ export default function PhoneChatsPage() {
           ? {
               ...c,
               messages: [...c.messages, newMessage],
-              lastMessage: inputValue.trim(),
+              lastMessage:
+                chatAttachments.length > 0 && !inputValue.trim()
+                  ? '📎 Attachment'
+                  : inputValue.trim(),
               time: 'Just now',
               unread: 0,
             }
@@ -1074,6 +1084,7 @@ export default function PhoneChatsPage() {
       )
     )
     setInputValue('')
+    setChatAttachments([])
   }
 
   const handleComposeSend = ({ message, recipients, scheduledDate, attachments, mode }) => {
@@ -1099,13 +1110,13 @@ export default function PhoneChatsPage() {
 
   const handleBack = () => {
     setSelectedChat(null)
-    setShowKeyboard(false)
+    hideKeyboard()
     setInputValue('')
   }
 
-  const openCompose = (mode) => {
+  const handleOpenCompose = (mode) => {
     setComposeMode(mode)
-    setShowCompose(true)
+    openComposeModal()
   }
 
   return (
@@ -1272,7 +1283,7 @@ export default function PhoneChatsPage() {
           {/* Compose Modal */}
           <ComposeModal
             open={showCompose}
-            onClose={() => setShowCompose(false)}
+            onClose={closeComposeModal}
             theme={t}
             contacts={mockContacts}
             mode={composeMode}
@@ -1316,7 +1327,7 @@ export default function PhoneChatsPage() {
                   </h1>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button
-                      onClick={() => openCompose('campaign')}
+                      onClick={() => handleOpenCompose('campaign')}
                       style={{
                         width: '36px',
                         height: '36px',
@@ -1334,7 +1345,7 @@ export default function PhoneChatsPage() {
                       {Icons.megaphone(t.accent)}
                     </button>
                     <button
-                      onClick={() => openCompose('direct')}
+                      onClick={() => handleOpenCompose('direct')}
                       style={{
                         width: '36px',
                         height: '36px',
@@ -1803,6 +1814,65 @@ export default function PhoneChatsPage() {
               </div>
 
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+                {/* Attachment Preview */}
+                {chatAttachments.length > 0 && (
+                  <div
+                    style={{
+                      padding: '8px 12px',
+                      background: t.navBg,
+                      backdropFilter: 'blur(20px)',
+                      borderBottom: `1px solid ${t.cardBorder}`,
+                      display: 'flex',
+                      gap: '8px',
+                      overflowX: 'auto',
+                    }}
+                  >
+                    {chatAttachments.map((att, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          position: 'relative',
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <img
+                          src={att.url}
+                          alt=""
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                          }}
+                        />
+                        <button
+                          onClick={() =>
+                            setChatAttachments((prev) => prev.filter((_, idx) => idx !== i))
+                          }
+                          style={{
+                            position: 'absolute',
+                            top: '2px',
+                            right: '2px',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background: 'rgba(0,0,0,0.6)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {Icons.x('#fff')}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div
                   style={{
                     padding: '8px 12px',
@@ -1815,6 +1885,7 @@ export default function PhoneChatsPage() {
                   }}
                 >
                   <button
+                    onClick={openMediaSheet}
                     style={{
                       width: '36px',
                       height: '36px',
@@ -1832,7 +1903,7 @@ export default function PhoneChatsPage() {
                     {Icons.plus(t.accent)}
                   </button>
                   <div
-                    onClick={() => setShowKeyboard(true)}
+                    onClick={openKeyboard}
                     style={{
                       flex: 1,
                       minHeight: '36px',
@@ -1912,6 +1983,18 @@ export default function PhoneChatsPage() {
                     inputValue={inputValue}
                   />
                 )}
+
+                {/* Media Attachment Sheet */}
+                <MediaAttachmentSheet
+                  open={showMediaSheet}
+                  onClose={closeMediaSheet}
+                  onMediaSelected={(media) => {
+                    setChatAttachments((prev) => [...prev, ...media])
+                    closeMediaSheet()
+                  }}
+                  theme={t}
+                  userId={user?.id || 'demo-user'}
+                />
               </div>
             </>
           )}

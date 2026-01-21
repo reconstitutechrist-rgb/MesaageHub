@@ -1,6 +1,9 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { useLocalStorage, useDebounce } from '@/hooks'
+import { toast } from 'sonner'
+import { initialContacts } from '@/data/mockData'
 
 // 4 Theme Options
 const themes = {
@@ -149,172 +152,14 @@ const Icons = {
       <circle cx="12" cy="19" r="1" />
     </svg>
   ),
+  chevronDown: (color) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  ),
 }
 
-// Initial contacts data
-const initialContacts = [
-  {
-    id: 1,
-    name: 'Alice Anderson',
-    phone: '+1 (555) 123-4567',
-    email: 'alice@example.com',
-    status: 'online',
-    isBlocked: false,
-  },
-  {
-    id: 2,
-    name: 'Bob Baker',
-    phone: '+1 (555) 234-5678',
-    email: 'bob@example.com',
-    status: 'offline',
-    isBlocked: false,
-  },
-  {
-    id: 3,
-    name: 'Carol Chen',
-    phone: '+1 (555) 345-6789',
-    email: 'carol@example.com',
-    status: 'online',
-    isBlocked: false,
-  },
-  {
-    id: 4,
-    name: 'David Davis',
-    phone: '+1 (555) 456-7890',
-    email: 'david@example.com',
-    status: 'offline',
-    isBlocked: false,
-  },
-  {
-    id: 5,
-    name: 'Emma Evans',
-    phone: '+1 (555) 567-8901',
-    email: 'emma@example.com',
-    status: 'online',
-    isBlocked: false,
-  },
-  {
-    id: 6,
-    name: 'Frank Foster',
-    phone: '+1 (555) 678-9012',
-    email: 'frank@example.com',
-    status: 'offline',
-    isBlocked: false,
-  },
-  {
-    id: 7,
-    name: 'Grace Garcia',
-    phone: '+1 (555) 789-0123',
-    email: 'grace@example.com',
-    status: 'online',
-    isBlocked: false,
-  },
-  {
-    id: 8,
-    name: 'Henry Hill',
-    phone: '+1 (555) 890-1234',
-    email: 'henry@example.com',
-    status: 'offline',
-    isBlocked: false,
-  },
-  {
-    id: 9,
-    name: 'Iris Irwin',
-    phone: '+1 (555) 901-2345',
-    email: 'iris@example.com',
-    status: 'online',
-    isBlocked: false,
-  },
-  {
-    id: 10,
-    name: 'Jack Johnson',
-    phone: '+1 (555) 012-3456',
-    email: 'jack@example.com',
-    status: 'offline',
-    isBlocked: true,
-  },
-  {
-    id: 11,
-    name: 'Karen Kim',
-    phone: '+1 (555) 111-2222',
-    email: 'karen@example.com',
-    status: 'online',
-    isBlocked: false,
-  },
-  {
-    id: 12,
-    name: 'Leo Lopez',
-    phone: '+1 (555) 222-3333',
-    email: 'leo@example.com',
-    status: 'offline',
-    isBlocked: false,
-  },
-  {
-    id: 13,
-    name: 'Maria Martinez',
-    phone: '+1 (555) 333-4444',
-    email: 'maria@example.com',
-    status: 'online',
-    isBlocked: false,
-  },
-  {
-    id: 14,
-    name: 'Nathan Nguyen',
-    phone: '+1 (555) 444-5555',
-    email: 'nathan@example.com',
-    status: 'offline',
-    isBlocked: false,
-  },
-  {
-    id: 15,
-    name: 'Olivia Owen',
-    phone: '+1 (555) 555-6666',
-    email: 'olivia@example.com',
-    status: 'online',
-    isBlocked: false,
-  },
-  {
-    id: 16,
-    name: 'Peter Park',
-    phone: '+1 (555) 666-7777',
-    email: 'peter@example.com',
-    status: 'offline',
-    isBlocked: false,
-  },
-  {
-    id: 17,
-    name: 'Quinn Quinn',
-    phone: '+1 (555) 777-8888',
-    email: 'quinn@example.com',
-    status: 'online',
-    isBlocked: true,
-  },
-  {
-    id: 18,
-    name: 'Rachel Roberts',
-    phone: '+1 (555) 888-9999',
-    email: 'rachel@example.com',
-    status: 'offline',
-    isBlocked: false,
-  },
-  {
-    id: 19,
-    name: 'Sam Smith',
-    phone: '+1 (555) 999-0000',
-    email: 'sam@example.com',
-    status: 'online',
-    isBlocked: false,
-  },
-  {
-    id: 20,
-    name: 'Tina Turner',
-    phone: '+1 (555) 000-1111',
-    email: 'tina@example.com',
-    status: 'offline',
-    isBlocked: false,
-  },
-]
-
+// Helper functions
 const getInitials = (name) =>
   name
     .split(' ')
@@ -326,15 +171,11 @@ const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 const isValidPhone = (phone) =>
   /^[\d\s\-+()]+$/.test(phone) && phone.replace(/\D/g, '').length >= 10
 
-// Debounce hook
-function useDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = useState(value)
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay)
-    return () => clearTimeout(handler)
-  }, [value, delay])
-  return debouncedValue
-}
+// Preferred method options
+const PREFERRED_METHODS = [
+  { value: 'phone', label: 'Phone / SMS' },
+  { value: 'email', label: 'Email' },
+]
 
 // Confirm Dialog Component
 function ConfirmDialog({
@@ -427,6 +268,9 @@ function AddContactModal({ open, onClose, onAdd, theme: t }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
+  const [interests, setInterests] = useState('')
+  const [preferredMethod, setPreferredMethod] = useState('phone')
+  const [showMethodDropdown, setShowMethodDropdown] = useState(false)
   const [errors, setErrors] = useState({})
 
   const validate = () => {
@@ -441,10 +285,22 @@ function AddContactModal({ open, onClose, onAdd, theme: t }) {
 
   const handleSubmit = () => {
     if (!validate()) return
-    onAdd({ name: name.trim(), phone: phone.trim(), email: email.trim() })
+    const parsedInterests = interests
+      .split(',')
+      .map((i) => i.trim().toLowerCase())
+      .filter(Boolean)
+    onAdd({
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      interests: parsedInterests,
+      preferredMethod,
+    })
     setName('')
     setPhone('')
     setEmail('')
+    setInterests('')
+    setPreferredMethod('phone')
     setErrors({})
     onClose()
   }
@@ -634,6 +490,131 @@ function AddContactModal({ open, onClose, onAdd, theme: t }) {
             </span>
           )}
         </div>
+
+        {/* Interests Field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              color: t.textMuted,
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: '500',
+            }}
+          >
+            Interests (Optional)
+          </label>
+          <input
+            type="text"
+            value={interests}
+            onChange={(e) => setInterests(e.target.value)}
+            placeholder="gold, silver, rings (comma separated)"
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              borderRadius: '12px',
+              border: `1px solid ${t.cardBorder}`,
+              background: t.searchBg,
+              color: t.text,
+              fontSize: '16px',
+              outline: 'none',
+            }}
+          />
+          <span
+            style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
+          >
+            Used for bulk messaging campaigns
+          </span>
+        </div>
+
+        {/* Preferred Contact Method Field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              color: t.textMuted,
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: '500',
+            }}
+          >
+            Preferred Contact Method
+          </label>
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setShowMethodDropdown(!showMethodDropdown)}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                border: `1px solid ${t.cardBorder}`,
+                background: t.searchBg,
+                color: t.text,
+                fontSize: '16px',
+                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <span>{PREFERRED_METHODS.find((m) => m.value === preferredMethod)?.label}</span>
+              {Icons.chevronDown(t.textMuted)}
+            </button>
+            {showMethodDropdown && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '4px',
+                  background: t.isDark ? t.screenBg : '#fff',
+                  borderRadius: '12px',
+                  border: `1px solid ${t.cardBorder}`,
+                  overflow: 'hidden',
+                  zIndex: 10,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                }}
+              >
+                {PREFERRED_METHODS.map((method) => (
+                  <button
+                    key={method.value}
+                    type="button"
+                    onClick={() => {
+                      setPreferredMethod(method.value)
+                      setShowMethodDropdown(false)
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      background: preferredMethod === method.value ? t.cardBg : 'transparent',
+                      border: 'none',
+                      borderBottom: `1px solid ${t.cardBorder}`,
+                      color: preferredMethod === method.value ? t.accent : t.text,
+                      fontSize: '16px',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <span>{method.label}</span>
+                    {preferredMethod === method.value && Icons.check(t.accent)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <span
+            style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
+          >
+            How bulk messages will be sent to this contact
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -754,7 +735,7 @@ export default function PhoneContactsPage() {
 
   const [theme, setTheme] = useState('cyanDark')
   const [searchQuery, setSearchQuery] = useState('')
-  const [contacts, setContacts] = useState(initialContacts)
+  const [contacts, setContacts] = useLocalStorage('contacts', initialContacts)
   const [activeTab, setActiveTab] = useState('all')
   const [selectedContact, setSelectedContact] = useState(null)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -836,29 +817,41 @@ export default function PhoneContactsPage() {
   }
 
   // Handlers
-  const handleAddContact = useCallback((newContact) => {
-    const contact = {
-      id: Date.now(),
-      ...newContact,
-      status: 'offline',
-      isBlocked: false,
-    }
-    setContacts((prev) => [...prev, contact])
-  }, [])
+  const handleAddContact = useCallback(
+    (newContact) => {
+      const contact = {
+        id: `c${Date.now()}`,
+        ...newContact,
+        avatar: null,
+        status: 'offline',
+        lastSeen: null,
+        isBlocked: false,
+        engagementScore: 0,
+      }
+      setContacts((prev) => [...prev, contact])
+      toast.success(`${contact.name} added to contacts`)
+    },
+    [setContacts]
+  )
 
   const handleDeleteContact = useCallback(() => {
     if (!showDeleteConfirm) return
+    const contactName = showDeleteConfirm.name
     setContacts((prev) => prev.filter((c) => c.id !== showDeleteConfirm.id))
     setShowDeleteConfirm(null)
-  }, [showDeleteConfirm])
+    toast.success(`${contactName} removed from contacts`)
+  }, [showDeleteConfirm, setContacts])
 
   const handleBlockContact = useCallback(() => {
     if (!showBlockConfirm) return
+    const wasBlocked = showBlockConfirm.isBlocked
+    const contactName = showBlockConfirm.name
     setContacts((prev) =>
       prev.map((c) => (c.id === showBlockConfirm.id ? { ...c, isBlocked: !c.isBlocked } : c))
     )
     setShowBlockConfirm(null)
-  }, [showBlockConfirm])
+    toast.success(wasBlocked ? `${contactName} unblocked` : `${contactName} blocked`)
+  }, [showBlockConfirm, setContacts])
 
   return (
     <div
