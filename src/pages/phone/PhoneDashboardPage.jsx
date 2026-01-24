@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { mediaLibraryService } from '@/services/MediaLibraryService'
 import { ComposeModal } from '@/components/common/ComposeModal'
+import { useWindowSize } from '@/hooks/useWindowSize'
 
 // 4 Theme Options
 const themes = {
@@ -539,6 +540,8 @@ const userData = {
 
 // Full Screen AI Studio
 function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
+  const { width } = useWindowSize()
+  const isMobile = width < 768
   const canvasRef = useRef(null)
   const [image, setImage] = useState(null)
   const [activeTab, setActiveTab] = useState('image')
@@ -710,16 +713,18 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
     >
       <div
         style={{
-          padding: '16px 24px',
+          padding: isMobile ? '12px 16px' : '16px 24px',
           borderBottom: `1px solid ${t.cardBorder}`,
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'stretch' : 'center',
           justifyContent: 'space-between',
           background: t.navBg,
           backdropFilter: 'blur(20px)',
+          gap: isMobile ? '12px' : '0',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '16px' }}>
           <button
             onClick={onClose}
             style={{
@@ -730,7 +735,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              fontSize: '16px',
+              fontSize: isMobile ? '14px' : '16px',
             }}
           >
             {Icons.arrowLeft(t.text)} Back
@@ -739,12 +744,12 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
           <h1
             style={{
               color: t.text,
-              fontSize: '24px',
+              fontSize: isMobile ? '18px' : '24px',
               fontWeight: '700',
               margin: 0,
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
+              gap: '8px',
             }}
           >
             <span
@@ -758,9 +763,9 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             </span>
             <span
               style={{
-                fontSize: '12px',
-                padding: '4px 8px',
-                borderRadius: '12px',
+                fontSize: '10px',
+                padding: '2px 6px',
+                borderRadius: '10px',
                 background: t.cardBg,
                 border: `1px solid ${t.cardBorder}`,
                 color: t.accent,
@@ -779,6 +784,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             padding: '4px',
             borderRadius: '12px',
             border: `1px solid ${t.cardBorder}`,
+            alignSelf: isMobile ? 'center' : 'auto',
           }}
         >
           {[
@@ -789,12 +795,12 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               style={{
-                padding: '8px 20px',
+                padding: isMobile ? '6px 14px' : '8px 20px',
                 borderRadius: '8px',
                 border: 'none',
                 background: activeTab === tab.id ? t.accent : 'transparent',
                 color: activeTab === tab.id ? '#fff' : t.textMuted,
-                fontSize: '14px',
+                fontSize: isMobile ? '12px' : '14px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
@@ -802,43 +808,47 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                 gap: '8px',
               }}
             >
-              {tab.icon(activeTab === tab.id ? '#fff' : t.textMuted, 18)} {tab.id}
+              {tab.icon(activeTab === tab.id ? '#fff' : t.textMuted, isMobile ? 16 : 18)} {tab.id}
             </button>
           ))}
         </div>
         <button
           onClick={handleExport}
           style={{
-            padding: '10px 24px',
+            padding: isMobile ? '8px 16px' : '10px 24px',
             borderRadius: '12px',
             border: 'none',
             background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
             color: '#fff',
-            fontSize: '14px',
+            fontSize: isMobile ? '13px' : '14px',
             fontWeight: '600',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px',
             boxShadow: `0 4px 20px ${t.accentGlow}`,
+            width: isMobile ? '100%' : 'auto',
           }}
         >
           {Icons.download('#fff')} Export
         </button>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: 'hidden' }}>
         <div
           style={{
-            width: '320px',
-            borderRight: `1px solid ${t.cardBorder}`,
+            width: isMobile ? '100%' : '320px',
+            height: isMobile ? '200px' : 'auto',
+            borderRight: isMobile ? 'none' : `1px solid ${t.cardBorder}`,
+            borderBottom: isMobile ? `1px solid ${t.cardBorder}` : 'none',
             background: t.navBg,
             backdropFilter: 'blur(20px)',
-            padding: '20px',
+            padding: isMobile ? '16px' : '20px',
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: '24px',
+            gap: isMobile ? '16px' : '24px',
           }}
         >
           <div>
@@ -1119,8 +1129,9 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             alignItems: 'center',
             justifyContent: 'center',
             background: t.isDark ? '#0a0a0f' : '#e2e8f0',
-            padding: '40px',
+            padding: isMobile ? '16px' : '40px',
             position: 'relative',
+            overflow: 'auto',
           }}
         >
           <div
@@ -1184,93 +1195,95 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
           </div>
         </div>
 
-        <div
-          style={{
-            width: '280px',
-            borderLeft: `1px solid ${t.cardBorder}`,
-            background: t.navBg,
-            backdropFilter: 'blur(20px)',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '24px',
-          }}
-        >
-          <div>
-            <h3
-              style={{
-                color: t.text,
-                fontSize: '14px',
-                fontWeight: '600',
-                marginBottom: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              {Icons.layers(t.accent, 18)} Layers
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {[
-                { name: 'Text Layer', icon: Icons.type, visible: !!textOverlay.text },
-                { name: 'Image Layer', icon: Icons.image, visible: !!image },
-                { name: 'Background', icon: Icons.grid, visible: true },
-              ].map((layer, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px',
-                    borderRadius: '12px',
-                    background: t.cardBg,
-                    border: `1px solid ${t.cardBorder}`,
-                    opacity: layer.visible ? 1 : 0.5,
-                  }}
-                >
-                  {layer.icon(t.textMuted, 18)}
-                  <span style={{ color: t.text, fontSize: '13px', flex: 1 }}>{layer.name}</span>
-                  {layer.visible ? Icons.eye(t.textMuted) : Icons.eyeOff(t.textMuted)}
-                </div>
-              ))}
+        {!isMobile && (
+          <div
+            style={{
+              width: '280px',
+              borderLeft: `1px solid ${t.cardBorder}`,
+              background: t.navBg,
+              backdropFilter: 'blur(20px)',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px',
+            }}
+          >
+            <div>
+              <h3
+                style={{
+                  color: t.text,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {Icons.layers(t.accent, 18)} Layers
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { name: 'Text Layer', icon: Icons.type, visible: !!textOverlay.text },
+                  { name: 'Image Layer', icon: Icons.image, visible: !!image },
+                  { name: 'Background', icon: Icons.grid, visible: true },
+                ].map((layer, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      background: t.cardBg,
+                      border: `1px solid ${t.cardBorder}`,
+                      opacity: layer.visible ? 1 : 0.5,
+                    }}
+                  >
+                    {layer.icon(t.textMuted, 18)}
+                    <span style={{ color: t.text, fontSize: '13px', flex: 1 }}>{layer.name}</span>
+                    {layer.visible ? Icons.eye(t.textMuted) : Icons.eyeOff(t.textMuted)}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3
+                style={{ color: t.text, fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}
+              >
+                Quick Actions
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { name: 'Resize Canvas', icon: Icons.maximize },
+                  { name: 'Add Filter', icon: Icons.sliders },
+                  { name: 'Crop Image', icon: Icons.scissors },
+                  { name: 'Reset All', icon: Icons.refreshCw },
+                ].map((action, i) => (
+                  <button
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      background: 'transparent',
+                      border: `1px solid ${t.cardBorder}`,
+                      color: t.text,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    {action.icon(t.textMuted, 18)} {action.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          <div>
-            <h3
-              style={{ color: t.text, fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}
-            >
-              Quick Actions
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {[
-                { name: 'Resize Canvas', icon: Icons.maximize },
-                { name: 'Add Filter', icon: Icons.sliders },
-                { name: 'Crop Image', icon: Icons.scissors },
-                { name: 'Reset All', icon: Icons.refreshCw },
-              ].map((action, i) => (
-                <button
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px',
-                    borderRadius: '12px',
-                    background: 'transparent',
-                    border: `1px solid ${t.cardBorder}`,
-                    color: t.text,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
-                  {action.icon(t.textMuted, 18)} {action.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Export Options Modal */}
