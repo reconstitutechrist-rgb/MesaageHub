@@ -867,472 +867,470 @@ export default function PhoneContactsPage() {
         flexDirection: 'column',
       }}
     >
-          {/* Add Contact Modal */}
-          <AddContactModal
-            open={showAddModal}
-            onClose={() => setShowAddModal(false)}
-            onAdd={handleAddContact}
-            theme={t}
-          />
+      {/* Add Contact Modal */}
+      <AddContactModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onAdd={handleAddContact}
+        theme={t}
+      />
 
-          {/* Action Menu */}
-          <ContactActionMenu
-            contact={showActionMenu}
-            onClose={() => setShowActionMenu(null)}
-            onDelete={(c) => setShowDeleteConfirm(c)}
-            onBlock={(c) => setShowBlockConfirm(c)}
-            theme={t}
-          />
+      {/* Action Menu */}
+      <ContactActionMenu
+        contact={showActionMenu}
+        onClose={() => setShowActionMenu(null)}
+        onDelete={(c) => setShowDeleteConfirm(c)}
+        onBlock={(c) => setShowBlockConfirm(c)}
+        theme={t}
+      />
 
-          {/* Confirm Dialogs */}
-          <ConfirmDialog
-            open={!!showDeleteConfirm}
-            onClose={() => setShowDeleteConfirm(null)}
-            onConfirm={handleDeleteContact}
-            title="Delete Contact"
-            message={`Are you sure you want to delete ${showDeleteConfirm?.name}? This action cannot be undone.`}
-            confirmText="Delete"
-            theme={t}
-            variant="danger"
-          />
-          <ConfirmDialog
-            open={!!showBlockConfirm}
-            onClose={() => setShowBlockConfirm(null)}
-            onConfirm={handleBlockContact}
-            title={showBlockConfirm?.isBlocked ? 'Unblock Contact' : 'Block Contact'}
-            message={
-              showBlockConfirm?.isBlocked
-                ? `Unblock ${showBlockConfirm?.name}? They will be able to contact you again.`
-                : `Block ${showBlockConfirm?.name}? They won't be able to contact you.`
-            }
-            confirmText={showBlockConfirm?.isBlocked ? 'Unblock' : 'Block'}
-            theme={t}
-            variant={showBlockConfirm?.isBlocked ? 'normal' : 'danger'}
-          />
+      {/* Confirm Dialogs */}
+      <ConfirmDialog
+        open={!!showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(null)}
+        onConfirm={handleDeleteContact}
+        title="Delete Contact"
+        message={`Are you sure you want to delete ${showDeleteConfirm?.name}? This action cannot be undone.`}
+        confirmText="Delete"
+        theme={t}
+        variant="danger"
+      />
+      <ConfirmDialog
+        open={!!showBlockConfirm}
+        onClose={() => setShowBlockConfirm(null)}
+        onConfirm={handleBlockContact}
+        title={showBlockConfirm?.isBlocked ? 'Unblock Contact' : 'Block Contact'}
+        message={
+          showBlockConfirm?.isBlocked
+            ? `Unblock ${showBlockConfirm?.name}? They will be able to contact you again.`
+            : `Block ${showBlockConfirm?.name}? They won't be able to contact you.`
+        }
+        confirmText={showBlockConfirm?.isBlocked ? 'Unblock' : 'Block'}
+        theme={t}
+        variant={showBlockConfirm?.isBlocked ? 'normal' : 'danger'}
+      />
 
-          {/* Header */}
-          {!showAddModal && (
-            <>
-              <div style={{ padding: '8px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
-                <h1
+      {/* Header */}
+      {!showAddModal && (
+        <>
+          <div style={{ padding: '8px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
+            <h1
+              style={{
+                color: t.text,
+                fontSize: '32px',
+                fontWeight: '700',
+                margin: '0 0 16px 0',
+                letterSpacing: '-0.5px',
+              }}
+            >
+              Contacts
+            </h1>
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <button
+                onClick={() => setActiveTab('all')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: activeTab === 'all' ? t.accent : t.cardBg,
+                  color: activeTab === 'all' ? '#fff' : t.text,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                }}
+              >
+                All ({contacts.filter((c) => !c.isBlocked).length})
+              </button>
+              <button
+                onClick={() => setActiveTab('blocked')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: activeTab === 'blocked' ? t.danger : t.cardBg,
+                  color: activeTab === 'blocked' ? '#fff' : t.text,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                }}
+              >
+                Blocked ({blockedCount})
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div
+              style={{
+                background: t.searchBg,
+                borderRadius: '12px',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                border: `1px solid ${t.cardBorder}`,
+              }}
+            >
+              {Icons.search(t.textMuted)}
+              <input
+                type="text"
+                placeholder="Search contacts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  outline: 'none',
+                  color: t.text,
+                  fontSize: '16px',
+                  width: '100%',
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
                   style={{
-                    color: t.text,
-                    fontSize: '32px',
-                    fontWeight: '700',
-                    margin: '0 0 16px 0',
-                    letterSpacing: '-0.5px',
-                  }}
-                >
-                  Contacts
-                </h1>
-
-                {/* Tabs */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                  <button
-                    onClick={() => setActiveTab('all')}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      background: activeTab === 'all' ? t.accent : t.cardBg,
-                      color: activeTab === 'all' ? '#fff' : t.text,
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    All ({contacts.filter((c) => !c.isBlocked).length})
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('blocked')}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      background: activeTab === 'blocked' ? t.danger : t.cardBg,
-                      color: activeTab === 'blocked' ? '#fff' : t.text,
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Blocked ({blockedCount})
-                  </button>
-                </div>
-
-                {/* Search Bar */}
-                <div
-                  style={{
-                    background: t.searchBg,
-                    borderRadius: '12px',
-                    padding: '12px 16px',
+                    background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    border: `1px solid ${t.cardBorder}`,
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: t.textMuted,
+                    fontSize: '12px',
                   }}
                 >
-                  {Icons.search(t.textMuted)}
-                  <input
-                    type="text"
-                    placeholder="Search contacts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                  x
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Contact List */}
+          <div
+            style={{
+              height: 'calc(100% - 270px)',
+              overflowY: 'auto',
+              padding: '0 20px',
+              position: 'relative',
+            }}
+          >
+            {Object.entries(groupedContacts).map(([letter, contactsInGroup]) => (
+              <div key={letter} id={`section-${letter}`}>
+                <div
+                  style={{
+                    color: t.accent,
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    padding: '12px 0 8px',
+                    position: 'sticky',
+                    top: 0,
+                    background: t.isDark
+                      ? `linear-gradient(180deg, ${t.screenBg} 0%, ${t.screenBg}ee 80%, transparent 100%)`
+                      : `linear-gradient(180deg, ${t.screenBg} 0%, ${t.screenBg}ee 80%, transparent 100%)`,
+                    zIndex: 10,
+                    letterSpacing: '1px',
+                  }}
+                >
+                  {letter}
+                </div>
+
+                {contactsInGroup.map((contact) => (
+                  <div
+                    key={contact.id}
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      outline: 'none',
-                      color: t.text,
-                      fontSize: '16px',
-                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '14px',
+                      marginBottom: '8px',
+                      background: selectedContact === contact.id ? t.cardBg : 'transparent',
+                      borderRadius: '16px',
+                      border: `1px solid ${selectedContact === contact.id ? t.cardBorder : 'transparent'}`,
+                      cursor: 'pointer',
                     }}
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
+                    onClick={() =>
+                      setSelectedContact(selectedContact === contact.id ? null : contact.id)
+                    }
+                  >
+                    <div
                       style={{
-                        background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                        border: 'none',
+                        width: '50px',
+                        height: '50px',
                         borderRadius: '50%',
-                        width: '20px',
-                        height: '20px',
+                        background: `linear-gradient(135deg, ${getAvatarColor(contact.name, t.avatarColors)}, ${getAvatarColor(contact.name, t.avatarColors)}88)`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        cursor: 'pointer',
-                        color: t.textMuted,
-                        fontSize: '12px',
+                        color: '#fff',
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        boxShadow: `0 4px 15px ${getAvatarColor(contact.name, t.avatarColors)}40`,
+                        position: 'relative',
+                        opacity: contact.isBlocked ? 0.5 : 1,
                       }}
                     >
-                      x
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Contact List */}
-              <div
-                style={{
-                  height: 'calc(100% - 270px)',
-                  overflowY: 'auto',
-                  padding: '0 20px',
-                  position: 'relative',
-                }}
-              >
-                {Object.entries(groupedContacts).map(([letter, contactsInGroup]) => (
-                  <div key={letter} id={`section-${letter}`}>
-                    <div
-                      style={{
-                        color: t.accent,
-                        fontSize: '14px',
-                        fontWeight: '700',
-                        padding: '12px 0 8px',
-                        position: 'sticky',
-                        top: 0,
-                        background: t.isDark
-                          ? `linear-gradient(180deg, ${t.screenBg} 0%, ${t.screenBg}ee 80%, transparent 100%)`
-                          : `linear-gradient(180deg, ${t.screenBg} 0%, ${t.screenBg}ee 80%, transparent 100%)`,
-                        zIndex: 10,
-                        letterSpacing: '1px',
-                      }}
-                    >
-                      {letter}
-                    </div>
-
-                    {contactsInGroup.map((contact) => (
-                      <div
-                        key={contact.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '14px',
-                          padding: '14px',
-                          marginBottom: '8px',
-                          background: selectedContact === contact.id ? t.cardBg : 'transparent',
-                          borderRadius: '16px',
-                          border: `1px solid ${selectedContact === contact.id ? t.cardBorder : 'transparent'}`,
-                          cursor: 'pointer',
-                        }}
-                        onClick={() =>
-                          setSelectedContact(selectedContact === contact.id ? null : contact.id)
-                        }
-                      >
+                      {getInitials(contact.name)}
+                      {contact.isBlocked && (
                         <div
                           style={{
-                            width: '50px',
-                            height: '50px',
+                            position: 'absolute',
+                            inset: 0,
                             borderRadius: '50%',
-                            background: `linear-gradient(135deg, ${getAvatarColor(contact.name, t.avatarColors)}, ${getAvatarColor(contact.name, t.avatarColors)}88)`,
+                            background: 'rgba(0,0,0,0.5)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#fff',
-                            fontSize: '18px',
-                            fontWeight: '600',
-                            boxShadow: `0 4px 15px ${getAvatarColor(contact.name, t.avatarColors)}40`,
-                            position: 'relative',
-                            opacity: contact.isBlocked ? 0.5 : 1,
                           }}
                         >
-                          {getInitials(contact.name)}
-                          {contact.isBlocked && (
-                            <div
-                              style={{
-                                position: 'absolute',
-                                inset: 0,
-                                borderRadius: '50%',
-                                background: 'rgba(0,0,0,0.5)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              {Icons.ban('#fff')}
-                            </div>
-                          )}
+                          {Icons.ban('#fff')}
                         </div>
+                      )}
+                    </div>
 
-                        <div style={{ flex: 1, opacity: contact.isBlocked ? 0.5 : 1 }}>
-                          <div
-                            style={{
-                              color: t.text,
-                              fontSize: '16px',
-                              fontWeight: '600',
-                              marginBottom: '4px',
-                            }}
-                          >
-                            {contact.name}
-                          </div>
-                          <div style={{ color: t.textMuted, fontSize: '13px' }}>
-                            {contact.phone}
-                          </div>
-                        </div>
-
-                        {selectedContact === contact.id ? (
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              style={{
-                                width: '36px',
-                                height: '36px',
-                                borderRadius: '50%',
-                                background: t.accent,
-                                border: 'none',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: `0 4px 15px ${t.accentGlow}`,
-                              }}
-                            >
-                              {Icons.phone('#fff')}
-                            </button>
-                            <button
-                              style={{
-                                width: '36px',
-                                height: '36px',
-                                borderRadius: '50%',
-                                background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                                border: `1px solid ${t.cardBorder}`,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              {Icons.message(t.accent)}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setShowActionMenu(contact)
-                              }}
-                              style={{
-                                width: '36px',
-                                height: '36px',
-                                borderRadius: '50%',
-                                background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                                border: `1px solid ${t.cardBorder}`,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              {Icons.moreVertical(t.textMuted)}
-                            </button>
-                          </div>
-                        ) : (
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke={t.textMuted}
-                            strokeWidth="2"
-                          >
-                            <path d="M9 18l6-6-6-6" />
-                          </svg>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-
-                {filteredContacts.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '60px 20px', color: t.textMuted }}>
-                    {Icons.search(t.textMuted)}
-                    <p style={{ fontSize: '16px', margin: '16px 0 0' }}>
-                      {activeTab === 'blocked' ? 'No blocked contacts' : 'No contacts found'}
-                    </p>
-                    <p style={{ fontSize: '13px', margin: '8px 0 0', opacity: 0.7 }}>
-                      {activeTab === 'blocked'
-                        ? 'Blocked contacts will appear here'
-                        : 'Try a different search term'}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Alphabet Scroll */}
-              <div
-                style={{
-                  position: 'absolute',
-                  right: '4px',
-                  top: '230px',
-                  bottom: '100px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  padding: '8px 0',
-                }}
-              >
-                {alphabet.map((letter) => (
-                  <button
-                    key={letter}
-                    onClick={() => scrollToLetter(letter)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: availableLetters.includes(letter) ? t.accent : t.textMuted,
-                      fontSize: '10px',
-                      fontWeight: '600',
-                      cursor: availableLetters.includes(letter) ? 'pointer' : 'default',
-                      opacity: availableLetters.includes(letter) ? 1 : 0.3,
-                      padding: '0',
-                      lineHeight: '1',
-                    }}
-                  >
-                    {letter}
-                  </button>
-                ))}
-              </div>
-
-              {/* Bottom Navigation */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: '85px',
-                  background: t.navBg,
-                  backdropFilter: 'blur(20px)',
-                  borderTop: `1px solid ${t.cardBorder}`,
-                  display: 'flex',
-                  justifyContent: 'space-around',
-                  alignItems: 'flex-start',
-                  paddingTop: '12px',
-                }}
-              >
-                {navItems.map((item, i) => {
-                  const isActive = location.pathname === item.path
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => navigate(item.path)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '4px',
-                        cursor: 'pointer',
-                        opacity: isActive ? 1 : 0.5,
-                      }}
-                    >
+                    <div style={{ flex: 1, opacity: contact.isBlocked ? 0.5 : 1 }}>
                       <div
                         style={{
-                          width: '28px',
-                          height: '28px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          color: t.text,
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          marginBottom: '4px',
                         }}
                       >
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke={isActive ? t.accent : t.text}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d={item.icon} />
-                        </svg>
+                        {contact.name}
                       </div>
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: isActive ? '600' : '400',
-                          color: isActive ? t.accent : t.textMuted,
-                        }}
-                      >
-                        {item.label}
-                      </span>
-                      {isActive && (
-                        <div
+                      <div style={{ color: t.textMuted, fontSize: '13px' }}>{contact.phone}</div>
+                    </div>
+
+                    {selectedContact === contact.id ? (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
                           style={{
-                            width: '4px',
-                            height: '4px',
+                            width: '36px',
+                            height: '36px',
                             borderRadius: '50%',
                             background: t.accent,
-                            boxShadow: `0 0 8px ${t.accent}`,
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: `0 4px 15px ${t.accentGlow}`,
                           }}
-                        />
-                      )}
-                    </button>
-                  )
-                })}
+                        >
+                          {Icons.phone('#fff')}
+                        </button>
+                        <button
+                          style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                            border: `1px solid ${t.cardBorder}`,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {Icons.message(t.accent)}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowActionMenu(contact)
+                          }}
+                          style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                            border: `1px solid ${t.cardBorder}`,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {Icons.moreVertical(t.textMuted)}
+                        </button>
+                      </div>
+                    ) : (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={t.textMuted}
+                        strokeWidth="2"
+                      >
+                        <path d="M9 18l6-6-6-6" />
+                      </svg>
+                    )}
+                  </div>
+                ))}
               </div>
+            ))}
 
-              {/* Add Contact FAB */}
+            {filteredContacts.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: t.textMuted }}>
+                {Icons.search(t.textMuted)}
+                <p style={{ fontSize: '16px', margin: '16px 0 0' }}>
+                  {activeTab === 'blocked' ? 'No blocked contacts' : 'No contacts found'}
+                </p>
+                <p style={{ fontSize: '13px', margin: '8px 0 0', opacity: 0.7 }}>
+                  {activeTab === 'blocked'
+                    ? 'Blocked contacts will appear here'
+                    : 'Try a different search term'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Alphabet Scroll */}
+          <div
+            style={{
+              position: 'absolute',
+              right: '4px',
+              top: '230px',
+              bottom: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              padding: '8px 0',
+            }}
+          >
+            {alphabet.map((letter) => (
               <button
-                onClick={() => setShowAddModal(true)}
+                key={letter}
+                onClick={() => scrollToLetter(letter)}
                 style={{
-                  position: 'absolute',
-                  bottom: '100px',
-                  right: '20px',
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${t.accent}, ${t.accent}cc)`,
+                  background: 'none',
                   border: 'none',
-                  boxShadow: `0 8px 30px ${t.accentGlow}`,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  color: availableLetters.includes(letter) ? t.accent : t.textMuted,
+                  fontSize: '10px',
+                  fontWeight: '600',
+                  cursor: availableLetters.includes(letter) ? 'pointer' : 'default',
+                  opacity: availableLetters.includes(letter) ? 1 : 0.3,
+                  padding: '0',
+                  lineHeight: '1',
                 }}
               >
-                {Icons.plus('#fff')}
+                {letter}
               </button>
-            </>
-          )}
+            ))}
+          </div>
+
+          {/* Bottom Navigation */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '85px',
+              background: t.navBg,
+              backdropFilter: 'blur(20px)',
+              borderTop: `1px solid ${t.cardBorder}`,
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'flex-start',
+              paddingTop: '12px',
+            }}
+          >
+            {navItems.map((item, i) => {
+              const isActive = location.pathname === item.path
+              return (
+                <button
+                  key={i}
+                  onClick={() => navigate(item.path)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer',
+                    opacity: isActive ? 1 : 0.5,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={isActive ? t.accent : t.text}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d={item.icon} />
+                    </svg>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: isActive ? '600' : '400',
+                      color: isActive ? t.accent : t.textMuted,
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <div
+                      style={{
+                        width: '4px',
+                        height: '4px',
+                        borderRadius: '50%',
+                        background: t.accent,
+                        boxShadow: `0 0 8px ${t.accent}`,
+                      }}
+                    />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Add Contact FAB */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              position: 'absolute',
+              bottom: '100px',
+              right: '20px',
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${t.accent}, ${t.accent}cc)`,
+              border: 'none',
+              boxShadow: `0 8px 30px ${t.accentGlow}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {Icons.plus('#fff')}
+          </button>
+        </>
+      )}
     </div>
   )
 }

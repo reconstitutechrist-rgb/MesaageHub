@@ -1133,724 +1133,732 @@ export default function PhoneChatsPage() {
         flexDirection: 'column',
       }}
     >
-          {/* Compose Modal */}
-          <ComposeModal
-            open={showCompose}
-            onClose={closeComposeModal}
-            theme={t}
-            contacts={mockContacts}
-            mode={composeMode}
-            onSend={handleComposeSend}
-          />
+      {/* Compose Modal */}
+      <ComposeModal
+        open={showCompose}
+        onClose={closeComposeModal}
+        theme={t}
+        contacts={mockContacts}
+        mode={composeMode}
+        onSend={handleComposeSend}
+      />
 
-          {/* INBOX VIEW */}
-          {!selectedChat && !showCompose && (
-            <>
-              <div style={{ padding: '8px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <h1
-                    style={{
-                      color: t.text,
-                      fontSize: '32px',
-                      fontWeight: '700',
-                      margin: 0,
-                      letterSpacing: '-0.5px',
-                    }}
-                  >
-                    Chats{' '}
-                    {totalUnread > 0 && (
-                      <span
-                        style={{
-                          marginLeft: '10px',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: t.accent,
-                        }}
-                      >
-                        ({totalUnread})
-                      </span>
-                    )}
-                  </h1>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      onClick={() => handleOpenCompose('campaign')}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        border: 'none',
-                        background: t.cardBg,
-                        color: t.accent,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      title="New Campaign"
-                    >
-                      {Icons.megaphone(t.accent)}
-                    </button>
-                    <button
-                      onClick={() => handleOpenCompose('direct')}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        border: 'none',
-                        background: t.cardBg,
-                        color: t.accent,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      title="New Message"
-                    >
-                      {Icons.edit(t.accent)}
-                    </button>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    background: t.searchBg,
-                    borderRadius: '12px',
-                    padding: '12px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    border: `1px solid ${t.cardBorder}`,
-                  }}
-                >
-                  {Icons.search(t.textMuted)}
-                  <input
-                    type="text"
-                    placeholder="Search messages..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      outline: 'none',
-                      color: t.text,
-                      fontSize: '16px',
-                      width: '100%',
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ height: 'calc(100% - 220px)', overflowY: 'auto', padding: '0 12px' }}>
-                {filteredConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    onClick={() => setSelectedChat(conversation.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '14px 8px',
-                      borderRadius: '16px',
-                      cursor: 'pointer',
-                      borderBottom: `1px solid ${t.cardBorder}`,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '56px',
-                        height: '56px',
-                        borderRadius: '50%',
-                        background: conversation.isCampaign
-                          ? `linear-gradient(135deg, ${t.accent}, ${t.accentDark})`
-                          : `linear-gradient(135deg, ${getAvatarColor(conversation.name, t.avatarColors)}, ${getAvatarColor(conversation.name, t.avatarColors)}88)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#fff',
-                        fontSize: conversation.isCampaign ? '20px' : '18px',
-                        fontWeight: '600',
-                        position: 'relative',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {conversation.isCampaign
-                        ? Icons.megaphone('#fff')
-                        : getInitials(conversation.name)}
-                      {conversation.online && !conversation.isCampaign && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            bottom: '2px',
-                            right: '2px',
-                            width: '14px',
-                            height: '14px',
-                            background: '#22c55e',
-                            borderRadius: '50%',
-                            border: `3px solid ${t.screenBg}`,
-                            boxShadow: '0 0 8px #22c55e',
-                          }}
-                        />
-                      )}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: t.text,
-                            fontSize: '16px',
-                            fontWeight: conversation.unread > 0 ? '700' : '600',
-                          }}
-                        >
-                          {conversation.name}
-                        </span>
-                        <span
-                          style={{
-                            color: conversation.unread > 0 ? t.accent : t.textMuted,
-                            fontSize: '12px',
-                            fontWeight: conversation.unread > 0 ? '600' : '400',
-                          }}
-                        >
-                          {conversation.time}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <p
-                          style={{
-                            color: conversation.unread > 0 ? t.text : t.textMuted,
-                            fontSize: '14px',
-                            margin: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            fontWeight: conversation.unread > 0 ? '500' : '400',
-                            maxWidth: conversation.unread > 0 ? '200px' : '230px',
-                          }}
-                        >
-                          {conversation.lastMessage}
-                        </p>
-                        {conversation.unread > 0 && (
-                          <div
-                            style={{
-                              minWidth: '22px',
-                              height: '22px',
-                              borderRadius: '11px',
-                              background: t.accent,
-                              color: '#fff',
-                              fontSize: '12px',
-                              fontWeight: '700',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              padding: '0 6px',
-                              boxShadow: `0 0 10px ${t.accentGlow}`,
-                            }}
-                          >
-                            {conversation.unread}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottom Navigation */}
-              <div
+      {/* INBOX VIEW */}
+      {!selectedChat && !showCompose && (
+        <>
+          <div style={{ padding: '8px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '16px',
+              }}
+            >
+              <h1
                 style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: '85px',
-                  background: t.navBg,
-                  backdropFilter: 'blur(20px)',
-                  borderTop: `1px solid ${t.cardBorder}`,
-                  display: 'flex',
-                  justifyContent: 'space-around',
-                  alignItems: 'flex-start',
-                  paddingTop: '12px',
+                  color: t.text,
+                  fontSize: '32px',
+                  fontWeight: '700',
+                  margin: 0,
+                  letterSpacing: '-0.5px',
                 }}
               >
-                {navItems.map((item, i) => {
-                  const isActive = location.pathname === item.path
-                  const badge = item.label === 'Chats' ? totalUnread : 0
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => navigate(item.path)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '4px',
-                        cursor: 'pointer',
-                        opacity: isActive ? 1 : 0.5,
-                        position: 'relative',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '28px',
-                          height: '28px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          position: 'relative',
-                        }}
-                      >
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke={isActive ? t.accent : t.text}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d={item.icon} />
-                        </svg>
-                        {badge > 0 && (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: '-4px',
-                              right: '-8px',
-                              minWidth: '18px',
-                              height: '18px',
-                              borderRadius: '9px',
-                              background: '#ef4444',
-                              color: '#fff',
-                              fontSize: '10px',
-                              fontWeight: '700',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              padding: '0 4px',
-                            }}
-                          >
-                            {badge}
-                          </div>
-                        )}
-                      </div>
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: isActive ? '600' : '400',
-                          color: isActive ? t.accent : t.textMuted,
-                        }}
-                      >
-                        {item.label}
-                      </span>
-                      {isActive && (
-                        <div
-                          style={{
-                            width: '4px',
-                            height: '4px',
-                            borderRadius: '50%',
-                            background: t.accent,
-                            boxShadow: `0 0 8px ${t.accent}`,
-                          }}
-                        />
-                      )}
-                    </button>
-                  )
-                })}
+                Chats{' '}
+                {totalUnread > 0 && (
+                  <span
+                    style={{
+                      marginLeft: '10px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: t.accent,
+                    }}
+                  >
+                    ({totalUnread})
+                  </span>
+                )}
+              </h1>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => handleOpenCompose('campaign')}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: t.cardBg,
+                    color: t.accent,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  title="New Campaign"
+                >
+                  {Icons.megaphone(t.accent)}
+                </button>
+                <button
+                  onClick={() => handleOpenCompose('direct')}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: t.cardBg,
+                    color: t.accent,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  title="New Message"
+                >
+                  {Icons.edit(t.accent)}
+                </button>
               </div>
-            </>
-          )}
-
-          {/* CHAT VIEW */}
-          {selectedChat && selectedConversation && (
-            <>
-              <div
+            </div>
+            <div
+              style={{
+                background: t.searchBg,
+                borderRadius: '12px',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                border: `1px solid ${t.cardBorder}`,
+              }}
+            >
+              {Icons.search(t.textMuted)}
+              <input
+                type="text"
+                placeholder="Search messages..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
-                  padding: '8px 16px 12px',
-                  borderBottom: `1px solid ${t.cardBorder}`,
+                  background: 'none',
+                  border: 'none',
+                  outline: 'none',
+                  color: t.text,
+                  fontSize: '16px',
+                  width: '100%',
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ height: 'calc(100% - 220px)', overflowY: 'auto', padding: '0 12px' }}>
+            {filteredConversations.map((conversation) => (
+              <div
+                key={conversation.id}
+                onClick={() => setSelectedChat(conversation.id)}
+                style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
+                  padding: '14px 8px',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  borderBottom: `1px solid ${t.cardBorder}`,
                 }}
               >
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '50%',
+                    background: conversation.isCampaign
+                      ? `linear-gradient(135deg, ${t.accent}, ${t.accentDark})`
+                      : `linear-gradient(135deg, ${getAvatarColor(conversation.name, t.avatarColors)}, ${getAvatarColor(conversation.name, t.avatarColors)}88)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontSize: conversation.isCampaign ? '20px' : '18px',
+                    fontWeight: '600',
+                    position: 'relative',
+                    flexShrink: 0,
+                  }}
+                >
+                  {conversation.isCampaign
+                    ? Icons.megaphone('#fff')
+                    : getInitials(conversation.name)}
+                  {conversation.online && !conversation.isCampaign && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '2px',
+                        right: '2px',
+                        width: '14px',
+                        height: '14px',
+                        background: '#22c55e',
+                        borderRadius: '50%',
+                        border: `3px solid ${t.screenBg}`,
+                        boxShadow: '0 0 8px #22c55e',
+                      }}
+                    />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: t.text,
+                        fontSize: '16px',
+                        fontWeight: conversation.unread > 0 ? '700' : '600',
+                      }}
+                    >
+                      {conversation.name}
+                    </span>
+                    <span
+                      style={{
+                        color: conversation.unread > 0 ? t.accent : t.textMuted,
+                        fontSize: '12px',
+                        fontWeight: conversation.unread > 0 ? '600' : '400',
+                      }}
+                    >
+                      {conversation.time}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <p
+                      style={{
+                        color: conversation.unread > 0 ? t.text : t.textMuted,
+                        fontSize: '14px',
+                        margin: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontWeight: conversation.unread > 0 ? '500' : '400',
+                        maxWidth: conversation.unread > 0 ? '200px' : '230px',
+                      }}
+                    >
+                      {conversation.lastMessage}
+                    </p>
+                    {conversation.unread > 0 && (
+                      <div
+                        style={{
+                          minWidth: '22px',
+                          height: '22px',
+                          borderRadius: '11px',
+                          background: t.accent,
+                          color: '#fff',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '0 6px',
+                          boxShadow: `0 0 10px ${t.accentGlow}`,
+                        }}
+                      >
+                        {conversation.unread}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom Navigation */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '85px',
+              background: t.navBg,
+              backdropFilter: 'blur(20px)',
+              borderTop: `1px solid ${t.cardBorder}`,
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'flex-start',
+              paddingTop: '12px',
+            }}
+          >
+            {navItems.map((item, i) => {
+              const isActive = location.pathname === item.path
+              const badge = item.label === 'Chats' ? totalUnread : 0
+              return (
                 <button
-                  onClick={handleBack}
+                  key={i}
+                  onClick={() => navigate(item.path)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer',
+                    opacity: isActive ? 1 : 0.5,
+                    position: 'relative',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                    }}
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={isActive ? t.accent : t.text}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d={item.icon} />
+                    </svg>
+                    {badge > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '-4px',
+                          right: '-8px',
+                          minWidth: '18px',
+                          height: '18px',
+                          borderRadius: '9px',
+                          background: '#ef4444',
+                          color: '#fff',
+                          fontSize: '10px',
+                          fontWeight: '700',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '0 4px',
+                        }}
+                      >
+                        {badge}
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: isActive ? '600' : '400',
+                      color: isActive ? t.accent : t.textMuted,
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <div
+                      style={{
+                        width: '4px',
+                        height: '4px',
+                        borderRadius: '50%',
+                        background: t.accent,
+                        boxShadow: `0 0 8px ${t.accent}`,
+                      }}
+                    />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* CHAT VIEW */}
+      {selectedChat && selectedConversation && (
+        <>
+          <div
+            style={{
+              padding: '8px 16px 12px',
+              borderBottom: `1px solid ${t.cardBorder}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}
+          >
+            <button
+              onClick={handleBack}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: t.accent,
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              {Icons.back(t.accent)}
+            </button>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: selectedConversation.isCampaign
+                  ? `linear-gradient(135deg, ${t.accent}, ${t.accentDark})`
+                  : `linear-gradient(135deg, ${getAvatarColor(selectedConversation.name, t.avatarColors)}, ${getAvatarColor(selectedConversation.name, t.avatarColors)}88)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: '600',
+                position: 'relative',
+              }}
+            >
+              {selectedConversation.isCampaign
+                ? Icons.megaphone('#fff')
+                : getInitials(selectedConversation.name)}
+              {selectedConversation.online && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '0',
+                    right: '0',
+                    width: '10px',
+                    height: '10px',
+                    background: '#22c55e',
+                    borderRadius: '50%',
+                    border: `2px solid ${t.screenBg}`,
+                  }}
+                />
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: t.text, fontSize: '16px', fontWeight: '600' }}>
+                {selectedConversation.name}
+              </div>
+              <div style={{ color: t.textMuted, fontSize: '12px' }}>
+                {selectedConversation.online ? 'Active now' : selectedConversation.phone}
+              </div>
+            </div>
+            {!selectedConversation.isCampaign && (
+              <>
+                <button
                   style={{
                     background: 'none',
                     border: 'none',
                     color: t.accent,
                     cursor: 'pointer',
-                    padding: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
+                    padding: '8px',
                   }}
                 >
-                  {Icons.back(t.accent)}
+                  {Icons.phone(t.accent)}
                 </button>
-                <div
+                <button
                   style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    background: selectedConversation.isCampaign
-                      ? `linear-gradient(135deg, ${t.accent}, ${t.accentDark})`
-                      : `linear-gradient(135deg, ${getAvatarColor(selectedConversation.name, t.avatarColors)}, ${getAvatarColor(selectedConversation.name, t.avatarColors)}88)`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    position: 'relative',
+                    background: 'none',
+                    border: 'none',
+                    color: t.accent,
+                    cursor: 'pointer',
+                    padding: '8px',
                   }}
                 >
-                  {selectedConversation.isCampaign
-                    ? Icons.megaphone('#fff')
-                    : getInitials(selectedConversation.name)}
-                  {selectedConversation.online && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: '0',
-                        right: '0',
-                        width: '10px',
-                        height: '10px',
-                        background: '#22c55e',
-                        borderRadius: '50%',
-                        border: `2px solid ${t.screenBg}`,
-                      }}
-                    />
-                  )}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: t.text, fontSize: '16px', fontWeight: '600' }}>
-                    {selectedConversation.name}
-                  </div>
-                  <div style={{ color: t.textMuted, fontSize: '12px' }}>
-                    {selectedConversation.online ? 'Active now' : selectedConversation.phone}
-                  </div>
-                </div>
-                {!selectedConversation.isCampaign && (
-                  <>
-                    <button
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: t.accent,
-                        cursor: 'pointer',
-                        padding: '8px',
-                      }}
-                    >
-                      {Icons.phone(t.accent)}
-                    </button>
-                    <button
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: t.accent,
-                        cursor: 'pointer',
-                        padding: '8px',
-                      }}
-                    >
-                      {Icons.video(t.accent)}
-                    </button>
-                  </>
-                )}
-              </div>
+                  {Icons.video(t.accent)}
+                </button>
+              </>
+            )}
+          </div>
 
+          <div
+            style={{
+              height: showKeyboard ? 'calc(100% - 340px)' : 'calc(100% - 170px)',
+              overflowY: 'auto',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            {selectedConversation.messages.map((message) => (
               <div
+                key={message.id}
                 style={{
-                  height: showKeyboard ? 'calc(100% - 340px)' : 'calc(100% - 170px)',
-                  overflowY: 'auto',
-                  padding: '16px',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
+                  justifyContent: message.sent ? 'flex-end' : 'flex-start',
                 }}
               >
-                {selectedConversation.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: message.sent ? 'flex-end' : 'flex-start',
-                    }}
-                  >
-                    <div
-                      style={{
-                        maxWidth: '75%',
-                        padding: '12px 16px',
-                        borderRadius: message.sent ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                        background: message.sent ? t.sentBubble : t.receivedBubble,
-                        color: message.sent ? '#fff' : t.text,
-                        fontSize: '15px',
-                        lineHeight: '1.4',
-                        boxShadow: message.sent ? `0 4px 15px ${t.accentGlow}` : 'none',
-                      }}
-                    >
-                      {message.text}
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          marginTop: '4px',
-                          opacity: 0.7,
-                          textAlign: 'right',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-end',
-                          gap: '4px',
-                        }}
-                      >
-                        {message.time}
-                        {message.sent && message.status === 'read' && (
-                          <>
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <path d="M20 6L9 17l-5-5" />
-                            </svg>
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              style={{ marginLeft: '-8px' }}
-                            >
-                              <path d="M20 6L9 17l-5-5" />
-                            </svg>
-                          </>
-                        )}
-                        {message.sent && message.status === 'delivered' && (
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M20 6L9 17l-5-5" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-                {/* Attachment Preview */}
-                {chatAttachments.length > 0 && (
-                  <div
-                    style={{
-                      padding: '8px 12px',
-                      background: t.navBg,
-                      backdropFilter: 'blur(20px)',
-                      borderBottom: `1px solid ${t.cardBorder}`,
-                      display: 'flex',
-                      gap: '8px',
-                      overflowX: 'auto',
-                    }}
-                  >
-                    {chatAttachments.map((att, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          position: 'relative',
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <img
-                          src={att.url}
-                          alt=""
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                          }}
-                        />
-                        <button
-                          onClick={() =>
-                            setChatAttachments((prev) => prev.filter((_, idx) => idx !== i))
-                          }
-                          style={{
-                            position: 'absolute',
-                            top: '2px',
-                            right: '2px',
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '50%',
-                            background: 'rgba(0,0,0,0.6)',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {Icons.x('#fff')}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
                 <div
                   style={{
-                    padding: '8px 12px',
-                    background: t.navBg,
-                    backdropFilter: 'blur(20px)',
-                    borderTop: `1px solid ${t.cardBorder}`,
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    gap: '8px',
+                    maxWidth: '75%',
+                    padding: '12px 16px',
+                    borderRadius: message.sent ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                    background: message.sent ? t.sentBubble : t.receivedBubble,
+                    color: message.sent ? '#fff' : t.text,
+                    fontSize: '15px',
+                    lineHeight: '1.4',
+                    boxShadow: message.sent ? `0 4px 15px ${t.accentGlow}` : 'none',
                   }}
                 >
-                  <button
-                    onClick={openMediaSheet}
+                  {message.text}
+                  <div
                     style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      border: 'none',
-                      background: t.cardBg,
-                      color: t.accent,
-                      cursor: 'pointer',
+                      fontSize: '11px',
+                      marginTop: '4px',
+                      opacity: 0.7,
+                      textAlign: 'right',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      justifyContent: 'flex-end',
+                      gap: '4px',
+                    }}
+                  >
+                    {message.time}
+                    {message.sent && message.status === 'read' && (
+                      <>
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          style={{ marginLeft: '-8px' }}
+                        >
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      </>
+                    )}
+                    {message.sent && message.status === 'delivered' && (
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            }}
+          >
+            {/* Attachment Preview */}
+            {chatAttachments.length > 0 && (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  background: t.navBg,
+                  backdropFilter: 'blur(20px)',
+                  borderBottom: `1px solid ${t.cardBorder}`,
+                  display: 'flex',
+                  gap: '8px',
+                  overflowX: 'auto',
+                }}
+              >
+                {chatAttachments.map((att, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      position: 'relative',
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
                       flexShrink: 0,
                     }}
                   >
-                    {Icons.plus(t.accent)}
-                  </button>
-                  <div
-                    onClick={openKeyboard}
-                    style={{
-                      flex: 1,
-                      minHeight: '36px',
-                      maxHeight: '100px',
-                      padding: '8px 16px',
-                      borderRadius: '20px',
-                      background: t.searchBg,
-                      border: `1px solid ${t.cardBorder}`,
-                      color: inputValue ? t.text : t.textMuted,
-                      fontSize: '15px',
-                      cursor: 'text',
-                      display: 'flex',
-                      alignItems: 'center',
-                      overflowY: 'auto',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {inputValue || 'Message...'}
-                    {showKeyboard && (
-                      <span
-                        style={{
-                          width: '2px',
-                          height: '18px',
-                          background: t.accent,
-                          marginLeft: '1px',
-                          animation: 'blink 1s infinite',
-                        }}
-                      />
-                    )}
+                    <img
+                      src={att.url}
+                      alt=""
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <button
+                      onClick={() =>
+                        setChatAttachments((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                      style={{
+                        position: 'absolute',
+                        top: '2px',
+                        right: '2px',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.6)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {Icons.x('#fff')}
+                    </button>
                   </div>
-                  {inputValue ? (
-                    <button
-                      onClick={handleSendMessage}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        border: 'none',
-                        background: t.accent,
-                        color: '#fff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        boxShadow: `0 4px 15px ${t.accentGlow}`,
-                      }}
-                    >
-                      {Icons.send('#fff')}
-                    </button>
-                  ) : (
-                    <button
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        border: 'none',
-                        background: t.cardBg,
-                        color: t.accent,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {Icons.mic(t.accent)}
-                    </button>
-                  )}
-                </div>
+                ))}
+              </div>
+            )}
+            <div
+              style={{
+                padding: '8px 12px',
+                background: t.navBg,
+                backdropFilter: 'blur(20px)',
+                borderTop: `1px solid ${t.cardBorder}`,
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: '8px',
+              }}
+            >
+              <button
+                onClick={openMediaSheet}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: t.cardBg,
+                  color: t.accent,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {Icons.plus(t.accent)}
+              </button>
+              <div
+                onClick={openKeyboard}
+                style={{
+                  flex: 1,
+                  minHeight: '36px',
+                  maxHeight: '100px',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  background: t.searchBg,
+                  border: `1px solid ${t.cardBorder}`,
+                  color: inputValue ? t.text : t.textMuted,
+                  fontSize: '15px',
+                  cursor: 'text',
+                  display: 'flex',
+                  alignItems: 'center',
+                  overflowY: 'auto',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {inputValue || 'Message...'}
                 {showKeyboard && (
-                  <PhoneKeyboard
-                    onKeyPress={(k) => setInputValue((p) => p + k)}
-                    onBackspace={() => setInputValue((p) => p.slice(0, -1))}
-                    onSend={handleSendMessage}
-                    theme={t}
-                    inputValue={inputValue}
+                  <span
+                    style={{
+                      width: '2px',
+                      height: '18px',
+                      background: t.accent,
+                      marginLeft: '1px',
+                      animation: 'blink 1s infinite',
+                    }}
                   />
                 )}
-
-                {/* Media Attachment Sheet */}
-                <MediaAttachmentSheet
-                  open={showMediaSheet}
-                  onClose={closeMediaSheet}
-                  onMediaSelected={(media) => {
-                    setChatAttachments((prev) => [...prev, ...media])
-                    closeMediaSheet()
-                  }}
-                  theme={t}
-                  userId={user?.id || 'demo-user'}
-                />
               </div>
-            </>
-          )}
+              {inputValue ? (
+                <button
+                  onClick={handleSendMessage}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: t.accent,
+                    color: '#fff',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    boxShadow: `0 4px 15px ${t.accentGlow}`,
+                  }}
+                >
+                  {Icons.send('#fff')}
+                </button>
+              ) : (
+                <button
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: t.cardBg,
+                    color: t.accent,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {Icons.mic(t.accent)}
+                </button>
+              )}
+            </div>
+            {showKeyboard && (
+              <PhoneKeyboard
+                onKeyPress={(k) => setInputValue((p) => p + k)}
+                onBackspace={() => setInputValue((p) => p.slice(0, -1))}
+                onSend={handleSendMessage}
+                theme={t}
+                inputValue={inputValue}
+              />
+            )}
+
+            {/* Media Attachment Sheet */}
+            <MediaAttachmentSheet
+              open={showMediaSheet}
+              onClose={closeMediaSheet}
+              onMediaSelected={(media) => {
+                setChatAttachments((prev) => [...prev, ...media])
+                closeMediaSheet()
+              }}
+              theme={t}
+              userId={user?.id || 'demo-user'}
+            />
+          </div>
+        </>
+      )}
       <style>{`@keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }`}</style>
     </div>
   )

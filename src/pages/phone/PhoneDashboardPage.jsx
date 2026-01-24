@@ -846,292 +846,299 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
         </button>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: 'hidden' }}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          overflow: 'hidden',
+        }}
+      >
         {/* Desktop Left Sidebar */}
         {!isMobile && (
-        <div
-          style={{
-            width: '320px',
-            borderRight: `1px solid ${t.cardBorder}`,
-            background: t.navBg,
-            backdropFilter: 'blur(20px)',
-            padding: '20px',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '24px',
-          }}
-        >
-          <div>
-            <h3
-              style={{
-                color: t.text,
-                fontSize: '14px',
-                fontWeight: '600',
-                marginBottom: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              {Icons.image(t.accent, 18)} Upload Media
-            </h3>
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '32px',
-                borderRadius: '16px',
-                border: `2px dashed ${t.cardBorder}`,
-                background: t.cardBg,
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => e.target.files?.[0] && setImage(e.target.files[0])}
-                style={{ display: 'none' }}
-              />
-              <div
+          <div
+            style={{
+              width: '320px',
+              borderRight: `1px solid ${t.cardBorder}`,
+              background: t.navBg,
+              backdropFilter: 'blur(20px)',
+              padding: '20px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px',
+            }}
+          >
+            <div>
+              <h3
                 style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${t.gradientStart}33, ${t.gradientEnd}33)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {Icons.upload(t.accent)}
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ color: t.text, fontSize: '14px', fontWeight: '600', margin: 0 }}>
-                  {image ? image.name : 'Drop your image here'}
-                </p>
-                <p style={{ color: t.textMuted, fontSize: '12px', margin: '4px 0 0' }}>
-                  PNG, JPG up to 10MB
-                </p>
-              </div>
-            </label>
-          </div>
-          <div>
-            <h3
-              style={{
-                color: t.text,
-                fontSize: '14px',
-                fontWeight: '600',
-                marginBottom: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              {Icons.sparkles(t.accent, 18)} AI Magic
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input
-                type="text"
-                placeholder="Describe your marketing content..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                style={{
-                  padding: '14px 16px',
-                  borderRadius: '12px',
-                  border: `1px solid ${t.cardBorder}`,
-                  background: t.searchBg,
                   color: t.text,
                   fontSize: '14px',
-                  outline: 'none',
-                }}
-              />
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating || !prompt}
-                style={{
-                  padding: '14px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background:
-                    isGenerating || !prompt
-                      ? t.cardBg
-                      : `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
-                  color: isGenerating || !prompt ? t.textMuted : '#fff',
-                  fontSize: '14px',
                   fontWeight: '600',
-                  cursor: isGenerating || !prompt ? 'not-allowed' : 'pointer',
+                  marginBottom: '12px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
                   gap: '8px',
                 }}
               >
-                {isGenerating ? (
-                  <>
-                    <div
-                      style={{
-                        width: '18px',
-                        height: '18px',
-                        border: `2px solid ${t.textMuted}`,
-                        borderTopColor: 'transparent',
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite',
-                      }}
-                    />
-                    Generating...
-                  </>
-                ) : (
-                  <>{Icons.sparkles('#fff', 18)} Generate with AI</>
-                )}
-              </button>
-            </div>
-          </div>
-          <div>
-            <h3
-              style={{
-                color: t.text,
-                fontSize: '14px',
-                fontWeight: '600',
-                marginBottom: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              {Icons.grid(t.accent, 18)} Templates
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              {templates.map((template) => (
-                <button
-                  key={template.id}
-                  onClick={() => setSelectedTemplate(template.id)}
+                {Icons.image(t.accent, 18)} Upload Media
+              </h3>
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '32px',
+                  borderRadius: '16px',
+                  border: `2px dashed ${t.cardBorder}`,
+                  background: t.cardBg,
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(e) => e.target.files?.[0] && setImage(e.target.files[0])}
+                  style={{ display: 'none' }}
+                />
+                <div
                   style={{
-                    padding: '16px 12px',
-                    borderRadius: '12px',
-                    border:
-                      selectedTemplate === template.id
-                        ? `2px solid ${t.accent}`
-                        : `1px solid ${t.cardBorder}`,
-                    background: selectedTemplate === template.id ? t.cardBg : 'transparent',
-                    cursor: 'pointer',
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '50%',
+                    background: `linear-gradient(135deg, ${t.gradientStart}33, ${t.gradientEnd}33)`,
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {Icons.upload(t.accent)}
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ color: t.text, fontSize: '14px', fontWeight: '600', margin: 0 }}>
+                    {image ? image.name : 'Drop your image here'}
+                  </p>
+                  <p style={{ color: t.textMuted, fontSize: '12px', margin: '4px 0 0' }}>
+                    PNG, JPG up to 10MB
+                  </p>
+                </div>
+              </label>
+            </div>
+            <div>
+              <h3
+                style={{
+                  color: t.text,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {Icons.sparkles(t.accent, 18)} AI Magic
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input
+                  type="text"
+                  placeholder="Describe your marketing content..."
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: '12px',
+                    border: `1px solid ${t.cardBorder}`,
+                    background: t.searchBg,
+                    color: t.text,
+                    fontSize: '14px',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !prompt}
+                  style={{
+                    padding: '14px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background:
+                      isGenerating || !prompt
+                        ? t.cardBg
+                        : `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
+                    color: isGenerating || !prompt ? t.textMuted : '#fff',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: isGenerating || !prompt ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '8px',
                   }}
                 >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
-                      background: `${template.color}22`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {template.icon(template.color, 20)}
-                  </div>
-                  <span style={{ color: t.text, fontSize: '12px', fontWeight: '500' }}>
-                    {template.name}
-                  </span>
+                  {isGenerating ? (
+                    <>
+                      <div
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          border: `2px solid ${t.textMuted}`,
+                          borderTopColor: 'transparent',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite',
+                        }}
+                      />
+                      Generating...
+                    </>
+                  ) : (
+                    <>{Icons.sparkles('#fff', 18)} Generate with AI</>
+                  )}
                 </button>
-              ))}
+              </div>
             </div>
-          </div>
-          <div>
-            <h3
-              style={{
-                color: t.text,
-                fontSize: '14px',
-                fontWeight: '600',
-                marginBottom: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              {Icons.type(t.accent, 18)} Text Overlay
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input
-                type="text"
-                placeholder="Enter text..."
-                value={textOverlay.text}
-                onChange={(e) => setTextOverlay((prev) => ({ ...prev, text: e.target.value }))}
+            <div>
+              <h3
                 style={{
-                  padding: '14px 16px',
-                  borderRadius: '12px',
-                  border: `1px solid ${t.cardBorder}`,
-                  background: t.searchBg,
                   color: t.text,
                   fontSize: '14px',
-                  outline: 'none',
+                  fontWeight: '600',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                 }}
-              />
-              <div>
-                <span
-                  style={{
-                    color: t.textMuted,
-                    fontSize: '12px',
-                    marginBottom: '8px',
-                    display: 'block',
-                  }}
-                >
-                  Text Color
-                </span>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {textColors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setTextOverlay((prev) => ({ ...prev, color }))}
+              >
+                {Icons.grid(t.accent, 18)} Templates
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {templates.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => setSelectedTemplate(template.id)}
+                    style={{
+                      padding: '16px 12px',
+                      borderRadius: '12px',
+                      border:
+                        selectedTemplate === template.id
+                          ? `2px solid ${t.accent}`
+                          : `1px solid ${t.cardBorder}`,
+                      background: selectedTemplate === template.id ? t.cardBg : 'transparent',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <div
                       style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        border:
-                          textOverlay.color === color
-                            ? `3px solid ${t.accent}`
-                            : `2px solid ${t.isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
-                        background: color,
-                        cursor: 'pointer',
-                        boxShadow:
-                          textOverlay.color === color ? `0 0 12px ${t.accentGlow}` : 'none',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '10px',
+                        background: `${template.color}22`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
-                    />
-                  ))}
-                </div>
+                    >
+                      {template.icon(template.color, 20)}
+                    </div>
+                    <span style={{ color: t.text, fontSize: '12px', fontWeight: '500' }}>
+                      {template.name}
+                    </span>
+                  </button>
+                ))}
               </div>
-              <div>
-                <span
-                  style={{
-                    color: t.textMuted,
-                    fontSize: '12px',
-                    marginBottom: '8px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  Font Size <span style={{ color: t.text }}>{textOverlay.fontSize}px</span>
-                </span>
+            </div>
+            <div>
+              <h3
+                style={{
+                  color: t.text,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {Icons.type(t.accent, 18)} Text Overlay
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <input
-                  type="range"
-                  min="24"
-                  max="120"
-                  value={textOverlay.fontSize}
-                  onChange={(e) =>
-                    setTextOverlay((prev) => ({ ...prev, fontSize: parseInt(e.target.value) }))
-                  }
-                  style={{ width: '100%', accentColor: t.accent }}
+                  type="text"
+                  placeholder="Enter text..."
+                  value={textOverlay.text}
+                  onChange={(e) => setTextOverlay((prev) => ({ ...prev, text: e.target.value }))}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: '12px',
+                    border: `1px solid ${t.cardBorder}`,
+                    background: t.searchBg,
+                    color: t.text,
+                    fontSize: '14px',
+                    outline: 'none',
+                  }}
                 />
+                <div>
+                  <span
+                    style={{
+                      color: t.textMuted,
+                      fontSize: '12px',
+                      marginBottom: '8px',
+                      display: 'block',
+                    }}
+                  >
+                    Text Color
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {textColors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setTextOverlay((prev) => ({ ...prev, color }))}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          border:
+                            textOverlay.color === color
+                              ? `3px solid ${t.accent}`
+                              : `2px solid ${t.isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                          background: color,
+                          cursor: 'pointer',
+                          boxShadow:
+                            textOverlay.color === color ? `0 0 12px ${t.accentGlow}` : 'none',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span
+                    style={{
+                      color: t.textMuted,
+                      fontSize: '12px',
+                      marginBottom: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    Font Size <span style={{ color: t.text }}>{textOverlay.fontSize}px</span>
+                  </span>
+                  <input
+                    type="range"
+                    min="24"
+                    max="120"
+                    value={textOverlay.fontSize}
+                    onChange={(e) =>
+                      setTextOverlay((prev) => ({ ...prev, fontSize: parseInt(e.target.value) }))
+                    }
+                    style={{ width: '100%', accentColor: t.accent }}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Canvas Area */}
@@ -1219,19 +1226,23 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
 
         {/* Mobile Bottom Controls */}
         {isMobile && (
-          <div style={{
-            background: t.navBg,
-            borderTop: `1px solid ${t.cardBorder}`,
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
+          <div
+            style={{
+              background: t.navBg,
+              borderTop: `1px solid ${t.cardBorder}`,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
             {/* Control Panel Content */}
-            <div style={{
-              height: '180px',
-              overflowY: 'auto',
-              padding: '16px',
-              borderBottom: `1px solid ${t.cardBorder}`,
-            }}>
+            <div
+              style={{
+                height: '180px',
+                overflowY: 'auto',
+                padding: '16px',
+                borderBottom: `1px solid ${t.cardBorder}`,
+              }}
+            >
               {/* Upload Tab */}
               {mobileControlTab === 'upload' && (
                 <label
@@ -1317,7 +1328,11 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                       minHeight: '48px',
                     }}
                   >
-                    {isGenerating ? 'Generating...' : <>{Icons.sparkles('#fff', 18)} Generate with AI</>}
+                    {isGenerating ? (
+                      'Generating...'
+                    ) : (
+                      <>{Icons.sparkles('#fff', 18)} Generate with AI</>
+                    )}
                   </button>
                 </div>
               )}
@@ -1360,7 +1375,9 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                     ))}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ color: t.textMuted, fontSize: '12px' }}>Size: {textOverlay.fontSize}px</span>
+                    <span style={{ color: t.textMuted, fontSize: '12px' }}>
+                      Size: {textOverlay.fontSize}px
+                    </span>
                     <input
                       type="range"
                       min="24"
@@ -1420,12 +1437,14 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             </div>
 
             {/* Tab Bar */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-around',
-              padding: '8px 0',
-              paddingBottom: 'env(safe-area-inset-bottom, 8px)',
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-around',
+                padding: '8px 0',
+                paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+              }}
+            >
               {[
                 { id: 'upload', icon: Icons.upload, label: 'Upload' },
                 { id: 'ai', icon: Icons.sparkles, label: 'AI Magic' },
@@ -1448,22 +1467,26 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                     minWidth: '64px',
                   }}
                 >
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    background: mobileControlTab === tab.id ? `${t.accent}22` : 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      background: mobileControlTab === tab.id ? `${t.accent}22` : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     {tab.icon(mobileControlTab === tab.id ? t.accent : t.textMuted, 20)}
                   </div>
-                  <span style={{
-                    fontSize: '10px',
-                    fontWeight: mobileControlTab === tab.id ? '600' : '400',
-                    color: mobileControlTab === tab.id ? t.accent : t.textMuted,
-                  }}>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: mobileControlTab === tab.id ? '600' : '400',
+                      color: mobileControlTab === tab.id ? t.accent : t.textMuted,
+                    }}
+                  >
                     {tab.label}
                   </span>
                 </button>
@@ -1829,483 +1852,475 @@ export default function PhoneDashboardPage() {
         }}
       />
 
-          <div style={{ padding: '16px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ color: t.textMuted, fontSize: '14px', margin: '0 0 4px' }}>
-                  Welcome back,
-                </p>
-                <h1 style={{ color: t.text, fontSize: '28px', fontWeight: '700', margin: 0 }}>
-                  {userData.name}
-                </h1>
+      <div style={{ padding: '16px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ color: t.textMuted, fontSize: '14px', margin: '0 0 4px' }}>Welcome back,</p>
+            <h1 style={{ color: t.text, fontSize: '28px', fontWeight: '700', margin: 0 }}>
+              {userData.name}
+            </h1>
+          </div>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: '18px',
+              fontWeight: '600',
+              boxShadow: `0 4px 20px ${t.accentGlow}`,
+            }}
+          >
+            {userData.name[0]}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', paddingBottom: '100px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '12px',
+            marginBottom: '20px',
+          }}
+        >
+          {statItems.map((stat, i) => (
+            <div
+              key={i}
+              style={{
+                padding: '16px',
+                borderRadius: '16px',
+                background: t.cardBg,
+                border: `1px solid ${t.cardBorder}`,
+              }}
+            >
+              <div style={{ marginBottom: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: `${stat.color}22`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {stat.icon(stat.color, 20)}
+                </div>
               </div>
+              <p
+                style={{
+                  color: t.text,
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  margin: '0 0 4px',
+                }}
+              >
+                {stat.value}
+              </p>
+              <p style={{ color: t.textMuted, fontSize: '12px', margin: 0 }}>{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div
+          onClick={() => setShowAIStudio(true)}
+          style={{
+            padding: '20px',
+            borderRadius: '20px',
+            background: `linear-gradient(135deg, ${t.gradientStart}22, ${t.gradientEnd}22)`,
+            border: `1px solid ${t.accent}44`,
+            marginBottom: '20px',
+            cursor: 'pointer',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              top: '-50%',
+              right: '-50%',
+              width: '100%',
+              height: '100%',
+              background: `radial-gradient(circle, ${t.accentGlow} 0%, transparent 70%)`,
+              opacity: 0.5,
+            }}
+          />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: '16px',
+              }}
+            >
               <div
                 style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '16px',
                   background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  boxShadow: `0 4px 20px ${t.accentGlow}`,
+                  boxShadow: `0 8px 30px ${t.accentGlow}`,
                 }}
               >
-                {userData.name[0]}
+                {Icons.sparkles('#fff', 28)}
               </div>
+              <span
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  background: t.accent,
+                  color: '#fff',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                }}
+              >
+                NEW
+              </span>
+            </div>
+            <h3 style={{ color: t.text, fontSize: '20px', fontWeight: '700', margin: '0 0 8px' }}>
+              AI Studio
+            </h3>
+            <p
+              style={{
+                color: t.textMuted,
+                fontSize: '13px',
+                margin: '0 0 16px',
+                lineHeight: '1.5',
+              }}
+            >
+              Create stunning marketing images & videos with AI-powered tools
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: t.accent,
+                fontSize: '14px',
+                fontWeight: '600',
+              }}
+            >
+              Open Studio {Icons.arrowRight(t.accent)}
             </div>
           </div>
+        </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', paddingBottom: '100px' }}>
+        {/* Media Library Section */}
+        <div style={{ marginBottom: '20px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px',
+            }}
+          >
+            <h3 style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: 0 }}>
+              My Media
+            </h3>
+            <button
+              onClick={() => navigate('/media-library')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: t.accent,
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+            >
+              See all
+            </button>
+          </div>
+          {mediaLibrary.length === 0 ? (
+            <div
+              style={{
+                padding: '24px',
+                borderRadius: '16px',
+                background: t.cardBg,
+                border: `1px solid ${t.cardBorder}`,
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
+              <p style={{ color: t.textMuted, fontSize: '13px', margin: 0 }}>
+                No media yet. Create your first with AI Studio!
+              </p>
+            </div>
+          ) : (
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '12px',
-                marginBottom: '20px',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '8px',
               }}
             >
-              {statItems.map((stat, i) => (
-                <div
-                  key={i}
-                  style={{
-                    padding: '16px',
-                    borderRadius: '16px',
-                    background: t.cardBg,
-                    border: `1px solid ${t.cardBorder}`,
-                  }}
-                >
-                  <div style={{ marginBottom: '12px' }}>
-                    <div
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '12px',
-                        background: `${stat.color}22`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {stat.icon(stat.color, 20)}
-                    </div>
-                  </div>
-                  <p
-                    style={{
-                      color: t.text,
-                      fontSize: '24px',
-                      fontWeight: '700',
-                      margin: '0 0 4px',
-                    }}
-                  >
-                    {stat.value}
-                  </p>
-                  <p style={{ color: t.textMuted, fontSize: '12px', margin: 0 }}>{stat.label}</p>
-                </div>
-              ))}
-            </div>
-
-            <div
-              onClick={() => setShowAIStudio(true)}
-              style={{
-                padding: '20px',
-                borderRadius: '20px',
-                background: `linear-gradient(135deg, ${t.gradientStart}22, ${t.gradientEnd}22)`,
-                border: `1px solid ${t.accent}44`,
-                marginBottom: '20px',
-                cursor: 'pointer',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '-50%',
-                  right: '-50%',
-                  width: '100%',
-                  height: '100%',
-                  background: `radial-gradient(circle, ${t.accentGlow} 0%, transparent 70%)`,
-                  opacity: 0.5,
-                }}
-              />
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '56px',
-                      height: '56px',
-                      borderRadius: '16px',
-                      background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: `0 8px 30px ${t.accentGlow}`,
-                    }}
-                  >
-                    {Icons.sparkles('#fff', 28)}
-                  </div>
-                  <span
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '20px',
-                      background: t.accent,
-                      color: '#fff',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                    }}
-                  >
-                    NEW
-                  </span>
-                </div>
-                <h3
-                  style={{ color: t.text, fontSize: '20px', fontWeight: '700', margin: '0 0 8px' }}
-                >
-                  AI Studio
-                </h3>
-                <p
-                  style={{
-                    color: t.textMuted,
-                    fontSize: '13px',
-                    margin: '0 0 16px',
-                    lineHeight: '1.5',
-                  }}
-                >
-                  Create stunning marketing images & videos with AI-powered tools
-                </p>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    color: t.accent,
-                    fontSize: '14px',
-                    fontWeight: '600',
-                  }}
-                >
-                  Open Studio {Icons.arrowRight(t.accent)}
-                </div>
-              </div>
-            </div>
-
-            {/* Media Library Section */}
-            <div style={{ marginBottom: '20px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '12px',
-                }}
-              >
-                <h3 style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: 0 }}>
-                  My Media
-                </h3>
+              {mediaLibrary.slice(0, 6).map((media) => (
                 <button
+                  key={media.id}
                   onClick={() => navigate('/media-library')}
                   style={{
-                    background: 'none',
+                    position: 'relative',
+                    aspectRatio: '1',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
                     border: 'none',
-                    color: t.accent,
-                    fontSize: '13px',
-                    fontWeight: '600',
+                    padding: 0,
                     cursor: 'pointer',
-                  }}
-                >
-                  See all
-                </button>
-              </div>
-              {mediaLibrary.length === 0 ? (
-                <div
-                  style={{
-                    padding: '24px',
-                    borderRadius: '16px',
                     background: t.cardBg,
-                    border: `1px solid ${t.cardBorder}`,
-                    textAlign: 'center',
                   }}
                 >
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
-                  <p style={{ color: t.textMuted, fontSize: '13px', margin: 0 }}>
-                    No media yet. Create your first with AI Studio!
-                  </p>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '8px',
-                  }}
-                >
-                  {mediaLibrary.slice(0, 6).map((media) => (
-                    <button
-                      key={media.id}
-                      onClick={() => navigate('/media-library')}
-                      style={{
-                        position: 'relative',
-                        aspectRatio: '1',
-                        borderRadius: '12px',
-                        overflow: 'hidden',
-                        border: 'none',
-                        padding: 0,
-                        cursor: 'pointer',
-                        background: t.cardBg,
-                      }}
-                    >
-                      <img
-                        src={media.thumbnail_url || media.url}
-                        alt=""
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                        }}
-                      />
-                      {media.source === 'ai-studio' && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '4px',
-                            right: '4px',
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '4px',
-                            background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {Icons.sparkles('#fff', 12)}
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '12px',
-                }}
-              >
-                <h3 style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: 0 }}>
-                  Recent Campaigns
-                </h3>
-                <button
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: t.accent,
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                  }}
-                >
-                  See all
-                </button>
-              </div>
-              {userData.recentCampaigns.map((campaign) => (
-                <div
-                  key={campaign.id}
-                  style={{
-                    padding: '16px',
-                    borderRadius: '16px',
-                    background: t.cardBg,
-                    border: `1px solid ${t.cardBorder}`,
-                    marginBottom: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                  }}
-                >
-                  <div
+                  <img
+                    src={media.thumbnail_url || media.url}
+                    alt=""
                     style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '12px',
-                      background: `${getCampaignColor(campaign.status)}22`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
                     }}
-                  >
-                    {getCampaignIcon(campaign.status)(getCampaignColor(campaign.status), 20)}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p
-                      style={{
-                        color: t.text,
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        margin: '0 0 4px',
-                      }}
-                    >
-                      {campaign.name}
-                    </p>
-                    <p style={{ color: t.textMuted, fontSize: '12px', margin: 0 }}>
-                      {campaign.sent > 0
-                        ? `${campaign.delivered}/${campaign.sent} delivered`
-                        : 'Draft'}
-                    </p>
-                  </div>
-                  <span
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      textTransform: 'capitalize',
-                      background: `${getCampaignColor(campaign.status)}22`,
-                      color: getCampaignColor(campaign.status),
-                    }}
-                  >
-                    {campaign.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <h3
-                style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: '0 0 12px' }}
-              >
-                Quick Actions
-              </h3>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                {quickActions.map((action, i) => (
-                  <button
-                    key={i}
-                    style={{
-                      flex: 1,
-                      padding: '16px 12px',
-                      borderRadius: '16px',
-                      background: t.cardBg,
-                      border: `1px solid ${t.cardBorder}`,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
+                  />
+                  {media.source === 'ai-studio' && (
                     <div
                       style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '12px',
-                        background: `${t.accent}22`,
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '4px',
+                        background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      {action.icon(t.accent, 20)}
+                      {Icons.sparkles('#fff', 12)}
                     </div>
-                    <span style={{ color: t.text, fontSize: '11px', fontWeight: '500' }}>
-                      {action.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              position: 'fixed',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: t.navBg,
-              backdropFilter: 'blur(20px)',
-              borderTop: `1px solid ${t.cardBorder}`,
-              display: 'flex',
-              justifyContent: 'space-around',
-              alignItems: 'flex-start',
-              paddingTop: '12px',
-              paddingBottom: 'env(safe-area-inset-bottom, 20px)',
-            }}
-          >
-            {navItems.map((item, i) => {
-              const isActive = location.pathname === item.path
-              return (
-                <button
-                  key={i}
-                  onClick={() => navigate(item.path)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    cursor: 'pointer',
-                    opacity: isActive ? 1 : 0.5,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke={isActive ? t.accent : t.text}
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d={item.icon} />
-                    </svg>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: isActive ? '600' : '400',
-                      color: isActive ? t.accent : t.textMuted,
-                    }}
-                  >
-                    {item.label}
-                  </span>
-                  {isActive && (
-                    <div
-                      style={{
-                        width: '4px',
-                        height: '4px',
-                        borderRadius: '50%',
-                        background: t.accent,
-                        boxShadow: `0 0 8px ${t.accent}`,
-                      }}
-                    />
                   )}
                 </button>
-              )
-            })}
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px',
+            }}
+          >
+            <h3 style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: 0 }}>
+              Recent Campaigns
+            </h3>
+            <button
+              style={{
+                background: 'none',
+                border: 'none',
+                color: t.accent,
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+            >
+              See all
+            </button>
           </div>
+          {userData.recentCampaigns.map((campaign) => (
+            <div
+              key={campaign.id}
+              style={{
+                padding: '16px',
+                borderRadius: '16px',
+                background: t.cardBg,
+                border: `1px solid ${t.cardBorder}`,
+                marginBottom: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+            >
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  background: `${getCampaignColor(campaign.status)}22`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {getCampaignIcon(campaign.status)(getCampaignColor(campaign.status), 20)}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p
+                  style={{
+                    color: t.text,
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    margin: '0 0 4px',
+                  }}
+                >
+                  {campaign.name}
+                </p>
+                <p style={{ color: t.textMuted, fontSize: '12px', margin: 0 }}>
+                  {campaign.sent > 0 ? `${campaign.delivered}/${campaign.sent} delivered` : 'Draft'}
+                </p>
+              </div>
+              <span
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  textTransform: 'capitalize',
+                  background: `${getCampaignColor(campaign.status)}22`,
+                  color: getCampaignColor(campaign.status),
+                }}
+              >
+                {campaign.status}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <h3 style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: '0 0 12px' }}>
+            Quick Actions
+          </h3>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {quickActions.map((action, i) => (
+              <button
+                key={i}
+                style={{
+                  flex: 1,
+                  padding: '16px 12px',
+                  borderRadius: '16px',
+                  background: t.cardBg,
+                  border: `1px solid ${t.cardBorder}`,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: `${t.accent}22`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {action.icon(t.accent, 20)}
+                </div>
+                <span style={{ color: t.text, fontSize: '11px', fontWeight: '500' }}>
+                  {action.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: t.navBg,
+          backdropFilter: 'blur(20px)',
+          borderTop: `1px solid ${t.cardBorder}`,
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'flex-start',
+          paddingTop: '12px',
+          paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+        }}
+      >
+        {navItems.map((item, i) => {
+          const isActive = location.pathname === item.path
+          return (
+            <button
+              key={i}
+              onClick={() => navigate(item.path)}
+              style={{
+                background: 'none',
+                border: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer',
+                opacity: isActive ? 1 : 0.5,
+              }}
+            >
+              <div
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={isActive ? t.accent : t.text}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d={item.icon} />
+                </svg>
+              </div>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: isActive ? '600' : '400',
+                  color: isActive ? t.accent : t.textMuted,
+                }}
+              >
+                {item.label}
+              </span>
+              {isActive && (
+                <div
+                  style={{
+                    width: '4px',
+                    height: '4px',
+                    borderRadius: '50%',
+                    background: t.accent,
+                    boxShadow: `0 0 8px ${t.accent}`,
+                  }}
+                />
+              )}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

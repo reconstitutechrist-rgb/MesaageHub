@@ -899,434 +899,417 @@ export default function PhoneSettingsPage() {
         flexDirection: 'column',
       }}
     >
-          {/* Theme Selection Modal */}
-          <ThemeSelectionModal
-            open={showThemeModal}
-            onClose={closeThemeModal}
-            currentTheme={theme}
-            onSelect={setTheme}
-            theme={t}
-          />
+      {/* Theme Selection Modal */}
+      <ThemeSelectionModal
+        open={showThemeModal}
+        onClose={closeThemeModal}
+        currentTheme={theme}
+        onSelect={setTheme}
+        theme={t}
+      />
 
-          {/* Confirm Dialogs */}
-          <ConfirmDialog
-            open={showLogoutConfirm}
-            onClose={closeLogoutConfirm}
-            onConfirm={() => {
-              closeLogoutConfirm()
-              handleLogout()
+      {/* Confirm Dialogs */}
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onClose={closeLogoutConfirm}
+        onConfirm={() => {
+          closeLogoutConfirm()
+          handleLogout()
+        }}
+        title="Log Out"
+        message={`Are you sure you want to log out${user?.email ? ` from ${user.email}` : ''}? You'll need to sign in again to access your account.`}
+        confirmText="Log Out"
+        theme={t}
+      />
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onClose={closeDeleteConfirm}
+        onConfirm={handleDeleteAccount}
+        title="Delete Account"
+        message="This action is permanent and cannot be undone. All your data, messages, and contacts will be permanently removed."
+        confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+        theme={t}
+        isLoading={isDeleting}
+      />
+
+      {/* Main Content */}
+      {!showThemeModal && (
+        <>
+          {/* Header */}
+          <div style={{ padding: '8px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
+            <h1
+              style={{
+                color: t.text,
+                fontSize: '32px',
+                fontWeight: '700',
+                margin: 0,
+                letterSpacing: '-0.5px',
+              }}
+            >
+              Settings
+            </h1>
+          </div>
+
+          {/* Settings Sections */}
+          <div style={{ height: 'calc(100% - 185px)', overflowY: 'auto', padding: '0 20px' }}>
+            {/* Appearance Section */}
+            <div
+              style={{
+                marginBottom: '24px',
+                background: t.cardBg,
+                borderRadius: '16px',
+                border: `1px solid ${t.cardBorder}`,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
+                <span
+                  style={{
+                    color: t.textMuted,
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  Appearance
+                </span>
+              </div>
+              <SettingsRow
+                icon={Icons.palette}
+                label="App Layout"
+                value={themes[theme].name}
+                onClick={openThemeModal}
+                theme={t}
+              />
+            </div>
+
+            {/* Notifications Section */}
+            <div
+              style={{
+                marginBottom: '24px',
+                background: t.cardBg,
+                borderRadius: '16px',
+                border: `1px solid ${t.cardBorder}`,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
+                <span
+                  style={{
+                    color: t.textMuted,
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  Notifications
+                </span>
+              </div>
+              <SettingsToggleRow
+                icon={Icons.bell}
+                label="Push Notifications"
+                description="Receive message alerts"
+                enabled={settings.notifications.push}
+                onChange={(val) => updateSetting('notifications', 'push', val)}
+                theme={t}
+              />
+              <SettingsToggleRow
+                icon={(c) => (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={c}
+                    strokeWidth="2"
+                  >
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <path d="M15.54 8.46a5 5 0 010 7.07" />
+                    <path d="M19.07 4.93a10 10 0 010 14.14" />
+                  </svg>
+                )}
+                label="Sound"
+                enabled={settings.notifications.sound}
+                onChange={(val) => updateSetting('notifications', 'sound', val)}
+                theme={t}
+              />
+              <SettingsToggleRow
+                icon={(c) => (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={c}
+                    strokeWidth="2"
+                  >
+                    <path d="M5.5 12H2v4h3.5" />
+                    <path d="M8 10v8" />
+                    <path d="M12 8v12" />
+                    <path d="M16 10v8" />
+                    <path d="M18.5 12H22v4h-3.5" />
+                  </svg>
+                )}
+                label="Message Preview"
+                enabled={settings.notifications.messagePreview}
+                onChange={(val) => updateSetting('notifications', 'messagePreview', val)}
+                theme={t}
+              />
+            </div>
+
+            {/* Privacy Section */}
+            <div
+              style={{
+                marginBottom: '24px',
+                background: t.cardBg,
+                borderRadius: '16px',
+                border: `1px solid ${t.cardBorder}`,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
+                <span
+                  style={{
+                    color: t.textMuted,
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  Privacy
+                </span>
+              </div>
+              <SettingsToggleRow
+                icon={(c) => (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={c}
+                    strokeWidth="2"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+                label="Read Receipts"
+                description="Let others know you've read their messages"
+                enabled={settings.privacy.showReadReceipts}
+                onChange={(val) => updateSetting('privacy', 'showReadReceipts', val)}
+                theme={t}
+              />
+              <SettingsRow
+                icon={Icons.shield}
+                label="Blocked Contacts"
+                onClick={() => {}}
+                theme={t}
+              />
+            </div>
+
+            {/* Account Section */}
+            <div
+              style={{
+                marginBottom: '24px',
+                background: t.cardBg,
+                borderRadius: '16px',
+                border: `1px solid ${t.cardBorder}`,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
+                <span
+                  style={{
+                    color: t.textMuted,
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  Account
+                </span>
+              </div>
+              <SettingsRow icon={Icons.user} label="Edit Profile" onClick={() => {}} theme={t} />
+              <SettingsRow
+                icon={Icons.database}
+                label="Storage & Data"
+                onClick={() => {}}
+                theme={t}
+              />
+              <SettingsRow
+                icon={Icons.download}
+                label={isExporting ? 'Exporting...' : 'Export Data'}
+                onClick={isExporting ? undefined : handleExportData}
+                theme={t}
+              />
+            </div>
+
+            {/* Support Section */}
+            <div
+              style={{
+                marginBottom: '24px',
+                background: t.cardBg,
+                borderRadius: '16px',
+                border: `1px solid ${t.cardBorder}`,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
+                <span
+                  style={{
+                    color: t.textMuted,
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  Support
+                </span>
+              </div>
+              <SettingsRow
+                icon={Icons.helpCircle}
+                label="Help Center"
+                onClick={() => {}}
+                theme={t}
+              />
+              <SettingsRow
+                icon={Icons.info}
+                label="About MessageHub"
+                value="v1.0.0"
+                onClick={() => {}}
+                theme={t}
+              />
+            </div>
+
+            {/* Danger Zone */}
+            <div
+              style={{
+                marginBottom: '24px',
+                background: t.cardBg,
+                borderRadius: '16px',
+                border: `1px solid ${t.danger}44`,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
+                <span
+                  style={{
+                    color: t.danger,
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  Danger Zone
+                </span>
+              </div>
+              <SettingsRow
+                icon={Icons.logOut}
+                label="Log Out"
+                onClick={openLogoutConfirm}
+                theme={t}
+                showArrow={false}
+                danger
+              />
+              <SettingsRow
+                icon={Icons.trash}
+                label="Delete Account"
+                onClick={openDeleteConfirm}
+                theme={t}
+                showArrow={false}
+                danger
+              />
+            </div>
+          </div>
+
+          {/* Bottom Navigation */}
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: t.navBg,
+              backdropFilter: 'blur(20px)',
+              borderTop: `1px solid ${t.cardBorder}`,
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'flex-start',
+              paddingTop: '12px',
+              paddingBottom: 'env(safe-area-inset-bottom, 20px)',
             }}
-            title="Log Out"
-            message={`Are you sure you want to log out${user?.email ? ` from ${user.email}` : ''}? You'll need to sign in again to access your account.`}
-            confirmText="Log Out"
-            theme={t}
-          />
-          <ConfirmDialog
-            open={showDeleteConfirm}
-            onClose={closeDeleteConfirm}
-            onConfirm={handleDeleteAccount}
-            title="Delete Account"
-            message="This action is permanent and cannot be undone. All your data, messages, and contacts will be permanently removed."
-            confirmText={isDeleting ? 'Deleting...' : 'Delete'}
-            theme={t}
-            isLoading={isDeleting}
-          />
-
-          {/* Main Content */}
-          {!showThemeModal && (
-            <>
-              {/* Header */}
-              <div style={{ padding: '8px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
-                <h1
+          >
+            {navItems.map((item, i) => {
+              const isActive = location.pathname === item.path
+              return (
+                <button
+                  key={i}
+                  onClick={() => navigate(item.path)}
                   style={{
-                    color: t.text,
-                    fontSize: '32px',
-                    fontWeight: '700',
-                    margin: 0,
-                    letterSpacing: '-0.5px',
-                  }}
-                >
-                  Settings
-                </h1>
-              </div>
-
-              {/* Settings Sections */}
-              <div style={{ height: 'calc(100% - 185px)', overflowY: 'auto', padding: '0 20px' }}>
-                {/* Appearance Section */}
-                <div
-                  style={{
-                    marginBottom: '24px',
-                    background: t.cardBg,
-                    borderRadius: '16px',
-                    border: `1px solid ${t.cardBorder}`,
-                    overflow: 'hidden',
+                    background: 'none',
+                    border: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer',
+                    opacity: isActive ? 1 : 0.5,
                   }}
                 >
                   <div
-                    style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
-                    <span
-                      style={{
-                        color: t.textMuted,
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={isActive ? t.accent : t.text}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     >
-                      Appearance
-                    </span>
+                      <path d={item.icon} />
+                    </svg>
                   </div>
-                  <SettingsRow
-                    icon={Icons.palette}
-                    label="App Layout"
-                    value={themes[theme].name}
-                    onClick={openThemeModal}
-                    theme={t}
-                  />
-                </div>
-
-                {/* Notifications Section */}
-                <div
-                  style={{
-                    marginBottom: '24px',
-                    background: t.cardBg,
-                    borderRadius: '16px',
-                    border: `1px solid ${t.cardBorder}`,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: isActive ? '600' : '400',
+                      color: isActive ? t.accent : t.textMuted,
+                    }}
                   >
-                    <span
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <div
                       style={{
-                        color: t.textMuted,
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
+                        width: '4px',
+                        height: '4px',
+                        borderRadius: '50%',
+                        background: t.accent,
+                        boxShadow: `0 0 8px ${t.accent}`,
                       }}
-                    >
-                      Notifications
-                    </span>
-                  </div>
-                  <SettingsToggleRow
-                    icon={Icons.bell}
-                    label="Push Notifications"
-                    description="Receive message alerts"
-                    enabled={settings.notifications.push}
-                    onChange={(val) => updateSetting('notifications', 'push', val)}
-                    theme={t}
-                  />
-                  <SettingsToggleRow
-                    icon={(c) => (
-                      <svg
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={c}
-                        strokeWidth="2"
-                      >
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                        <path d="M15.54 8.46a5 5 0 010 7.07" />
-                        <path d="M19.07 4.93a10 10 0 010 14.14" />
-                      </svg>
-                    )}
-                    label="Sound"
-                    enabled={settings.notifications.sound}
-                    onChange={(val) => updateSetting('notifications', 'sound', val)}
-                    theme={t}
-                  />
-                  <SettingsToggleRow
-                    icon={(c) => (
-                      <svg
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={c}
-                        strokeWidth="2"
-                      >
-                        <path d="M5.5 12H2v4h3.5" />
-                        <path d="M8 10v8" />
-                        <path d="M12 8v12" />
-                        <path d="M16 10v8" />
-                        <path d="M18.5 12H22v4h-3.5" />
-                      </svg>
-                    )}
-                    label="Message Preview"
-                    enabled={settings.notifications.messagePreview}
-                    onChange={(val) => updateSetting('notifications', 'messagePreview', val)}
-                    theme={t}
-                  />
-                </div>
-
-                {/* Privacy Section */}
-                <div
-                  style={{
-                    marginBottom: '24px',
-                    background: t.cardBg,
-                    borderRadius: '16px',
-                    border: `1px solid ${t.cardBorder}`,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}
-                  >
-                    <span
-                      style={{
-                        color: t.textMuted,
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Privacy
-                    </span>
-                  </div>
-                  <SettingsToggleRow
-                    icon={(c) => (
-                      <svg
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={c}
-                        strokeWidth="2"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                    label="Read Receipts"
-                    description="Let others know you've read their messages"
-                    enabled={settings.privacy.showReadReceipts}
-                    onChange={(val) => updateSetting('privacy', 'showReadReceipts', val)}
-                    theme={t}
-                  />
-                  <SettingsRow
-                    icon={Icons.shield}
-                    label="Blocked Contacts"
-                    onClick={() => {}}
-                    theme={t}
-                  />
-                </div>
-
-                {/* Account Section */}
-                <div
-                  style={{
-                    marginBottom: '24px',
-                    background: t.cardBg,
-                    borderRadius: '16px',
-                    border: `1px solid ${t.cardBorder}`,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}
-                  >
-                    <span
-                      style={{
-                        color: t.textMuted,
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Account
-                    </span>
-                  </div>
-                  <SettingsRow
-                    icon={Icons.user}
-                    label="Edit Profile"
-                    onClick={() => {}}
-                    theme={t}
-                  />
-                  <SettingsRow
-                    icon={Icons.database}
-                    label="Storage & Data"
-                    onClick={() => {}}
-                    theme={t}
-                  />
-                  <SettingsRow
-                    icon={Icons.download}
-                    label={isExporting ? 'Exporting...' : 'Export Data'}
-                    onClick={isExporting ? undefined : handleExportData}
-                    theme={t}
-                  />
-                </div>
-
-                {/* Support Section */}
-                <div
-                  style={{
-                    marginBottom: '24px',
-                    background: t.cardBg,
-                    borderRadius: '16px',
-                    border: `1px solid ${t.cardBorder}`,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}
-                  >
-                    <span
-                      style={{
-                        color: t.textMuted,
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Support
-                    </span>
-                  </div>
-                  <SettingsRow
-                    icon={Icons.helpCircle}
-                    label="Help Center"
-                    onClick={() => {}}
-                    theme={t}
-                  />
-                  <SettingsRow
-                    icon={Icons.info}
-                    label="About MessageHub"
-                    value="v1.0.0"
-                    onClick={() => {}}
-                    theme={t}
-                  />
-                </div>
-
-                {/* Danger Zone */}
-                <div
-                  style={{
-                    marginBottom: '24px',
-                    background: t.cardBg,
-                    borderRadius: '16px',
-                    border: `1px solid ${t.danger}44`,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}
-                  >
-                    <span
-                      style={{
-                        color: t.danger,
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Danger Zone
-                    </span>
-                  </div>
-                  <SettingsRow
-                    icon={Icons.logOut}
-                    label="Log Out"
-                    onClick={openLogoutConfirm}
-                    theme={t}
-                    showArrow={false}
-                    danger
-                  />
-                  <SettingsRow
-                    icon={Icons.trash}
-                    label="Delete Account"
-                    onClick={openDeleteConfirm}
-                    theme={t}
-                    showArrow={false}
-                    danger
-                  />
-                </div>
-              </div>
-
-              {/* Bottom Navigation */}
-              <div
-                style={{
-                  position: 'fixed',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  background: t.navBg,
-                  backdropFilter: 'blur(20px)',
-                  borderTop: `1px solid ${t.cardBorder}`,
-                  display: 'flex',
-                  justifyContent: 'space-around',
-                  alignItems: 'flex-start',
-                  paddingTop: '12px',
-                  paddingBottom: 'env(safe-area-inset-bottom, 20px)',
-                }}
-              >
-                {navItems.map((item, i) => {
-                  const isActive = location.pathname === item.path
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => navigate(item.path)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '4px',
-                        cursor: 'pointer',
-                        opacity: isActive ? 1 : 0.5,
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '28px',
-                          height: '28px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke={isActive ? t.accent : t.text}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d={item.icon} />
-                        </svg>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: isActive ? '600' : '400',
-                          color: isActive ? t.accent : t.textMuted,
-                        }}
-                      >
-                        {item.label}
-                      </span>
-                      {isActive && (
-                        <div
-                          style={{
-                            width: '4px',
-                            height: '4px',
-                            borderRadius: '50%',
-                            background: t.accent,
-                            boxShadow: `0 0 8px ${t.accent}`,
-                          }}
-                        />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </>
-          )}
+                    />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }
