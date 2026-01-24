@@ -8,6 +8,22 @@ import prettierConfig from 'eslint-config-prettier'
 
 export default [
   { ignores: ['dist', 'node_modules', 'build'] },
+  // Test files - add vitest globals
+  {
+    files: ['**/*.test.{js,jsx}', '**/*.spec.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        vi: 'readonly',
+      },
+    },
+  },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
