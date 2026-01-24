@@ -540,11 +540,12 @@ const userData = {
 
 // Full Screen AI Studio
 function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
-  const { width } = useWindowSize()
+  const { width, height } = useWindowSize()
   const isMobile = width < 768
   const canvasRef = useRef(null)
   const [image, setImage] = useState(null)
   const [activeTab, setActiveTab] = useState('image')
+  const [mobileControlTab, setMobileControlTab] = useState('upload') // upload, ai, text, templates
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [showExportOptions, setShowExportOptions] = useState(false)
@@ -558,6 +559,10 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
     isDragging: false,
   })
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+
+  // Mobile-responsive canvas dimensions
+  const canvasWidth = isMobile ? Math.min(width - 32, 360) : 800
+  const canvasHeight = isMobile ? Math.min(height - 320, 280) : 600
 
   const templates = [
     { id: 1, name: 'Sale Banner', icon: Icons.tag, color: '#ef4444' },
@@ -586,13 +591,14 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
     } else {
       ctx.strokeStyle = t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
       ctx.lineWidth = 1
-      for (let i = 0; i < canvas.width; i += 40) {
+      const gridSize = isMobile ? 30 : 40
+      for (let i = 0; i < canvas.width; i += gridSize) {
         ctx.beginPath()
         ctx.moveTo(i, 0)
         ctx.lineTo(i, canvas.height)
         ctx.stroke()
       }
-      for (let i = 0; i < canvas.height; i += 40) {
+      for (let i = 0; i < canvas.height; i += gridSize) {
         ctx.beginPath()
         ctx.moveTo(0, i)
         ctx.lineTo(canvas.width, i)
@@ -600,7 +606,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
       }
       drawText(ctx)
     }
-  }, [image, textOverlay, t])
+  }, [image, textOverlay, t, canvasWidth, canvasHeight, isMobile])
 
   const drawText = (ctx) => {
     if (textOverlay.text) {
@@ -711,36 +717,38 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
         borderRadius: 'inherit',
       }}
     >
+      {/* Header - Compact on mobile */}
       <div
         style={{
           padding: isMobile ? '12px 16px' : '16px 24px',
+          paddingTop: isMobile ? 'env(safe-area-inset-top, 12px)' : '16px',
           borderBottom: `1px solid ${t.cardBorder}`,
           display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'stretch' : 'center',
+          alignItems: 'center',
           justifyContent: 'space-between',
           background: t.navBg,
           backdropFilter: 'blur(20px)',
-          gap: isMobile ? '12px' : '0',
+          gap: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
             onClick={onClose}
             style={{
-              background: 'none',
-              border: 'none',
+              width: '44px',
+              height: '44px',
+              background: t.cardBg,
+              border: `1px solid ${t.cardBorder}`,
+              borderRadius: '12px',
               color: t.text,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              fontSize: isMobile ? '14px' : '16px',
+              justifyContent: 'center',
             }}
           >
-            {Icons.arrowLeft(t.text)} Back
+            {Icons.arrowLeft(t.text)}
           </button>
-          <div style={{ width: '1px', height: '24px', background: t.cardBorder }} />
           <h1
             style={{
               color: t.text,
@@ -761,66 +769,69 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             >
               AI Studio
             </span>
-            <span
-              style={{
-                fontSize: '10px',
-                padding: '2px 6px',
-                borderRadius: '10px',
-                background: t.cardBg,
-                border: `1px solid ${t.cardBorder}`,
-                color: t.accent,
-                fontWeight: '600',
-              }}
-            >
-              BETA
-            </span>
+            {!isMobile && (
+              <span
+                style={{
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  background: t.cardBg,
+                  border: `1px solid ${t.cardBorder}`,
+                  color: t.accent,
+                  fontWeight: '600',
+                }}
+              >
+                BETA
+              </span>
+            )}
           </h1>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: '4px',
-            background: t.cardBg,
-            padding: '4px',
-            borderRadius: '12px',
-            border: `1px solid ${t.cardBorder}`,
-            alignSelf: isMobile ? 'center' : 'auto',
-          }}
-        >
-          {[
-            { id: 'image', icon: Icons.image },
-            { id: 'video', icon: Icons.video },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: isMobile ? '6px 14px' : '8px 20px',
-                borderRadius: '8px',
-                border: 'none',
-                background: activeTab === tab.id ? t.accent : 'transparent',
-                color: activeTab === tab.id ? '#fff' : t.textMuted,
-                fontSize: isMobile ? '12px' : '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              {tab.icon(activeTab === tab.id ? '#fff' : t.textMuted, isMobile ? 16 : 18)} {tab.id}
-            </button>
-          ))}
-        </div>
+        {!isMobile && (
+          <div
+            style={{
+              display: 'flex',
+              gap: '4px',
+              background: t.cardBg,
+              padding: '4px',
+              borderRadius: '12px',
+              border: `1px solid ${t.cardBorder}`,
+            }}
+          >
+            {[
+              { id: 'image', icon: Icons.image },
+              { id: 'video', icon: Icons.video },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '8px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: activeTab === tab.id ? t.accent : 'transparent',
+                  color: activeTab === tab.id ? '#fff' : t.textMuted,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {tab.icon(activeTab === tab.id ? '#fff' : t.textMuted, 18)} {tab.id}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           onClick={handleExport}
           style={{
-            padding: isMobile ? '8px 16px' : '10px 24px',
+            padding: isMobile ? '12px 20px' : '10px 24px',
             borderRadius: '12px',
             border: 'none',
             background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
             color: '#fff',
-            fontSize: isMobile ? '13px' : '14px',
+            fontSize: '14px',
             fontWeight: '600',
             cursor: 'pointer',
             display: 'flex',
@@ -828,27 +839,27 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             justifyContent: 'center',
             gap: '8px',
             boxShadow: `0 4px 20px ${t.accentGlow}`,
-            width: isMobile ? '100%' : 'auto',
+            minHeight: '44px',
           }}
         >
-          {Icons.download('#fff')} Export
+          {Icons.download('#fff')} {isMobile ? '' : 'Export'}
         </button>
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: 'hidden' }}>
+        {/* Desktop Left Sidebar */}
+        {!isMobile && (
         <div
           style={{
-            width: isMobile ? '100%' : '320px',
-            height: isMobile ? '200px' : 'auto',
-            borderRight: isMobile ? 'none' : `1px solid ${t.cardBorder}`,
-            borderBottom: isMobile ? `1px solid ${t.cardBorder}` : 'none',
+            width: '320px',
+            borderRight: `1px solid ${t.cardBorder}`,
             background: t.navBg,
             backdropFilter: 'blur(20px)',
-            padding: isMobile ? '16px' : '20px',
+            padding: '20px',
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: isMobile ? '16px' : '24px',
+            gap: '24px',
           }}
         >
           <div>
@@ -1121,7 +1132,9 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             </div>
           </div>
         </div>
+        )}
 
+        {/* Canvas Area */}
         <div
           style={{
             flex: 1,
@@ -1129,7 +1142,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             alignItems: 'center',
             justifyContent: 'center',
             background: t.isDark ? '#0a0a0f' : '#e2e8f0',
-            padding: isMobile ? '16px' : '40px',
+            padding: isMobile ? '12px' : '40px',
             position: 'relative',
             overflow: 'auto',
           }}
@@ -1137,27 +1150,34 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
           <div
             style={{
               position: 'relative',
-              boxShadow: `0 0 100px ${t.accentGlow}`,
-              borderRadius: '16px',
+              boxShadow: isMobile ? `0 0 40px ${t.accentGlow}` : `0 0 100px ${t.accentGlow}`,
+              borderRadius: isMobile ? '12px' : '16px',
               overflow: 'hidden',
             }}
           >
             <canvas
               ref={canvasRef}
-              width={800}
-              height={600}
+              width={canvasWidth}
+              height={canvasHeight}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
+              onTouchStart={(e) => {
+                const touch = e.touches[0]
+                handleMouseDown({ clientX: touch.clientX, clientY: touch.clientY })
+              }}
+              onTouchMove={(e) => {
+                const touch = e.touches[0]
+                handleMouseMove({ clientX: touch.clientX, clientY: touch.clientY })
+              }}
+              onTouchEnd={() => setTextOverlay((prev) => ({ ...prev, isDragging: false }))}
               onMouseUp={() => setTextOverlay((prev) => ({ ...prev, isDragging: false }))}
               onMouseLeave={() => setTextOverlay((prev) => ({ ...prev, isDragging: false }))}
               style={{
                 cursor: textOverlay.isDragging ? 'grabbing' : 'grab',
-                maxWidth: '100%',
-                maxHeight: 'calc(100vh - 200px)',
-                borderRadius: '16px',
+                borderRadius: isMobile ? '12px' : '16px',
               }}
             />
-            {textOverlay.text && (
+            {textOverlay.text && !isMobile && (
               <div
                 style={{
                   position: 'absolute',
@@ -1178,23 +1198,281 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
               </div>
             )}
           </div>
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '20px',
-              right: '20px',
-              background: t.cardBg,
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: `1px solid ${t.cardBorder}`,
-              color: t.textMuted,
-              fontSize: '12px',
-            }}
-          >
-            800 x 600 px
-          </div>
+          {!isMobile && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                background: t.cardBg,
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: `1px solid ${t.cardBorder}`,
+                color: t.textMuted,
+                fontSize: '12px',
+              }}
+            >
+              {canvasWidth} x {canvasHeight} px
+            </div>
+          )}
         </div>
 
+        {/* Mobile Bottom Controls */}
+        {isMobile && (
+          <div style={{
+            background: t.navBg,
+            borderTop: `1px solid ${t.cardBorder}`,
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Control Panel Content */}
+            <div style={{
+              height: '180px',
+              overflowY: 'auto',
+              padding: '16px',
+              borderBottom: `1px solid ${t.cardBorder}`,
+            }}>
+              {/* Upload Tab */}
+              {mobileControlTab === 'upload' && (
+                <label
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '24px',
+                    borderRadius: '16px',
+                    border: `2px dashed ${t.cardBorder}`,
+                    background: t.cardBg,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={(e) => e.target.files?.[0] && setImage(e.target.files[0])}
+                    style={{ display: 'none' }}
+                  />
+                  <div
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${t.gradientStart}33, ${t.gradientEnd}33)`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {Icons.upload(t.accent)}
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ color: t.text, fontSize: '14px', fontWeight: '600', margin: 0 }}>
+                      {image ? image.name : 'Tap to upload image'}
+                    </p>
+                    <p style={{ color: t.textMuted, fontSize: '12px', margin: '4px 0 0' }}>
+                      PNG, JPG up to 10MB
+                    </p>
+                  </div>
+                </label>
+              )}
+
+              {/* AI Magic Tab */}
+              {mobileControlTab === 'ai' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <input
+                    type="text"
+                    placeholder="Describe your marketing content..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '12px',
+                      border: `1px solid ${t.cardBorder}`,
+                      background: t.searchBg,
+                      color: t.text,
+                      fontSize: '14px',
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !prompt}
+                    style={{
+                      padding: '14px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background:
+                        isGenerating || !prompt
+                          ? t.cardBg
+                          : `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
+                      color: isGenerating || !prompt ? t.textMuted : '#fff',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: isGenerating || !prompt ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      minHeight: '48px',
+                    }}
+                  >
+                    {isGenerating ? 'Generating...' : <>{Icons.sparkles('#fff', 18)} Generate with AI</>}
+                  </button>
+                </div>
+              )}
+
+              {/* Text Tab */}
+              {mobileControlTab === 'text' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <input
+                    type="text"
+                    placeholder="Enter text..."
+                    value={textOverlay.text}
+                    onChange={(e) => setTextOverlay((prev) => ({ ...prev, text: e.target.value }))}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '12px',
+                      border: `1px solid ${t.cardBorder}`,
+                      background: t.searchBg,
+                      color: t.text,
+                      fontSize: '14px',
+                      outline: 'none',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    {textColors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setTextOverlay((prev) => ({ ...prev, color }))}
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          border:
+                            textOverlay.color === color
+                              ? `3px solid ${t.accent}`
+                              : `2px solid ${t.isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                          background: color,
+                          cursor: 'pointer',
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ color: t.textMuted, fontSize: '12px' }}>Size: {textOverlay.fontSize}px</span>
+                    <input
+                      type="range"
+                      min="24"
+                      max="80"
+                      value={textOverlay.fontSize}
+                      onChange={(e) =>
+                        setTextOverlay((prev) => ({ ...prev, fontSize: parseInt(e.target.value) }))
+                      }
+                      style={{ flex: 1, accentColor: t.accent }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Templates Tab */}
+              {mobileControlTab === 'templates' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {templates.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => setSelectedTemplate(template.id)}
+                      style={{
+                        padding: '14px 12px',
+                        borderRadius: '12px',
+                        border:
+                          selectedTemplate === template.id
+                            ? `2px solid ${t.accent}`
+                            : `1px solid ${t.cardBorder}`,
+                        background: selectedTemplate === template.id ? t.cardBg : 'transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '10px',
+                          background: `${template.color}22`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {template.icon(template.color, 18)}
+                      </div>
+                      <span style={{ color: t.text, fontSize: '11px', fontWeight: '500' }}>
+                        {template.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Tab Bar */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-around',
+              padding: '8px 0',
+              paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+            }}>
+              {[
+                { id: 'upload', icon: Icons.upload, label: 'Upload' },
+                { id: 'ai', icon: Icons.sparkles, label: 'AI Magic' },
+                { id: 'text', icon: Icons.type, label: 'Text' },
+                { id: 'templates', icon: Icons.grid, label: 'Templates' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setMobileControlTab(tab.id)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    opacity: mobileControlTab === tab.id ? 1 : 0.5,
+                    minWidth: '64px',
+                  }}
+                >
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: mobileControlTab === tab.id ? `${t.accent}22` : 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    {tab.icon(mobileControlTab === tab.id ? t.accent : t.textMuted, 20)}
+                  </div>
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: mobileControlTab === tab.id ? '600' : '400',
+                    color: mobileControlTab === tab.id ? t.accent : t.textMuted,
+                  }}>
+                    {tab.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Right Sidebar */}
         {!isMobile && (
           <div
             style={{
@@ -1306,9 +1584,10 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
               transform: 'translate(-50%, -50%)',
               background: t.isDark ? '#1a1a2e' : '#ffffff',
               borderRadius: '24px',
-              padding: '24px',
+              padding: isMobile ? '20px' : '24px',
               zIndex: 1002,
-              width: '320px',
+              width: isMobile ? 'calc(100% - 32px)' : '320px',
+              maxWidth: '320px',
               boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
             }}
           >
@@ -1342,7 +1621,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '10px',
-                  padding: '14px',
+                  padding: '16px',
                   borderRadius: '12px',
                   border: `1px solid ${t.cardBorder}`,
                   background: t.cardBg,
@@ -1350,6 +1629,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: 'pointer',
+                  minHeight: '48px',
                 }}
               >
                 {Icons.download(t.accent, 20)} Download Image
@@ -1361,7 +1641,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '10px',
-                  padding: '14px',
+                  padding: '16px',
                   borderRadius: '12px',
                   border: 'none',
                   background: `linear-gradient(135deg, ${t.gradientStart}, ${t.gradientEnd})`,
@@ -1370,6 +1650,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                   fontWeight: '600',
                   cursor: 'pointer',
                   boxShadow: `0 4px 20px ${t.accentGlow}`,
+                  minHeight: '48px',
                 }}
               >
                 {Icons.megaphone('#fff', 20)} Send as Campaign
@@ -1377,13 +1658,14 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
               <button
                 onClick={() => setShowExportOptions(false)}
                 style={{
-                  padding: '12px',
+                  padding: '14px',
                   borderRadius: '12px',
                   border: 'none',
                   background: 'transparent',
                   color: t.textMuted,
                   fontSize: '14px',
                   cursor: 'pointer',
+                  minHeight: '44px',
                 }}
               >
                 Continue Editing
@@ -1499,13 +1781,14 @@ export default function PhoneDashboardPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: t.isDark ? '#1a1a2e' : '#f1f5f9',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
+        height: '100vh',
+        background: t.bg,
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {showAIStudio && (
@@ -1546,150 +1829,7 @@ export default function PhoneDashboardPage() {
         }}
       />
 
-      <div
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          display: 'flex',
-          gap: '8px',
-          zIndex: 100,
-          flexWrap: 'wrap',
-          maxWidth: '320px',
-          justifyContent: 'flex-end',
-        }}
-      >
-        {Object.entries(themes).map(([key, value]) => (
-          <button
-            key={key}
-            onClick={() => setTheme(key)}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '20px',
-              border: theme === key ? `2px solid ${value.accent}` : '2px solid transparent',
-              background:
-                theme === key
-                  ? value.isDark
-                    ? value.cardBg
-                    : 'rgba(255,255,255,0.9)'
-                  : value.isDark
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'rgba(0,0,0,0.05)',
-              color: value.accent,
-              cursor: 'pointer',
-              fontSize: '11px',
-              fontWeight: '600',
-              boxShadow: theme === key ? `0 0 20px ${value.accentGlow}` : 'none',
-            }}
-          >
-            {value.name}
-          </button>
-        ))}
-      </div>
-
-      <div
-        style={{
-          width: '375px',
-          height: '812px',
-          borderRadius: '50px',
-          background: t.isDark ? '#000' : '#1a1a1a',
-          padding: '12px',
-          boxShadow: `0 0 0 2px ${t.isDark ? '#333' : '#e5e7eb'}, 0 0 0 4px ${t.isDark ? '#1a1a1a' : '#d1d5db'}, 0 25px 80px rgba(0,0,0,${t.isDark ? '0.5' : '0.2'}), 0 0 60px ${t.accentGlow}`,
-          position: 'relative',
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: '40px',
-            background: t.bg,
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          <div
-            style={{
-              height: '50px',
-              padding: '14px 28px 0',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              color: t.text,
-              fontSize: '14px',
-              fontWeight: '600',
-            }}
-          >
-            <span>9:41</span>
-            <div
-              style={{
-                width: '125px',
-                height: '35px',
-                background: '#000',
-                borderRadius: '20px',
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                top: '8px',
-              }}
-            />
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <svg width="18" height="12" viewBox="0 0 18 12" fill={t.text}>
-                <rect x="0" y="8" width="3" height="4" rx="1" />
-                <rect x="5" y="5" width="3" height="7" rx="1" />
-                <rect x="10" y="2" width="3" height="10" rx="1" />
-                <rect x="15" y="0" width="3" height="12" rx="1" />
-              </svg>
-              <svg width="16" height="12" viewBox="0 0 16 12" fill={t.text}>
-                <path d="M8 10.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" transform="translate(0,-2)" />
-                <path
-                  d="M4.5 8a5 5 0 017 0"
-                  stroke={t.text}
-                  strokeWidth="1.5"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M1.5 5a9 9 0 0113 0"
-                  stroke={t.text}
-                  strokeWidth="1.5"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div
-                  style={{
-                    width: '24px',
-                    height: '11px',
-                    border: `1.5px solid ${t.text}`,
-                    borderRadius: '3px',
-                    padding: '1.5px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '80%',
-                      height: '100%',
-                      background: t.accent,
-                      borderRadius: '1px',
-                    }}
-                  />
-                </div>
-                <div
-                  style={{
-                    width: '2px',
-                    height: '5px',
-                    background: t.text,
-                    borderRadius: '0 1px 1px 0',
-                    marginLeft: '1px',
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ padding: '8px 20px 16px' }}>
+          <div style={{ padding: '16px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <p style={{ color: t.textMuted, fontSize: '14px', margin: '0 0 4px' }}>
@@ -1719,7 +1859,7 @@ export default function PhoneDashboardPage() {
             </div>
           </div>
 
-          <div style={{ height: 'calc(100% - 185px)', overflowY: 'auto', padding: '0 20px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', paddingBottom: '100px' }}>
             <div
               style={{
                 display: 'grid',
@@ -2089,11 +2229,10 @@ export default function PhoneDashboardPage() {
 
           <div
             style={{
-              position: 'absolute',
+              position: 'fixed',
               bottom: 0,
               left: 0,
               right: 0,
-              height: '85px',
               background: t.navBg,
               backdropFilter: 'blur(20px)',
               borderTop: `1px solid ${t.cardBorder}`,
@@ -2101,6 +2240,7 @@ export default function PhoneDashboardPage() {
               justifyContent: 'space-around',
               alignItems: 'flex-start',
               paddingTop: '12px',
+              paddingBottom: 'env(safe-area-inset-bottom, 20px)',
             }}
           >
             {navItems.map((item, i) => {
@@ -2166,21 +2306,6 @@ export default function PhoneDashboardPage() {
               )
             })}
           </div>
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '134px',
-            height: '5px',
-            background: t.isDark ? '#fff' : '#000',
-            borderRadius: '10px',
-            opacity: 0.3,
-          }}
-        />
-      </div>
     </div>
   )
 }

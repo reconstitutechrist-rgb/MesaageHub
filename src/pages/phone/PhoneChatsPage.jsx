@@ -1123,163 +1123,16 @@ export default function PhoneChatsPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: t.isDark ? '#1a1a2e' : '#f1f5f9',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
+        height: '100vh',
+        background: t.bg,
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      {/* Theme Switcher */}
-      <div
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          display: 'flex',
-          gap: '8px',
-          zIndex: 100,
-          flexWrap: 'wrap',
-          maxWidth: '320px',
-          justifyContent: 'flex-end',
-        }}
-      >
-        {Object.entries(themes).map(([key, value]) => (
-          <button
-            key={key}
-            onClick={() => setTheme(key)}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '20px',
-              border: theme === key ? `2px solid ${value.accent}` : '2px solid transparent',
-              background:
-                theme === key
-                  ? value.isDark
-                    ? value.cardBg
-                    : 'rgba(255,255,255,0.9)'
-                  : value.isDark
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'rgba(0,0,0,0.05)',
-              color: value.accent,
-              cursor: 'pointer',
-              fontSize: '11px',
-              fontWeight: '600',
-              boxShadow: theme === key ? `0 0 20px ${value.accentGlow}` : 'none',
-            }}
-          >
-            {value.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Phone Frame */}
-      <div
-        style={{
-          width: '375px',
-          height: '812px',
-          borderRadius: '50px',
-          background: t.isDark ? '#000' : '#1a1a1a',
-          padding: '12px',
-          boxShadow: `0 0 0 2px ${t.isDark ? '#333' : '#e5e7eb'}, 0 0 0 4px ${t.isDark ? '#1a1a1a' : '#d1d5db'}, 0 25px 80px rgba(0,0,0,${t.isDark ? '0.5' : '0.2'}), 0 0 60px ${t.accentGlow}`,
-          position: 'relative',
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: '40px',
-            background: t.bg,
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          {/* Status Bar */}
-          <div
-            style={{
-              height: '50px',
-              padding: '14px 28px 0',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              color: t.text,
-              fontSize: '14px',
-              fontWeight: '600',
-              position: 'relative',
-              zIndex: 10,
-            }}
-          >
-            <span>9:41</span>
-            <div
-              style={{
-                width: '125px',
-                height: '35px',
-                background: '#000',
-                borderRadius: '20px',
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                top: '8px',
-              }}
-            />
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <svg width="18" height="12" viewBox="0 0 18 12" fill={t.text}>
-                <rect x="0" y="8" width="3" height="4" rx="1" />
-                <rect x="5" y="5" width="3" height="7" rx="1" />
-                <rect x="10" y="2" width="3" height="10" rx="1" />
-                <rect x="15" y="0" width="3" height="12" rx="1" />
-              </svg>
-              <svg width="16" height="12" viewBox="0 0 16 12" fill={t.text}>
-                <path d="M8 10.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" transform="translate(0,-2)" />
-                <path
-                  d="M4.5 8a5 5 0 017 0"
-                  stroke={t.text}
-                  strokeWidth="1.5"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M1.5 5a9 9 0 0113 0"
-                  stroke={t.text}
-                  strokeWidth="1.5"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div
-                  style={{
-                    width: '24px',
-                    height: '11px',
-                    border: `1.5px solid ${t.text}`,
-                    borderRadius: '3px',
-                    padding: '1.5px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '80%',
-                      height: '100%',
-                      background: t.accent,
-                      borderRadius: '1px',
-                    }}
-                  />
-                </div>
-                <div
-                  style={{
-                    width: '2px',
-                    height: '5px',
-                    background: t.text,
-                    borderRadius: '0 1px 1px 0',
-                    marginLeft: '1px',
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Compose Modal */}
           <ComposeModal
             open={showCompose}
@@ -1293,7 +1146,7 @@ export default function PhoneChatsPage() {
           {/* INBOX VIEW */}
           {!selectedChat && !showCompose && (
             <>
-              <div style={{ padding: '8px 20px 16px' }}>
+              <div style={{ padding: '8px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
                 <div
                   style={{
                     display: 'flex',
@@ -1813,7 +1666,7 @@ export default function PhoneChatsPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+              <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
                 {/* Attachment Preview */}
                 {chatAttachments.length > 0 && (
                   <div
@@ -1998,21 +1851,6 @@ export default function PhoneChatsPage() {
               </div>
             </>
           )}
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '134px',
-            height: '5px',
-            background: t.isDark ? '#fff' : '#000',
-            borderRadius: '10px',
-            opacity: 0.3,
-          }}
-        />
-      </div>
       <style>{`@keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }`}</style>
     </div>
   )
