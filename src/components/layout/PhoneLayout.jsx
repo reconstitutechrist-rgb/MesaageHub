@@ -3,6 +3,7 @@ import { CyanPhoneLayout } from './CyanPhoneLayout'
 import { PurplePhoneLayout } from './PurplePhoneLayout'
 
 // Layout theme options
+// eslint-disable-next-line react-refresh/only-export-components
 export const LAYOUT_THEMES = {
   CYAN: 'cyan',
   PURPLE: 'purple',

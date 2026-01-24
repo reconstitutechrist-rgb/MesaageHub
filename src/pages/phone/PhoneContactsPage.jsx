@@ -731,9 +731,9 @@ function ContactActionMenu({ contact, onClose, onDelete, onBlock, theme: t }) {
 export default function PhoneContactsPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth()
+  const { user: _user } = useAuth()
 
-  const [theme, setTheme] = useState('cyanDark')
+  const [theme, _setTheme] = useState('cyanDark')
   const [searchQuery, setSearchQuery] = useState('')
   const [contacts, setContacts] = useLocalStorage('contacts', initialContacts)
   const [activeTab, setActiveTab] = useState('all')

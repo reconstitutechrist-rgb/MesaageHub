@@ -606,6 +606,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
       }
       drawText(ctx)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [image, textOverlay, t, canvasWidth, canvasHeight, isMobile])
 
   const drawText = (ctx) => {
@@ -1708,7 +1709,7 @@ export default function PhoneDashboardPage() {
   const location = useLocation()
   const { user: _user } = useAuth()
 
-  const [theme, setTheme] = useState('cyanDark')
+  const [theme, _setTheme] = useState('cyanDark')
   const [showAIStudio, setShowAIStudio] = useState(false)
   const [mediaLibrary, setMediaLibrary] = useState([])
   const [showComposeModal, setShowComposeModal] = useState(false)
@@ -1718,6 +1719,7 @@ export default function PhoneDashboardPage() {
   // Load media library on mount
   useEffect(() => {
     loadMediaLibrary()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadMediaLibrary = async () => {
@@ -1845,8 +1847,7 @@ export default function PhoneDashboardPage() {
               ]
             : []
         }
-        onSend={(data) => {
-          console.log('Campaign sent:', data)
+        onSend={() => {
           setShowComposeModal(false)
           setComposeAttachment(null)
         }}

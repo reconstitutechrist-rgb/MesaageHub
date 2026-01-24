@@ -12,11 +12,21 @@ const ProfilePage = lazy(() => import('@/pages/ProfilePage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 // Phone Pages
-const PhoneDashboardPage = lazy(() => import('@/pages/phone').then(module => ({ default: module.PhoneDashboardPage })))
-const PhoneChatsPage = lazy(() => import('@/pages/phone').then(module => ({ default: module.PhoneChatsPage })))
-const PhoneContactsPage = lazy(() => import('@/pages/phone').then(module => ({ default: module.PhoneContactsPage })))
-const PhoneSettingsPage = lazy(() => import('@/pages/phone').then(module => ({ default: module.PhoneSettingsPage })))
-const MediaLibraryPage = lazy(() => import('@/pages/phone').then(module => ({ default: module.MediaLibraryPage })))
+const PhoneDashboardPage = lazy(() =>
+  import('@/pages/phone').then((module) => ({ default: module.PhoneDashboardPage }))
+)
+const PhoneChatsPage = lazy(() =>
+  import('@/pages/phone').then((module) => ({ default: module.PhoneChatsPage }))
+)
+const PhoneContactsPage = lazy(() =>
+  import('@/pages/phone').then((module) => ({ default: module.PhoneContactsPage }))
+)
+const PhoneSettingsPage = lazy(() =>
+  import('@/pages/phone').then((module) => ({ default: module.PhoneSettingsPage }))
+)
+const MediaLibraryPage = lazy(() =>
+  import('@/pages/phone').then((module) => ({ default: module.MediaLibraryPage }))
+)
 
 // Auth guard component
 import { AuthGuard } from '@/features/auth/components/AuthGuard'

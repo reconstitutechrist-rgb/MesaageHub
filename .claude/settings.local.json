@@ -20,7 +20,10 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: add switchable Cyan Blue and Purple Glow layout themes\n\n- Add CyanPhoneLayout with cyan/teal glassmorphism design\n- Add PurplePhoneLayout with purple/fuchsia glowing effects\n- Update PhoneLayout to switch themes via localStorage events\n- Add layout theme selector with preview cards in Settings\n- Create layout/index.js for centralized exports\n- Fix unused import warnings (DialogFooter, toast, Trash2)\n\nUsers can switch layouts in Settings > Appearance > Layout Theme.\nChanges apply instantly without page reload.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(unzip:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add mobile support with offline database and messaging services\n\n- Add Capacitor dependencies for mobile \\(SQLite, Network\\)\n- Create DatabaseService, SyncService, TwilioService\n- Add RecipientSelector and VirtualList components\n- Update ContactsPage and ConversationsPage\n- Refactor MarketingAIModal\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "Bash(git commit:*)",
+      "Bash(npm test:*)",
+      "Bash(npx vitest:*)"
     ],
     "deny": [],
     "ask": []
