@@ -1023,7 +1023,7 @@ export default function PhoneChatsPage() {
   const location = useLocation()
   const { user } = useAuth()
 
-  const [theme, _setTheme] = useState('cyanDark')
+  const [theme, setTheme] = useState('cyanDark')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedChat, setSelectedChat] = useState(null)
   const [conversations, setConversations] = useState(mockConversations)
@@ -1043,6 +1043,33 @@ export default function PhoneChatsPage() {
   const [loadingScheduled, setLoadingScheduled] = useState(false)
 
   const t = themes[theme]
+
+  // Load theme from localStorage and listen for changes
+  useEffect(() => {
+    const loadTheme = () => {
+      try {
+        const saved = localStorage.getItem('app-settings')
+        if (saved) {
+          const settings = JSON.parse(saved)
+          const savedTheme = settings.appearance?.colorTheme
+          if (savedTheme && themes[savedTheme]) {
+            setTheme(savedTheme)
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load theme', e)
+      }
+    }
+
+    loadTheme()
+    window.addEventListener('layout-theme-changed', loadTheme)
+    window.addEventListener('storage', loadTheme)
+
+    return () => {
+      window.removeEventListener('layout-theme-changed', loadTheme)
+      window.removeEventListener('storage', loadTheme)
+    }
+  }, [])
 
   // Navigation items with routes
   const navItems = [
