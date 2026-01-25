@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useLocalStorage, useDebounce } from '@/hooks'
@@ -155,6 +155,12 @@ const Icons = {
   chevronDown: (color) => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
       <path d="M6 9l6 6 6-6" />
+    </svg>
+  ),
+  edit: (color) => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   ),
 }
@@ -658,8 +664,409 @@ function AddContactModal({ open, onClose, onAdd, theme: t }) {
   )
 }
 
+// Edit Contact Modal
+function EditContactModal({ open, onClose, contact, onSave, theme: t }) {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [birthday, setBirthday] = useState('')
+  const [interests, setInterests] = useState('')
+  const [preferredMethod, setPreferredMethod] = useState('phone')
+  const [showMethodDropdown, setShowMethodDropdown] = useState(false)
+  const [errors, setErrors] = useState({})
+
+  // Populate fields when contact changes or modal opens
+  useEffect(() => {
+    if (open && contact) {
+      setName(contact.name || '')
+      setPhone(contact.phone || '')
+      setEmail(contact.email || '')
+      setBirthday(contact.birthday || '')
+      setInterests(contact.interests?.join(', ') || '')
+      setPreferredMethod(contact.preferredMethod || 'phone')
+      setErrors({})
+    }
+  }, [open, contact])
+
+  const validate = () => {
+    const newErrors = {}
+    if (!name.trim()) newErrors.name = 'Name is required'
+    if (!phone.trim()) newErrors.phone = 'Phone is required'
+    else if (!isValidPhone(phone)) newErrors.phone = 'Invalid phone number'
+    if (email && !isValidEmail(email)) newErrors.email = 'Invalid email format'
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = () => {
+    if (!validate()) return
+    const parsedInterests = interests
+      .split(',')
+      .map((i) => i.trim().toLowerCase())
+      .filter(Boolean)
+    onSave({
+      ...contact,
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      birthday: birthday || null,
+      interests: parsedInterests,
+      preferredMethod,
+    })
+  }
+
+  if (!open || !contact) return null
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: t.bg,
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: '60px 16px 16px',
+          borderBottom: `1px solid ${t.cardBorder}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: t.accent,
+            cursor: 'pointer',
+            fontSize: '16px',
+          }}
+        >
+          Cancel
+        </button>
+        <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+          Edit Contact
+        </h2>
+        <button
+          onClick={handleSubmit}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: t.accent,
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: '600',
+          }}
+        >
+          Save
+        </button>
+      </div>
+
+      {/* Form */}
+      <div style={{ padding: '24px 20px', flex: 1, overflowY: 'auto' }}>
+        {/* Avatar Preview */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
+          <div
+            style={{
+              width: '100px',
+              height: '100px',
+              borderRadius: '50%',
+              background: name
+                ? `linear-gradient(135deg, ${getAvatarColor(name || 'A', t.avatarColors)}, ${getAvatarColor(name || 'A', t.avatarColors)}88)`
+                : t.cardBg,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: '36px',
+              fontWeight: '600',
+              border: `2px solid ${t.cardBorder}`,
+            }}
+          >
+            {name ? getInitials(name) : Icons.user(t.textMuted)}
+          </div>
+        </div>
+
+        {/* Name Field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              color: t.textMuted,
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: '500',
+            }}
+          >
+            Name *
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="John Doe"
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              borderRadius: '12px',
+              border: `1px solid ${errors.name ? t.danger : t.cardBorder}`,
+              background: t.searchBg,
+              color: t.text,
+              fontSize: '16px',
+              outline: 'none',
+            }}
+          />
+          {errors.name && (
+            <span style={{ color: t.danger, fontSize: '12px', marginTop: '4px', display: 'block' }}>
+              {errors.name}
+            </span>
+          )}
+        </div>
+
+        {/* Phone Field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              color: t.textMuted,
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: '500',
+            }}
+          >
+            Phone Number *
+          </label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+1 (555) 123-4567"
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              borderRadius: '12px',
+              border: `1px solid ${errors.phone ? t.danger : t.cardBorder}`,
+              background: t.searchBg,
+              color: t.text,
+              fontSize: '16px',
+              outline: 'none',
+            }}
+          />
+          {errors.phone && (
+            <span style={{ color: t.danger, fontSize: '12px', marginTop: '4px', display: 'block' }}>
+              {errors.phone}
+            </span>
+          )}
+        </div>
+
+        {/* Email Field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              color: t.textMuted,
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: '500',
+            }}
+          >
+            Email (Optional)
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="john@example.com"
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              borderRadius: '12px',
+              border: `1px solid ${errors.email ? t.danger : t.cardBorder}`,
+              background: t.searchBg,
+              color: t.text,
+              fontSize: '16px',
+              outline: 'none',
+            }}
+          />
+          {errors.email && (
+            <span style={{ color: t.danger, fontSize: '12px', marginTop: '4px', display: 'block' }}>
+              {errors.email}
+            </span>
+          )}
+        </div>
+
+        {/* Birthday Field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              color: t.textMuted,
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: '500',
+            }}
+          >
+            Birthday (Optional)
+          </label>
+          <input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              borderRadius: '12px',
+              border: `1px solid ${t.cardBorder}`,
+              background: t.searchBg,
+              color: t.text,
+              fontSize: '16px',
+              outline: 'none',
+            }}
+          />
+          <span
+            style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
+          >
+            Used for birthday automation messages
+          </span>
+        </div>
+
+        {/* Interests Field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              color: t.textMuted,
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: '500',
+            }}
+          >
+            Interests (Optional)
+          </label>
+          <input
+            type="text"
+            value={interests}
+            onChange={(e) => setInterests(e.target.value)}
+            placeholder="gold, silver, rings (comma separated)"
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              borderRadius: '12px',
+              border: `1px solid ${t.cardBorder}`,
+              background: t.searchBg,
+              color: t.text,
+              fontSize: '16px',
+              outline: 'none',
+            }}
+          />
+          <span
+            style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
+          >
+            Used for bulk messaging campaigns
+          </span>
+        </div>
+
+        {/* Preferred Contact Method Field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              color: t.textMuted,
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: '500',
+            }}
+          >
+            Preferred Contact Method
+          </label>
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setShowMethodDropdown(!showMethodDropdown)}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                border: `1px solid ${t.cardBorder}`,
+                background: t.searchBg,
+                color: t.text,
+                fontSize: '16px',
+                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <span>{PREFERRED_METHODS.find((m) => m.value === preferredMethod)?.label}</span>
+              {Icons.chevronDown(t.textMuted)}
+            </button>
+            {showMethodDropdown && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '4px',
+                  background: t.isDark ? t.screenBg : '#fff',
+                  borderRadius: '12px',
+                  border: `1px solid ${t.cardBorder}`,
+                  overflow: 'hidden',
+                  zIndex: 10,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                }}
+              >
+                {PREFERRED_METHODS.map((method) => (
+                  <button
+                    key={method.value}
+                    type="button"
+                    onClick={() => {
+                      setPreferredMethod(method.value)
+                      setShowMethodDropdown(false)
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      background: preferredMethod === method.value ? t.cardBg : 'transparent',
+                      border: 'none',
+                      borderBottom: `1px solid ${t.cardBorder}`,
+                      color: preferredMethod === method.value ? t.accent : t.text,
+                      fontSize: '16px',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <span>{method.label}</span>
+                    {preferredMethod === method.value && Icons.check(t.accent)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <span
+            style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
+          >
+            How bulk messages will be sent to this contact
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Contact Action Menu
-function ContactActionMenu({ contact, onClose, onDelete, onBlock, theme: t }) {
+function ContactActionMenu({ contact, onClose, onEdit, onDelete, onBlock, theme: t }) {
   if (!contact) return null
 
   return (
@@ -721,6 +1128,26 @@ function ContactActionMenu({ contact, onClose, onDelete, onBlock, theme: t }) {
         <div style={{ borderTop: `1px solid ${t.cardBorder}` }}>
           <button
             onClick={() => {
+              onEdit(contact)
+              onClose()
+            }}
+            style={{
+              width: '100%',
+              padding: '16px 20px',
+              background: 'none',
+              border: 'none',
+              borderBottom: `1px solid ${t.cardBorder}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              cursor: 'pointer',
+            }}
+          >
+            {Icons.edit(t.accent)}
+            <span style={{ color: t.text, fontSize: '16px' }}>Edit Contact</span>
+          </button>
+          <button
+            onClick={() => {
               onBlock(contact)
               onClose()
             }}
@@ -780,6 +1207,8 @@ export default function PhoneContactsPage() {
   const [showActionMenu, setShowActionMenu] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [showBlockConfirm, setShowBlockConfirm] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingContact, setEditingContact] = useState(null)
 
   const t = themes[theme]
 
@@ -891,6 +1320,21 @@ export default function PhoneContactsPage() {
     toast.success(wasBlocked ? `${contactName} unblocked` : `${contactName} blocked`)
   }, [showBlockConfirm, setContacts])
 
+  const handleEditContact = useCallback((contact) => {
+    setEditingContact(contact)
+    setShowEditModal(true)
+  }, [])
+
+  const handleSaveContact = useCallback(
+    (updatedContact) => {
+      setContacts((prev) => prev.map((c) => (c.id === updatedContact.id ? updatedContact : c)))
+      setShowEditModal(false)
+      setEditingContact(null)
+      toast.success(`${updatedContact.name} updated`)
+    },
+    [setContacts]
+  )
+
   return (
     <div
       style={{
@@ -913,10 +1357,23 @@ export default function PhoneContactsPage() {
         theme={t}
       />
 
+      {/* Edit Contact Modal */}
+      <EditContactModal
+        open={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setEditingContact(null)
+        }}
+        contact={editingContact}
+        onSave={handleSaveContact}
+        theme={t}
+      />
+
       {/* Action Menu */}
       <ContactActionMenu
         contact={showActionMenu}
         onClose={() => setShowActionMenu(null)}
+        onEdit={handleEditContact}
         onDelete={(c) => setShowDeleteConfirm(c)}
         onBlock={(c) => setShowBlockConfirm(c)}
         theme={t}

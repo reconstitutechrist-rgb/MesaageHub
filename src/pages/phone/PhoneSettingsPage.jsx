@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS = {
   appearance: {
     fontSize: 'medium',
     compactMode: false,
-    colorTheme: 'default',
+    colorTheme: 'cyanDark',
     layoutTheme: 'cyan',
   },
 }
@@ -1365,6 +1365,14 @@ export default function PhoneSettingsPage() {
   // Settings state with persistence (shared with SettingsPage)
   const [settings, setSettings] = useLocalStorage('app-settings', DEFAULT_SETTINGS)
 
+  // Load theme from persisted settings on mount
+  useEffect(() => {
+    const savedTheme = settings?.appearance?.colorTheme
+    if (savedTheme && themes[savedTheme]) {
+      setTheme(savedTheme)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Helper to update nested settings
   const updateSetting = useCallback(
     (category, key, value) => {
@@ -1379,6 +1387,33 @@ export default function PhoneSettingsPage() {
         return updated
       })
       toast.success('Setting saved')
+    },
+    [setSettings]
+  )
+
+  // Handle theme change with persistence and event dispatch
+  const handleThemeChange = useCallback(
+    (themeKey) => {
+      // Update local state
+      setTheme(themeKey)
+
+      // Determine layout theme for PhoneLayout (cyan or purple)
+      const layoutTheme = themeKey.includes('purple') ? 'purple' : 'cyan'
+
+      // Update persisted settings
+      setSettings((prev) => ({
+        ...prev,
+        appearance: {
+          ...prev.appearance,
+          colorTheme: themeKey,
+          layoutTheme: layoutTheme,
+        },
+      }))
+
+      // Dispatch event for PhoneLayout to react
+      window.dispatchEvent(new CustomEvent('layout-theme-changed'))
+
+      toast.success('Theme updated')
     },
     [setSettings]
   )
@@ -1477,7 +1512,7 @@ export default function PhoneSettingsPage() {
         open={showThemeModal}
         onClose={closeThemeModal}
         currentTheme={theme}
-        onSelect={setTheme}
+        onSelect={handleThemeChange}
         theme={t}
       />
 
