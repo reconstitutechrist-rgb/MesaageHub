@@ -2,8 +2,18 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { mediaLibraryService } from '@/services/MediaLibraryService'
+import { aiService } from '@/services/AIService'
 import { ComposeModal } from '@/components/common/ComposeModal'
 import { useWindowSize } from '@/hooks/useWindowSize'
+import { useLayerManager, LayerType } from '@/hooks/useLayerManager'
+import {
+  platformPresets,
+  platformCategories,
+  marketingTemplates,
+  templateCategories,
+  gradientPresets,
+  scaleToFit,
+} from '@/lib/platformTemplates'
 
 // 4 Theme Options
 const themes = {
@@ -191,6 +201,21 @@ const Icons = {
     >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+  x: (color, size = 24) => (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   ),
   upload: (color, size = 24) => (
@@ -558,27 +583,123 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
     fontSize: 48,
     isDragging: false,
   })
-  const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [_selectedTemplate, _setSelectedTemplate] = useState(null)
 
-  // Mobile-responsive canvas dimensions
-  const canvasWidth = isMobile ? Math.min(width - 32, 360) : 800
-  const canvasHeight = isMobile ? Math.min(height - 320, 280) : 600
+  // Multi-layer support for additional text layers
+  const {
+    layers: additionalLayers,
+    selectedLayerId,
+    addTextLayer,
+    removeLayer,
+    updateLayer: _updateLayer,
+    selectLayer,
+    clearSelection: _clearSelection,
+    toggleLayerVisibility,
+  } = useLayerManager([])
 
-  const templates = [
-    { id: 1, name: 'Sale Banner', icon: Icons.tag, color: '#ef4444' },
-    { id: 2, name: 'Product Feature', icon: Icons.sparkles, color: '#3b82f6' },
-    { id: 3, name: 'Announcement', icon: Icons.bell, color: '#22c55e' },
-    { id: 4, name: 'Story Ad', icon: Icons.smartphone, color: '#f59e0b' },
-  ]
+  // Platform preset state
+  const [selectedPlatform, setSelectedPlatform] = useState('instagram-post')
+  const [showPlatformPicker, setShowPlatformPicker] = useState(false)
+  const currentPreset = platformPresets[selectedPlatform]
+
+  // Calculate canvas display dimensions based on selected platform
+  // The actual export will use full resolution, but display is scaled to fit
+  const maxDisplayWidth = isMobile ? width - 32 : 600
+  const maxDisplayHeight = isMobile ? height - 360 : 500
+  const scaledDimensions = scaleToFit(
+    currentPreset.width,
+    currentPreset.height,
+    maxDisplayWidth,
+    maxDisplayHeight
+  )
+
+  // Use scaled dimensions for display, but store full resolution for export
+  const canvasWidth = scaledDimensions.width
+  const canvasHeight = scaledDimensions.height
+  const exportWidth = currentPreset.width
+  const exportHeight = currentPreset.height
+
+  // Marketing template state
+  const [activeMarketingTemplate, setActiveMarketingTemplate] = useState(null)
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
+  const [templateCategory, setTemplateCategory] = useState('all')
+  const [canvasBackground, setCanvasBackground] = useState(null) // { type: 'solid' | 'gradient', value: string | string[] }
+
   const textColors = ['#ffffff', '#000000', '#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7']
+
+  // Filter marketing templates by category
+  const filteredTemplates =
+    templateCategory === 'all'
+      ? marketingTemplates
+      : marketingTemplates.filter((t) => t.category === templateCategory)
+
+  // Draw background (solid, gradient, or default)
+  const drawBackground = (ctx, width, height) => {
+    if (canvasBackground) {
+      if (canvasBackground.type === 'gradient' && Array.isArray(canvasBackground.value)) {
+        const gradient = ctx.createLinearGradient(0, 0, width, height)
+        gradient.addColorStop(0, canvasBackground.value[0])
+        gradient.addColorStop(1, canvasBackground.value[1])
+        ctx.fillStyle = gradient
+      } else {
+        ctx.fillStyle = canvasBackground.value
+      }
+    } else {
+      ctx.fillStyle = t.isDark ? '#1a1a2e' : '#f1f5f9'
+    }
+    ctx.fillRect(0, 0, width, height)
+  }
+
+  // Draw template elements on canvas
+  const drawTemplateElements = (ctx, template, width, height) => {
+    if (!template || !template.elements) return
+
+    template.elements.forEach((element) => {
+      if (element.type === 'background') {
+        if (element.style === 'gradient' && element.colors) {
+          const gradient = ctx.createLinearGradient(0, 0, width, height)
+          gradient.addColorStop(0, element.colors[0])
+          gradient.addColorStop(1, element.colors[1])
+          ctx.fillStyle = gradient
+          ctx.fillRect(0, 0, width, height)
+        } else if (element.style === 'solid' && element.color) {
+          ctx.fillStyle = element.color
+          ctx.fillRect(0, 0, width, height)
+        }
+      } else if (element.type === 'text') {
+        const fontSize = (element.fontSize / 1080) * width // Scale font relative to canvas
+        ctx.font = `${element.fontWeight || 'bold'} ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
+        ctx.fillStyle = element.color || '#ffffff'
+        ctx.textAlign = 'center'
+        ctx.shadowColor = 'rgba(0,0,0,0.3)'
+        ctx.shadowBlur = 4
+
+        // Calculate position
+        const x =
+          element.position?.x === 'center'
+            ? width / 2
+            : (parseFloat(element.position?.x) / 100) * width
+        const y = (parseFloat(element.position?.y) / 100) * height
+
+        ctx.fillText(element.content, x, y)
+        ctx.shadowBlur = 0
+      }
+    })
+  }
 
   useEffect(() => {
     if (!canvasRef.current) return
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
-    ctx.fillStyle = t.isDark ? '#1a1a2e' : '#f1f5f9'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    if (image) {
+
+    // Draw background first
+    drawBackground(ctx, canvas.width, canvas.height)
+
+    // If we have an active marketing template (and no image), draw it
+    if (activeMarketingTemplate && !image) {
+      drawTemplateElements(ctx, activeMarketingTemplate, canvas.width, canvas.height)
+    } else if (image) {
+      // Draw uploaded image
       const img = new Image()
       img.src = URL.createObjectURL(image)
       img.onload = () => {
@@ -588,7 +709,8 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
         ctx.drawImage(img, x, y, img.width * scale, img.height * scale)
         drawText(ctx)
       }
-    } else {
+    } else if (!activeMarketingTemplate) {
+      // Draw grid pattern when no image or template
       ctx.strokeStyle = t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
       ctx.lineWidth = 1
       const gridSize = isMobile ? 30 : 40
@@ -604,12 +726,26 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
         ctx.lineTo(canvas.width, i)
         ctx.stroke()
       }
-      drawText(ctx)
     }
+
+    // Always draw text overlay on top
+    drawText(ctx)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [image, textOverlay, t, canvasWidth, canvasHeight, isMobile])
+  }, [
+    image,
+    textOverlay,
+    t,
+    canvasWidth,
+    canvasHeight,
+    isMobile,
+    activeMarketingTemplate,
+    canvasBackground,
+    additionalLayers,
+    selectedLayerId,
+  ])
 
   const drawText = (ctx) => {
+    // Draw primary text overlay
     if (textOverlay.text) {
       ctx.font = `bold ${textOverlay.fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
       ctx.fillStyle = textOverlay.color
@@ -621,21 +757,69 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
       ctx.fillText(textOverlay.text, textOverlay.x, textOverlay.y)
       ctx.shadowBlur = 0
     }
+
+    // Draw additional text layers
+    additionalLayers.forEach((layer) => {
+      if (layer.type !== LayerType.TEXT || !layer.visible || !layer.data.text) return
+
+      const x = (layer.data.x / 100) * canvasWidth
+      const y = (layer.data.y / 100) * canvasHeight
+
+      ctx.font = `${layer.data.fontWeight || 'bold'} ${layer.data.fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
+      ctx.fillStyle = layer.data.color
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'
+      ctx.shadowBlur = 8
+      ctx.shadowOffsetX = 2
+      ctx.shadowOffsetY = 2
+      ctx.textAlign = 'center'
+      ctx.fillText(layer.data.text, x, y)
+      ctx.shadowBlur = 0
+
+      // Draw selection indicator if selected
+      if (layer.id === selectedLayerId) {
+        const metrics = ctx.measureText(layer.data.text)
+        ctx.strokeStyle = t.accent
+        ctx.lineWidth = 2
+        ctx.setLineDash([5, 5])
+        ctx.strokeRect(
+          x - metrics.width / 2 - 10,
+          y - layer.data.fontSize / 2 - 10,
+          metrics.width + 20,
+          layer.data.fontSize + 20
+        )
+        ctx.setLineDash([])
+      }
+    })
   }
 
   const handleGenerate = async () => {
     if (!prompt) return
     setIsGenerating(true)
-    await new Promise((r) => setTimeout(r, 2000))
-    setTextOverlay((prev) => ({
-      ...prev,
-      text: prompt.includes('sale')
-        ? 'MEGA SALE 50% OFF'
-        : prompt.includes('new')
-          ? 'NEW ARRIVAL'
-          : prompt.toUpperCase(),
-    }))
-    setIsGenerating(false)
+    try {
+      const result = await aiService.generateMarketingCopy(prompt)
+
+      if (result.success) {
+        setTextOverlay((prev) => ({
+          ...prev,
+          text: result.data.headline,
+          color: result.data.suggestedColor || prev.color,
+        }))
+      } else {
+        // Fallback to simple uppercase if service fails
+        setTextOverlay((prev) => ({
+          ...prev,
+          text: prompt.toUpperCase(),
+        }))
+      }
+    } catch {
+      // Fallback on error
+      setTextOverlay((prev) => ({
+        ...prev,
+        text: prompt.toUpperCase(),
+      }))
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleMouseDown = (e) => {
@@ -662,8 +846,86 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
   }
 
   const handleExport = async () => {
-    const dataUrl = canvasRef.current.toDataURL('image/png')
-    const fileName = `ai-studio-${Date.now()}.png`
+    // Create a high-resolution export canvas at full platform dimensions
+    const exportCanvas = document.createElement('canvas')
+    exportCanvas.width = exportWidth
+    exportCanvas.height = exportHeight
+    const exportCtx = exportCanvas.getContext('2d')
+
+    // Scale up from display canvas to export resolution
+    const scaleX = exportWidth / canvasWidth
+    const scaleY = exportHeight / canvasHeight
+
+    // Draw background
+    if (canvasBackground) {
+      if (canvasBackground.type === 'gradient' && Array.isArray(canvasBackground.value)) {
+        const gradient = exportCtx.createLinearGradient(0, 0, exportWidth, exportHeight)
+        gradient.addColorStop(0, canvasBackground.value[0])
+        gradient.addColorStop(1, canvasBackground.value[1])
+        exportCtx.fillStyle = gradient
+      } else {
+        exportCtx.fillStyle = canvasBackground.value
+      }
+    } else {
+      exportCtx.fillStyle = t.isDark ? '#1a1a2e' : '#f1f5f9'
+    }
+    exportCtx.fillRect(0, 0, exportWidth, exportHeight)
+
+    // Draw marketing template if active (and no image)
+    if (activeMarketingTemplate && !image) {
+      drawTemplateElements(exportCtx, activeMarketingTemplate, exportWidth, exportHeight)
+    }
+
+    // Draw image if present
+    if (image) {
+      const img = new Image()
+      img.src = URL.createObjectURL(image)
+      await new Promise((resolve) => {
+        img.onload = () => {
+          const scale = Math.min(exportWidth / img.width, exportHeight / img.height)
+          const x = (exportWidth - img.width * scale) / 2
+          const y = (exportHeight - img.height * scale) / 2
+          exportCtx.drawImage(img, x, y, img.width * scale, img.height * scale)
+          resolve()
+        }
+      })
+    }
+
+    // Draw text overlay at scaled position
+    if (textOverlay.text) {
+      const scaledFontSize = textOverlay.fontSize * scaleX
+      exportCtx.font = `bold ${scaledFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
+      exportCtx.fillStyle = textOverlay.color
+      exportCtx.shadowColor = 'rgba(0,0,0,0.5)'
+      exportCtx.shadowBlur = 8 * scaleX
+      exportCtx.shadowOffsetX = 2 * scaleX
+      exportCtx.shadowOffsetY = 2 * scaleY
+      exportCtx.textAlign = 'center'
+      exportCtx.fillText(textOverlay.text, textOverlay.x * scaleX, textOverlay.y * scaleY)
+    }
+
+    // Draw additional text layers at scaled positions
+    additionalLayers.forEach((layer) => {
+      if (layer.type !== LayerType.TEXT || !layer.visible || !layer.data.text) return
+
+      const x = (layer.data.x / 100) * exportWidth
+      const y = (layer.data.y / 100) * exportHeight
+      const scaledFontSize = layer.data.fontSize * scaleX
+
+      exportCtx.font = `${layer.data.fontWeight || 'bold'} ${scaledFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
+      exportCtx.fillStyle = layer.data.color
+      exportCtx.shadowColor = 'rgba(0,0,0,0.5)'
+      exportCtx.shadowBlur = 8 * scaleX
+      exportCtx.shadowOffsetX = 2 * scaleX
+      exportCtx.shadowOffsetY = 2 * scaleY
+      exportCtx.textAlign = 'center'
+      exportCtx.fillText(layer.data.text, x, y)
+    })
+
+    const dataUrl = exportCanvas.toDataURL('image/png')
+    const platformLabel = currentPreset.label.toLowerCase().replace(/\s+/g, '-')
+    const templateName = activeMarketingTemplate ? `-${activeMarketingTemplate.id}` : ''
+    const fileName = `ai-studio-${platformLabel}${templateName}-${Date.now()}.png`
 
     // Save to media library
     if (onExport) {
@@ -676,7 +938,7 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
     }
 
     // Fallback: direct download
-    canvasRef.current.toBlob((blob) => {
+    exportCanvas.toBlob((blob) => {
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
       a.download = fileName
@@ -998,6 +1260,139 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
               </div>
             </div>
             <div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '12px',
+                }}
+              >
+                <h3
+                  style={{
+                    color: t.text,
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    margin: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  {Icons.grid(t.accent, 18)} Templates
+                </h3>
+                <button
+                  onClick={() => setShowTemplateLibrary(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: t.accent,
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                  }}
+                >
+                  See all
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {marketingTemplates.slice(0, 4).map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => {
+                      setActiveMarketingTemplate(template)
+                      // Clear custom background when applying template
+                      setCanvasBackground(null)
+                      // Reset text to template's main text if no custom text
+                      const mainText = template.elements?.find(
+                        (e) => e.type === 'text' && e.fontSize > 60
+                      )
+                      if (mainText && !textOverlay.text) {
+                        setTextOverlay((prev) => ({
+                          ...prev,
+                          text: mainText.content,
+                          color: mainText.color || '#ffffff',
+                        }))
+                      }
+                    }}
+                    style={{
+                      padding: '12px 8px',
+                      borderRadius: '12px',
+                      border:
+                        activeMarketingTemplate?.id === template.id
+                          ? `2px solid ${t.accent}`
+                          : `1px solid ${t.cardBorder}`,
+                      background:
+                        activeMarketingTemplate?.id === template.id
+                          ? `${t.accent}15`
+                          : 'transparent',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    {/* Template Preview */}
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '48px',
+                        borderRadius: '8px',
+                        background:
+                          template.elements?.[0]?.style === 'gradient'
+                            ? `linear-gradient(135deg, ${template.elements[0].colors?.[0]}, ${template.elements[0].colors?.[1]})`
+                            : template.elements?.[0]?.color || '#333',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: '#fff',
+                          fontSize: '10px',
+                          fontWeight: '700',
+                          textAlign: 'center',
+                          padding: '4px',
+                        }}
+                      >
+                        {template.elements?.find((e) => e.type === 'text')?.content?.slice(0, 12) ||
+                          template.name}
+                      </span>
+                    </div>
+                    <span style={{ color: t.text, fontSize: '11px', fontWeight: '500' }}>
+                      {template.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {activeMarketingTemplate && (
+                <button
+                  onClick={() => {
+                    setActiveMarketingTemplate(null)
+                    setCanvasBackground(null)
+                  }}
+                  style={{
+                    width: '100%',
+                    marginTop: '8px',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    border: `1px solid ${t.cardBorder}`,
+                    background: 'transparent',
+                    color: t.textMuted,
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Clear Template
+                </button>
+              )}
+            </div>
+
+            {/* Background Colors */}
+            <div>
               <h3
                 style={{
                   color: t.text,
@@ -1009,46 +1404,82 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                   gap: '8px',
                 }}
               >
-                {Icons.grid(t.accent, 18)} Templates
+                {Icons.layers(t.accent, 18)} Background
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => setSelectedTemplate(template.id)}
-                    style={{
-                      padding: '16px 12px',
-                      borderRadius: '12px',
-                      border:
-                        selectedTemplate === template.id
-                          ? `2px solid ${t.accent}`
-                          : `1px solid ${t.cardBorder}`,
-                      background: selectedTemplate === template.id ? t.cardBg : 'transparent',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <div
+              <div style={{ marginBottom: '12px' }}>
+                <span
+                  style={{
+                    color: t.textMuted,
+                    fontSize: '12px',
+                    marginBottom: '8px',
+                    display: 'block',
+                  }}
+                >
+                  Solid Colors
+                </span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {[
+                    '#1a1a2e',
+                    '#ffffff',
+                    '#000000',
+                    '#ef4444',
+                    '#f59e0b',
+                    '#22c55e',
+                    '#3b82f6',
+                    '#a855f7',
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setCanvasBackground({ type: 'solid', value: color })}
                       style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '10px',
-                        background: `${template.color}22`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        border:
+                          canvasBackground?.value === color
+                            ? `2px solid ${t.accent}`
+                            : `1px solid ${t.cardBorder}`,
+                        background: color,
+                        cursor: 'pointer',
                       }}
-                    >
-                      {template.icon(template.color, 20)}
-                    </div>
-                    <span style={{ color: t.text, fontSize: '12px', fontWeight: '500' }}>
-                      {template.name}
-                    </span>
-                  </button>
-                ))}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span
+                  style={{
+                    color: t.textMuted,
+                    fontSize: '12px',
+                    marginBottom: '8px',
+                    display: 'block',
+                  }}
+                >
+                  Gradients
+                </span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {gradientPresets.slice(0, 6).map((gradient) => (
+                    <button
+                      key={gradient.id}
+                      onClick={() =>
+                        setCanvasBackground({ type: 'gradient', value: gradient.colors })
+                      }
+                      title={gradient.label}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        border:
+                          JSON.stringify(canvasBackground?.value) ===
+                          JSON.stringify(gradient.colors)
+                            ? `2px solid ${t.accent}`
+                            : `1px solid ${t.cardBorder}`,
+                        background: `linear-gradient(135deg, ${gradient.colors[0]}, ${gradient.colors[1]})`,
+                        cursor: 'pointer',
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
             <div>
@@ -1207,21 +1638,70 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             )}
           </div>
           {!isMobile && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '20px',
-                right: '20px',
-                background: t.cardBg,
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: `1px solid ${t.cardBorder}`,
-                color: t.textMuted,
-                fontSize: '12px',
-              }}
-            >
-              {canvasWidth} x {canvasHeight} px
-            </div>
+            <>
+              {/* Platform Selector Button */}
+              <button
+                onClick={() => setShowPlatformPicker(true)}
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  background: t.cardBg,
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  border: `1px solid ${t.cardBorder}`,
+                  color: t.text,
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  backdropFilter: 'blur(10px)',
+                }}
+              >
+                {Icons.grid(t.accent, 16)}
+                {currentPreset.label}
+                <span style={{ color: t.textMuted, fontSize: '11px' }}>
+                  {currentPreset.aspectRatio}
+                </span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={t.textMuted}
+                  strokeWidth="2"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {/* Export Resolution Display */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '20px',
+                  right: '20px',
+                  background: t.cardBg,
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: `1px solid ${t.cardBorder}`,
+                  color: t.textMuted,
+                  fontSize: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: '2px',
+                }}
+              >
+                <span style={{ color: t.text, fontWeight: '500' }}>
+                  Export: {exportWidth} x {exportHeight} px
+                </span>
+                <span style={{ fontSize: '10px' }}>
+                  Preview: {canvasWidth} x {canvasHeight} px
+                </span>
+              </div>
+            </>
           )}
         </div>
 
@@ -1393,46 +1873,185 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                 </div>
               )}
 
-              {/* Templates Tab */}
+              {/* Templates Tab (Mobile) */}
               {mobileControlTab === 'templates' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  {templates.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => setSelectedTemplate(template.id)}
-                      style={{
-                        padding: '14px 12px',
-                        borderRadius: '12px',
-                        border:
-                          selectedTemplate === template.id
-                            ? `2px solid ${t.accent}`
-                            : `1px solid ${t.cardBorder}`,
-                        background: selectedTemplate === template.id ? t.cardBg : 'transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <div
+                <div>
+                  <div
+                    style={{ display: 'flex', gap: '6px', marginBottom: '12px', overflowX: 'auto' }}
+                  >
+                    {templateCategories.slice(0, 4).map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setTemplateCategory(cat.id)}
                         style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '10px',
-                          background: `${template.color}22`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          padding: '5px 12px',
+                          borderRadius: '14px',
+                          border: 'none',
+                          background: templateCategory === cat.id ? t.accent : t.cardBg,
+                          color: templateCategory === cat.id ? '#fff' : t.textMuted,
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        {template.icon(template.color, 18)}
-                      </div>
-                      <span style={{ color: t.text, fontSize: '11px', fontWeight: '500' }}>
-                        {template.name}
-                      </span>
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div
+                    style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}
+                  >
+                    {filteredTemplates.slice(0, 6).map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => {
+                          setActiveMarketingTemplate(template)
+                          setCanvasBackground(null)
+                          const mainText = template.elements?.find(
+                            (e) => e.type === 'text' && e.fontSize > 60
+                          )
+                          if (mainText) {
+                            setTextOverlay((prev) => ({
+                              ...prev,
+                              text: mainText.content,
+                              color: mainText.color || '#ffffff',
+                            }))
+                          }
+                        }}
+                        style={{
+                          padding: '6px',
+                          borderRadius: '10px',
+                          border:
+                            activeMarketingTemplate?.id === template.id
+                              ? `2px solid ${t.accent}`
+                              : `1px solid ${t.cardBorder}`,
+                          background:
+                            activeMarketingTemplate?.id === template.id
+                              ? `${t.accent}15`
+                              : 'transparent',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '100%',
+                            height: '40px',
+                            borderRadius: '6px',
+                            background:
+                              template.elements?.[0]?.style === 'gradient'
+                                ? `linear-gradient(135deg, ${template.elements[0].colors?.[0]}, ${template.elements[0].colors?.[1]})`
+                                : template.elements?.[0]?.color || '#333',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <span style={{ color: '#fff', fontSize: '8px', fontWeight: '700' }}>
+                            {template.elements
+                              ?.find((e) => e.type === 'text')
+                              ?.content?.slice(0, 8) || ''}
+                          </span>
+                        </div>
+                        <span style={{ color: t.text, fontSize: '9px', fontWeight: '500' }}>
+                          {template.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  {activeMarketingTemplate && (
+                    <button
+                      onClick={() => {
+                        setActiveMarketingTemplate(null)
+                        setCanvasBackground(null)
+                      }}
+                      style={{
+                        width: '100%',
+                        marginTop: '8px',
+                        padding: '6px',
+                        borderRadius: '8px',
+                        border: `1px solid ${t.cardBorder}`,
+                        background: 'transparent',
+                        color: t.textMuted,
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Clear Template
                     </button>
-                  ))}
+                  )}
+                </div>
+              )}
+
+              {/* Size/Platform Tab */}
+              {mobileControlTab === 'size' && (
+                <div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <span style={{ color: t.textMuted, fontSize: '12px' }}>
+                      Current:{' '}
+                      <span style={{ color: t.text, fontWeight: '600' }}>
+                        {currentPreset.label}
+                      </span>
+                      <span style={{ marginLeft: '8px', color: t.accent }}>
+                        {exportWidth} × {exportHeight}
+                      </span>
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {Object.entries(platformPresets)
+                      .filter(([id]) => id !== 'custom')
+                      .slice(0, 6) // Show top 6 presets on mobile
+                      .map(([id, preset]) => (
+                        <button
+                          key={id}
+                          onClick={() => {
+                            setSelectedPlatform(id)
+                            const newScaled = scaleToFit(
+                              preset.width,
+                              preset.height,
+                              maxDisplayWidth,
+                              maxDisplayHeight
+                            )
+                            setTextOverlay((prev) => ({
+                              ...prev,
+                              x: newScaled.width / 2,
+                              y: newScaled.height / 2,
+                            }))
+                          }}
+                          style={{
+                            padding: '12px 10px',
+                            borderRadius: '10px',
+                            border:
+                              selectedPlatform === id
+                                ? `2px solid ${t.accent}`
+                                : `1px solid ${t.cardBorder}`,
+                            background: selectedPlatform === id ? `${t.accent}15` : 'transparent',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: '4px',
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: selectedPlatform === id ? t.accent : t.text,
+                              fontSize: '12px',
+                              fontWeight: '600',
+                            }}
+                          >
+                            {preset.label}
+                          </span>
+                          <span style={{ color: t.textMuted, fontSize: '10px' }}>
+                            {preset.aspectRatio}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -1448,9 +2067,9 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
             >
               {[
                 { id: 'upload', icon: Icons.upload, label: 'Upload' },
-                { id: 'ai', icon: Icons.sparkles, label: 'AI Magic' },
+                { id: 'templates', icon: Icons.layers, label: 'Templates' },
                 { id: 'text', icon: Icons.type, label: 'Text' },
-                { id: 'templates', icon: Icons.grid, label: 'Templates' },
+                { id: 'size', icon: Icons.grid, label: 'Size' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1525,29 +2144,145 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                 {Icons.layers(t.accent, 18)} Layers
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {[
-                  { name: 'Text Layer', icon: Icons.type, visible: !!textOverlay.text },
-                  { name: 'Image Layer', icon: Icons.image, visible: !!image },
-                  { name: 'Background', icon: Icons.grid, visible: true },
-                ].map((layer, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      background: t.cardBg,
-                      border: `1px solid ${t.cardBorder}`,
-                      opacity: layer.visible ? 1 : 0.5,
-                    }}
-                  >
-                    {layer.icon(t.textMuted, 18)}
-                    <span style={{ color: t.text, fontSize: '13px', flex: 1 }}>{layer.name}</span>
-                    {layer.visible ? Icons.eye(t.textMuted) : Icons.eyeOff(t.textMuted)}
-                  </div>
-                ))}
+                {/* Primary Text Layer (legacy) */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: t.cardBg,
+                    border: `1px solid ${t.cardBorder}`,
+                    opacity: textOverlay.text ? 1 : 0.5,
+                  }}
+                >
+                  {Icons.type(t.textMuted, 18)}
+                  <span style={{ color: t.text, fontSize: '13px', flex: 1 }}>
+                    {textOverlay.text
+                      ? textOverlay.text.substring(0, 20) +
+                        (textOverlay.text.length > 20 ? '...' : '')
+                      : 'Text Layer'}
+                  </span>
+                  {textOverlay.text ? Icons.eye(t.textMuted) : Icons.eyeOff(t.textMuted)}
+                </div>
+
+                {/* Additional Text Layers */}
+                {additionalLayers
+                  .filter((l) => l.type === LayerType.TEXT)
+                  .map((layer) => (
+                    <div
+                      key={layer.id}
+                      onClick={() => selectLayer(layer.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px',
+                        borderRadius: '12px',
+                        background: selectedLayerId === layer.id ? `${t.accent}20` : t.cardBg,
+                        border: `1px solid ${selectedLayerId === layer.id ? t.accent : t.cardBorder}`,
+                        opacity: layer.visible ? 1 : 0.5,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      {Icons.type(t.textMuted, 18)}
+                      <span style={{ color: t.text, fontSize: '13px', flex: 1 }}>
+                        {layer.data.text
+                          ? layer.data.text.substring(0, 20) +
+                            (layer.data.text.length > 20 ? '...' : '')
+                          : layer.name}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleLayerVisibility(layer.id)
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '4px',
+                        }}
+                      >
+                        {layer.visible ? Icons.eye(t.textMuted) : Icons.eyeOff(t.textMuted)}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeLayer(layer.id)
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          color: '#ef4444',
+                        }}
+                      >
+                        {Icons.x('#ef4444', 16)}
+                      </button>
+                    </div>
+                  ))}
+
+                {/* Image Layer */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: t.cardBg,
+                    border: `1px solid ${t.cardBorder}`,
+                    opacity: image ? 1 : 0.5,
+                  }}
+                >
+                  {Icons.image(t.textMuted, 18)}
+                  <span style={{ color: t.text, fontSize: '13px', flex: 1 }}>Image Layer</span>
+                  {image ? Icons.eye(t.textMuted) : Icons.eyeOff(t.textMuted)}
+                </div>
+
+                {/* Background Layer */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: t.cardBg,
+                    border: `1px solid ${t.cardBorder}`,
+                  }}
+                >
+                  {Icons.grid(t.textMuted, 18)}
+                  <span style={{ color: t.text, fontSize: '13px', flex: 1 }}>Background</span>
+                  {Icons.eye(t.textMuted)}
+                </div>
+
+                {/* Add Text Layer Button */}
+                <button
+                  onClick={() =>
+                    addTextLayer('New Text', { x: 50, y: 50 + additionalLayers.length * 10 })
+                  }
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: 'transparent',
+                    border: `1px dashed ${t.cardBorder}`,
+                    color: t.accent,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {Icons.plus(t.accent, 16)} Add Text Layer
+                </button>
               </div>
             </div>
             <div>
@@ -1695,6 +2430,362 @@ function AIStudioFullScreen({ theme: t, onClose, onExport, onSendAsCampaign }) {
                 Continue Editing
               </button>
             </div>
+          </div>
+        </>
+      )}
+
+      {/* Template Library Modal */}
+      {showTemplateLibrary && (
+        <>
+          <div
+            onClick={() => setShowTemplateLibrary(false)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0,0,0,0.6)',
+              zIndex: 1001,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: t.isDark ? '#1a1a2e' : '#ffffff',
+              borderRadius: '24px',
+              padding: '24px',
+              zIndex: 1002,
+              width: isMobile ? 'calc(100% - 32px)' : '500px',
+              maxWidth: '500px',
+              maxHeight: '80vh',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ color: t.text, fontSize: '18px', fontWeight: '700', margin: '0 0 4px' }}>
+                Marketing Templates
+              </h3>
+              <p style={{ color: t.textMuted, fontSize: '13px', margin: 0 }}>
+                Choose a pre-designed template to get started quickly
+              </p>
+            </div>
+
+            {/* Category Filter */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+              {templateCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setTemplateCategory(cat.id)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: templateCategory === cat.id ? t.accent : t.cardBg,
+                    color: templateCategory === cat.id ? '#fff' : t.textMuted,
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Templates Grid */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '12px',
+                paddingRight: '8px',
+              }}
+            >
+              {filteredTemplates.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => {
+                    setActiveMarketingTemplate(template)
+                    setCanvasBackground(null)
+                    setShowTemplateLibrary(false)
+                    // Set main text from template
+                    const mainText = template.elements?.find(
+                      (e) => e.type === 'text' && e.fontSize > 60
+                    )
+                    if (mainText) {
+                      setTextOverlay((prev) => ({
+                        ...prev,
+                        text: mainText.content,
+                        color: mainText.color || '#ffffff',
+                      }))
+                    }
+                  }}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '16px',
+                    border:
+                      activeMarketingTemplate?.id === template.id
+                        ? `2px solid ${t.accent}`
+                        : `1px solid ${t.cardBorder}`,
+                    background:
+                      activeMarketingTemplate?.id === template.id ? `${t.accent}10` : t.cardBg,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
+                    gap: '10px',
+                    textAlign: 'left',
+                  }}
+                >
+                  {/* Template Preview */}
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100px',
+                      borderRadius: '10px',
+                      background:
+                        template.elements?.[0]?.style === 'gradient'
+                          ? `linear-gradient(135deg, ${template.elements[0].colors?.[0]}, ${template.elements[0].colors?.[1]})`
+                          : template.elements?.[0]?.color || '#333',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      padding: '8px',
+                    }}
+                  >
+                    {template.elements
+                      ?.filter((e) => e.type === 'text')
+                      .slice(0, 2)
+                      .map((textEl, idx) => (
+                        <span
+                          key={idx}
+                          style={{
+                            color: textEl.color || '#fff',
+                            fontSize: Math.min(textEl.fontSize / 6, 16),
+                            fontWeight: textEl.fontWeight || 'bold',
+                            textAlign: 'center',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {textEl.content}
+                        </span>
+                      ))}
+                  </div>
+                  <div>
+                    <span
+                      style={{
+                        color: t.text,
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        display: 'block',
+                      }}
+                    >
+                      {template.name}
+                    </span>
+                    <span
+                      style={{ color: t.textMuted, fontSize: '11px', textTransform: 'capitalize' }}
+                    >
+                      {template.category}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowTemplateLibrary(false)}
+              style={{
+                marginTop: '16px',
+                padding: '14px',
+                borderRadius: '12px',
+                border: 'none',
+                background: t.cardBg,
+                color: t.textMuted,
+                fontSize: '14px',
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Platform Picker Modal */}
+      {showPlatformPicker && (
+        <>
+          <div
+            onClick={() => setShowPlatformPicker(false)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0,0,0,0.6)',
+              zIndex: 1001,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: t.isDark ? '#1a1a2e' : '#ffffff',
+              borderRadius: '24px',
+              padding: '24px',
+              zIndex: 1002,
+              width: isMobile ? 'calc(100% - 32px)' : '420px',
+              maxWidth: '420px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: t.text, fontSize: '18px', fontWeight: '700', margin: '0 0 4px' }}>
+                Choose Platform
+              </h3>
+              <p style={{ color: t.textMuted, fontSize: '13px', margin: 0 }}>
+                Select the social platform to optimize your canvas size
+              </p>
+            </div>
+
+            {platformCategories.map((category) => {
+              const presets = Object.entries(platformPresets)
+                .filter(([, p]) => p.category === category.id)
+                .map(([id, p]) => ({ id, ...p }))
+
+              if (presets.length === 0) return null
+
+              return (
+                <div key={category.id} style={{ marginBottom: '20px' }}>
+                  <h4
+                    style={{
+                      color: t.textMuted,
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    {category.label}
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    {presets.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => {
+                          setSelectedPlatform(preset.id)
+                          setShowPlatformPicker(false)
+                          // Reset text position for new canvas size
+                          const newScaled = scaleToFit(
+                            preset.width,
+                            preset.height,
+                            maxDisplayWidth,
+                            maxDisplayHeight
+                          )
+                          setTextOverlay((prev) => ({
+                            ...prev,
+                            x: newScaled.width / 2,
+                            y: newScaled.height / 2,
+                          }))
+                        }}
+                        style={{
+                          padding: '14px 12px',
+                          borderRadius: '12px',
+                          border:
+                            selectedPlatform === preset.id
+                              ? `2px solid ${t.accent}`
+                              : `1px solid ${t.cardBorder}`,
+                          background: selectedPlatform === preset.id ? `${t.accent}15` : t.cardBg,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          gap: '6px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            width: '100%',
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: selectedPlatform === preset.id ? t.accent : t.text,
+                              fontSize: '14px',
+                              fontWeight: '600',
+                            }}
+                          >
+                            {preset.label}
+                          </span>
+                          {selectedPlatform === preset.id && (
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill={t.accent}
+                              style={{ marginLeft: 'auto' }}
+                            >
+                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span
+                            style={{
+                              color: t.textMuted,
+                              fontSize: '11px',
+                            }}
+                          >
+                            {preset.width} × {preset.height}
+                          </span>
+                          <span
+                            style={{
+                              color: t.textMuted,
+                              fontSize: '11px',
+                              padding: '2px 6px',
+                              background: t.cardBg,
+                              borderRadius: '4px',
+                            }}
+                          >
+                            {preset.aspectRatio}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+
+            <button
+              onClick={() => setShowPlatformPicker(false)}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: '12px',
+                border: 'none',
+                background: t.cardBg,
+                color: t.textMuted,
+                fontSize: '14px',
+                cursor: 'pointer',
+                marginTop: '8px',
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </>
       )}

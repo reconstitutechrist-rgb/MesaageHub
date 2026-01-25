@@ -11,25 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sparkles, Upload, Download, RefreshCw, Image as ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
-
-// Mock Gemini 3 Flash API response
-// In production, this would call the actual Gemini API
-const mockGeminiAnalysis = (productName) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        headlines: [
-          `Summer Sale: ${productName}`,
-          `Limited Time Offer on ${productName}`,
-          `Get your ${productName} Today!`,
-        ],
-        suggestedColor: '#ffffff',
-        suggestedShadow: '#000000',
-        suggestedPosition: { x: 50, y: 80 }, // % coordinates
-      })
-    }, 1500)
-  })
-}
+import { aiService } from '@/services/AIService'
 
 export function MarketingAIModal({ open, onOpenChange, onImageGenerated }) {
   const [image, setImage] = useState(null)
@@ -92,12 +74,18 @@ export function MarketingAIModal({ open, onOpenChange, onImageGenerated }) {
 
     setIsGenerating(true)
     try {
-      const analysis = await mockGeminiAnalysis(prompt || 'Product')
+      const result = await aiService.analyzeProductImage(prompt || 'Product')
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate copy')
+      }
+
+      const { headlines, suggestedColor } = result.data
       const canvas = canvasRef.current
 
       setTextOverlay({
-        text: analysis.headlines[0],
-        color: analysis.suggestedColor,
+        text: headlines[0],
+        color: suggestedColor,
         fontSize: 40,
         x: canvas.width / 2,
         y: canvas.height * 0.8,
@@ -105,8 +93,8 @@ export function MarketingAIModal({ open, onOpenChange, onImageGenerated }) {
       })
 
       toast.success('AI Copy Generated!')
-    } catch {
-      toast.error('Failed to generate copy')
+    } catch (error) {
+      toast.error(error.message || 'Failed to generate copy')
     } finally {
       setIsGenerating(false)
     }

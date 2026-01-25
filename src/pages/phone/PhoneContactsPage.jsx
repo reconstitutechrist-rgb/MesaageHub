@@ -268,6 +268,7 @@ function AddContactModal({ open, onClose, onAdd, theme: t }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
+  const [birthday, setBirthday] = useState('')
   const [interests, setInterests] = useState('')
   const [preferredMethod, setPreferredMethod] = useState('phone')
   const [showMethodDropdown, setShowMethodDropdown] = useState(false)
@@ -293,12 +294,14 @@ function AddContactModal({ open, onClose, onAdd, theme: t }) {
       name: name.trim(),
       phone: phone.trim(),
       email: email.trim(),
+      birthday: birthday || null,
       interests: parsedInterests,
       preferredMethod,
     })
     setName('')
     setPhone('')
     setEmail('')
+    setBirthday('')
     setInterests('')
     setPreferredMethod('phone')
     setErrors({})
@@ -489,6 +492,41 @@ function AddContactModal({ open, onClose, onAdd, theme: t }) {
               {errors.email}
             </span>
           )}
+        </div>
+
+        {/* Birthday Field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              color: t.textMuted,
+              fontSize: '13px',
+              marginBottom: '8px',
+              fontWeight: '500',
+            }}
+          >
+            Birthday (Optional)
+          </label>
+          <input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              borderRadius: '12px',
+              border: `1px solid ${t.cardBorder}`,
+              background: t.searchBg,
+              color: t.text,
+              fontSize: '16px',
+              outline: 'none',
+            }}
+          />
+          <span
+            style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
+          >
+            Used for birthday automation messages
+          </span>
         </div>
 
         {/* Interests Field */}

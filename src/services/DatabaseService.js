@@ -40,6 +40,7 @@ class DatabaseService {
         phone TEXT,
         email TEXT,
         tags TEXT, -- JSON string
+        birthday TEXT, -- YYYY-MM-DD format
         created_at TEXT,
         updated_at TEXT,
         synced_at TEXT
@@ -65,6 +66,38 @@ class DatabaseService {
         data TEXT, -- JSON payload
         created_at TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS automation_rules (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        name TEXT,
+        trigger_type TEXT, -- 'birthday_month'
+        template_id TEXT,
+        message_body TEXT,
+        is_active INTEGER DEFAULT 1,
+        send_time TEXT DEFAULT '09:00',
+        days_offset INTEGER DEFAULT 0,
+        created_at TEXT,
+        updated_at TEXT,
+        synced_at TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS scheduled_messages (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        automation_rule_id TEXT,
+        contact_id TEXT,
+        phone TEXT,
+        message_body TEXT,
+        scheduled_for TEXT,
+        status TEXT DEFAULT 'pending', -- pending, processing, sent, failed
+        twilio_sid TEXT,
+        error_message TEXT,
+        attempts INTEGER DEFAULT 0,
+        created_at TEXT,
+        sent_at TEXT,
+        synced_at TEXT
+      );
     `
     await this.db.execute(schema)
   }
@@ -88,8 +121,8 @@ class DatabaseService {
     if (isNative) {
       const tags = JSON.stringify(contact.tags || [])
       const query = `
-        INSERT OR REPLACE INTO contacts (id, user_id, name, phone, email, tags, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO contacts (id, user_id, name, phone, email, tags, birthday, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       await this.db.run(query, [
         contact.id,
@@ -98,6 +131,7 @@ class DatabaseService {
         contact.phone,
         contact.email,
         tags,
+        contact.birthday || null,
         contact.created_at || now,
         now,
       ])
@@ -225,6 +259,183 @@ class DatabaseService {
       const pending = await this.getPendingMutations()
       const filtered = pending.filter((m) => m.id !== mutationId)
       this.webStore.setItem('pending_mutations', JSON.stringify(filtered))
+    }
+  }
+
+  // --- Automation Rules Methods ---
+
+  async getAutomationRules() {
+    if (isNative) {
+      const res = await this.db.query('SELECT * FROM automation_rules')
+      return res.values.map((r) => ({ ...r, is_active: Boolean(r.is_active) }))
+    } else {
+      const data = this.webStore.getItem('automation_rules')
+      return data ? JSON.parse(data) : []
+    }
+  }
+
+  async saveAutomationRule(rule) {
+    const now = new Date().toISOString()
+    const ruleToSave = { ...rule, updated_at: now }
+
+    if (isNative) {
+      const query = `
+        INSERT OR REPLACE INTO automation_rules (id, user_id, name, trigger_type, template_id, message_body, is_active, send_time, days_offset, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `
+      await this.db.run(query, [
+        rule.id,
+        rule.user_id,
+        rule.name,
+        rule.trigger_type || 'birthday_month',
+        rule.template_id || null,
+        rule.message_body,
+        rule.is_active ? 1 : 0,
+        rule.send_time || '09:00',
+        rule.days_offset || 0,
+        rule.created_at || now,
+        now,
+      ])
+    } else {
+      const rules = await this.getAutomationRules()
+      const index = rules.findIndex((r) => r.id === rule.id)
+      if (index >= 0) {
+        rules[index] = ruleToSave
+      } else {
+        rules.push(ruleToSave)
+      }
+      this.webStore.setItem('automation_rules', JSON.stringify(rules))
+    }
+
+    return ruleToSave
+  }
+
+  async deleteAutomationRule(ruleId) {
+    if (isNative) {
+      await this.db.run('DELETE FROM automation_rules WHERE id = ?', [ruleId])
+    } else {
+      const rules = await this.getAutomationRules()
+      const filtered = rules.filter((r) => r.id !== ruleId)
+      this.webStore.setItem('automation_rules', JSON.stringify(filtered))
+    }
+  }
+
+  async toggleAutomationRule(ruleId, isActive) {
+    if (isNative) {
+      await this.db.run('UPDATE automation_rules SET is_active = ?, updated_at = ? WHERE id = ?', [
+        isActive ? 1 : 0,
+        new Date().toISOString(),
+        ruleId,
+      ])
+    } else {
+      const rules = await this.getAutomationRules()
+      const index = rules.findIndex((r) => r.id === ruleId)
+      if (index >= 0) {
+        rules[index].is_active = isActive
+        rules[index].updated_at = new Date().toISOString()
+        this.webStore.setItem('automation_rules', JSON.stringify(rules))
+      }
+    }
+  }
+
+  // --- Scheduled Messages Methods ---
+
+  async getScheduledMessages(filters = {}) {
+    if (isNative) {
+      let query = 'SELECT * FROM scheduled_messages'
+      const params = []
+
+      if (filters.status) {
+        query += ' WHERE status = ?'
+        params.push(filters.status)
+      }
+
+      query += ' ORDER BY scheduled_for ASC'
+      const res = await this.db.query(query, params)
+      return res.values
+    } else {
+      const data = this.webStore.getItem('scheduled_messages')
+      let messages = data ? JSON.parse(data) : []
+
+      if (filters.status) {
+        messages = messages.filter((m) => m.status === filters.status)
+      }
+
+      return messages.sort((a, b) => new Date(a.scheduled_for) - new Date(b.scheduled_for))
+    }
+  }
+
+  async saveScheduledMessage(message) {
+    const now = new Date().toISOString()
+    const messageToSave = { ...message, created_at: message.created_at || now }
+
+    if (isNative) {
+      const query = `
+        INSERT OR REPLACE INTO scheduled_messages (id, user_id, automation_rule_id, contact_id, phone, message_body, scheduled_for, status, twilio_sid, error_message, attempts, created_at, sent_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `
+      await this.db.run(query, [
+        message.id,
+        message.user_id,
+        message.automation_rule_id || null,
+        message.contact_id,
+        message.phone,
+        message.message_body,
+        message.scheduled_for,
+        message.status || 'pending',
+        message.twilio_sid || null,
+        message.error_message || null,
+        message.attempts || 0,
+        message.created_at || now,
+        message.sent_at || null,
+      ])
+    } else {
+      const messages = await this.getScheduledMessages()
+      const index = messages.findIndex((m) => m.id === message.id)
+      if (index >= 0) {
+        messages[index] = messageToSave
+      } else {
+        messages.push(messageToSave)
+      }
+      this.webStore.setItem('scheduled_messages', JSON.stringify(messages))
+    }
+
+    return messageToSave
+  }
+
+  async cancelScheduledMessage(messageId) {
+    if (isNative) {
+      await this.db.run(
+        "UPDATE scheduled_messages SET status = 'cancelled' WHERE id = ? AND status = 'pending'",
+        [messageId]
+      )
+    } else {
+      const messages = await this.getScheduledMessages()
+      const index = messages.findIndex((m) => m.id === messageId)
+      if (index >= 0 && messages[index].status === 'pending') {
+        messages[index].status = 'cancelled'
+        this.webStore.setItem('scheduled_messages', JSON.stringify(messages))
+      }
+    }
+  }
+
+  // --- Birthday Contacts Helper ---
+
+  async getContactsByBirthdayMonth(month) {
+    if (isNative) {
+      // month is 1-12
+      const monthStr = month.toString().padStart(2, '0')
+      const res = await this.db.query('SELECT * FROM contacts WHERE substr(birthday, 6, 2) = ?', [
+        monthStr,
+      ])
+      return res.values.map((c) => ({ ...c, tags: JSON.parse(c.tags || '[]') }))
+    } else {
+      const contacts = await this.getContacts()
+      return contacts.filter((c) => {
+        if (!c.birthday) return false
+        const birthMonth = new Date(c.birthday).getMonth() + 1
+        return birthMonth === month
+      })
     }
   }
 }

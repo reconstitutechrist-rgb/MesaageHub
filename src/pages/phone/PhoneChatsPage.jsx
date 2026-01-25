@@ -1,8 +1,10 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { MediaAttachmentSheet } from '@/components/common/MediaAttachmentSheet'
 import { useToggle } from '@/hooks'
+import { automationService } from '@/services/AutomationService'
+import { toast } from 'sonner'
 
 // 4 Theme Options
 const themes = {
@@ -98,6 +100,31 @@ const Icons = {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
       <circle cx="11" cy="11" r="8" />
       <path d="M21 21l-4.35-4.35" />
+    </svg>
+  ),
+  scheduled: (color, size = 18) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  checkCircle: (color, size = 16) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  ),
+  alertCircle: (color, size = 16) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  ),
+  trash: (color) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
     </svg>
   ),
   edit: (color) => (
@@ -1010,6 +1037,11 @@ export default function PhoneChatsPage() {
   const [chatAttachments, setChatAttachments] = useState([])
   const messagesEndRef = useRef(null)
 
+  // Tab state for Chats vs Scheduled
+  const [activeTab, setActiveTab] = useState('chats')
+  const [scheduledMessages, setScheduledMessages] = useState([])
+  const [loadingScheduled, setLoadingScheduled] = useState(false)
+
   const t = themes[theme]
 
   // Navigation items with routes
@@ -1056,6 +1088,77 @@ export default function PhoneChatsPage() {
   useEffect(() => {
     if (selectedChat) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [selectedChat, selectedConversation?.messages])
+
+  // Load scheduled messages when tab changes to scheduled
+  useEffect(() => {
+    if (activeTab === 'scheduled') {
+      loadScheduledMessages()
+    }
+  }, [activeTab])
+
+  const loadScheduledMessages = async () => {
+    setLoadingScheduled(true)
+    try {
+      const messages = await automationService.getScheduledMessages()
+      setScheduledMessages(messages)
+    } catch (error) {
+      console.error('Failed to load scheduled messages:', error)
+      toast.error('Failed to load scheduled messages')
+    } finally {
+      setLoadingScheduled(false)
+    }
+  }
+
+  const handleCancelScheduledMessage = async (messageId) => {
+    try {
+      await automationService.cancelScheduledMessage(messageId)
+      setScheduledMessages((prev) => prev.filter((m) => m.id !== messageId))
+      toast.success('Scheduled message cancelled')
+    } catch (error) {
+      console.error('Failed to cancel message:', error)
+      toast.error('Failed to cancel message')
+    }
+  }
+
+  const formatScheduledTime = (isoString) => {
+    const date = new Date(isoString)
+    const now = new Date()
+    const isToday = date.toDateString() === now.toDateString()
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const isTomorrow = date.toDateString() === tomorrow.toDateString()
+
+    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+    if (isToday) return `Today at ${timeStr}`
+    if (isTomorrow) return `Tomorrow at ${timeStr}`
+    return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${timeStr}`
+  }
+
+  const getStatusIcon = (status, large = false) => {
+    const size = large ? 24 : 16
+    switch (status) {
+      case 'sent':
+        return Icons.checkCircle('#fff', size)
+      case 'failed':
+        return Icons.alertCircle('#fff', size)
+      case 'pending':
+      case 'processing':
+      default:
+        return Icons.scheduled('#fff', size)
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'sent':
+        return '#22c55e'
+      case 'failed':
+        return '#ef4444'
+      default:
+        return t.accent
+    }
+  }
 
   const handleSendMessage = () => {
     if ((!inputValue.trim() && chatAttachments.length === 0) || !selectedChat) return
@@ -1169,8 +1272,8 @@ export default function PhoneChatsPage() {
                   letterSpacing: '-0.5px',
                 }}
               >
-                Chats{' '}
-                {totalUnread > 0 && (
+                {activeTab === 'chats' ? 'Chats' : 'Scheduled'}{' '}
+                {activeTab === 'chats' && totalUnread > 0 && (
                   <span
                     style={{
                       marginLeft: '10px',
@@ -1222,160 +1325,453 @@ export default function PhoneChatsPage() {
                 </button>
               </div>
             </div>
+
+            {/* Tab Buttons */}
             <div
               style={{
-                background: t.searchBg,
-                borderRadius: '12px',
-                padding: '12px 16px',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                border: `1px solid ${t.cardBorder}`,
+                gap: '8px',
+                marginBottom: '16px',
               }}
             >
-              {Icons.search(t.textMuted)}
-              <input
-                type="text"
-                placeholder="Search messages..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+              <button
+                onClick={() => setActiveTab('chats')}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  outline: 'none',
-                  color: t.text,
-                  fontSize: '16px',
-                  width: '100%',
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ height: 'calc(100% - 220px)', overflowY: 'auto', padding: '0 12px' }}>
-            {filteredConversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                onClick={() => setSelectedChat(conversation.id)}
-                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  border: `1px solid ${activeTab === 'chats' ? t.accent : t.cardBorder}`,
+                  background: activeTab === 'chats' ? `${t.accent}22` : t.cardBg,
+                  color: activeTab === 'chats' ? t.accent : t.textMuted,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  padding: '14px 8px',
-                  borderRadius: '16px',
-                  cursor: 'pointer',
-                  borderBottom: `1px solid ${t.cardBorder}`,
+                  justifyContent: 'center',
+                  gap: '8px',
                 }}
               >
-                <div
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                Chats
+                {totalUnread > 0 && (
+                  <span
+                    style={{
+                      minWidth: '18px',
+                      height: '18px',
+                      borderRadius: '9px',
+                      background: t.accent,
+                      color: '#fff',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 5px',
+                    }}
+                  >
+                    {totalUnread}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('scheduled')}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  border: `1px solid ${activeTab === 'scheduled' ? t.accent : t.cardBorder}`,
+                  background: activeTab === 'scheduled' ? `${t.accent}22` : t.cardBg,
+                  color: activeTab === 'scheduled' ? t.accent : t.textMuted,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+              >
+                {Icons.scheduled(activeTab === 'scheduled' ? t.accent : t.textMuted)}
+                Scheduled
+              </button>
+            </div>
+
+            {activeTab === 'chats' && (
+              <div
+                style={{
+                  background: t.searchBg,
+                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  border: `1px solid ${t.cardBorder}`,
+                }}
+              >
+                {Icons.search(t.textMuted)}
+                <input
+                  type="text"
+                  placeholder="Search messages..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '50%',
-                    background: conversation.isCampaign
-                      ? `linear-gradient(135deg, ${t.accent}, ${t.accentDark})`
-                      : `linear-gradient(135deg, ${getAvatarColor(conversation.name, t.avatarColors)}, ${getAvatarColor(conversation.name, t.avatarColors)}88)`,
+                    background: 'none',
+                    border: 'none',
+                    outline: 'none',
+                    color: t.text,
+                    fontSize: '16px',
+                    width: '100%',
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div style={{ height: 'calc(100% - 260px)', overflowY: 'auto', padding: '0 12px' }}>
+            {/* Chats Tab Content */}
+            {activeTab === 'chats' &&
+              filteredConversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  onClick={() => setSelectedChat(conversation.id)}
+                  style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff',
-                    fontSize: conversation.isCampaign ? '20px' : '18px',
-                    fontWeight: '600',
-                    position: 'relative',
-                    flexShrink: 0,
+                    gap: '12px',
+                    padding: '14px 8px',
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                    borderBottom: `1px solid ${t.cardBorder}`,
                   }}
                 >
-                  {conversation.isCampaign
-                    ? Icons.megaphone('#fff')
-                    : getInitials(conversation.name)}
-                  {conversation.online && !conversation.isCampaign && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: '2px',
-                        right: '2px',
-                        width: '14px',
-                        height: '14px',
-                        background: '#22c55e',
-                        borderRadius: '50%',
-                        border: `3px solid ${t.screenBg}`,
-                        boxShadow: '0 0 8px #22c55e',
-                      }}
-                    />
-                  )}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
+                      width: '56px',
+                      height: '56px',
+                      borderRadius: '50%',
+                      background: conversation.isCampaign
+                        ? `linear-gradient(135deg, ${t.accent}, ${t.accentDark})`
+                        : `linear-gradient(135deg, ${getAvatarColor(conversation.name, t.avatarColors)}, ${getAvatarColor(conversation.name, t.avatarColors)}88)`,
                       display: 'flex',
-                      justifyContent: 'space-between',
                       alignItems: 'center',
-                      marginBottom: '4px',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      fontSize: conversation.isCampaign ? '20px' : '18px',
+                      fontWeight: '600',
+                      position: 'relative',
+                      flexShrink: 0,
                     }}
                   >
-                    <span
-                      style={{
-                        color: t.text,
-                        fontSize: '16px',
-                        fontWeight: conversation.unread > 0 ? '700' : '600',
-                      }}
-                    >
-                      {conversation.name}
-                    </span>
-                    <span
-                      style={{
-                        color: conversation.unread > 0 ? t.accent : t.textMuted,
-                        fontSize: '12px',
-                        fontWeight: conversation.unread > 0 ? '600' : '400',
-                      }}
-                    >
-                      {conversation.time}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <p
-                      style={{
-                        color: conversation.unread > 0 ? t.text : t.textMuted,
-                        fontSize: '14px',
-                        margin: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        fontWeight: conversation.unread > 0 ? '500' : '400',
-                        maxWidth: conversation.unread > 0 ? '200px' : '230px',
-                      }}
-                    >
-                      {conversation.lastMessage}
-                    </p>
-                    {conversation.unread > 0 && (
+                    {conversation.isCampaign
+                      ? Icons.megaphone('#fff')
+                      : getInitials(conversation.name)}
+                    {conversation.online && !conversation.isCampaign && (
                       <div
                         style={{
-                          minWidth: '22px',
-                          height: '22px',
-                          borderRadius: '11px',
-                          background: t.accent,
-                          color: '#fff',
+                          position: 'absolute',
+                          bottom: '2px',
+                          right: '2px',
+                          width: '14px',
+                          height: '14px',
+                          background: '#22c55e',
+                          borderRadius: '50%',
+                          border: `3px solid ${t.screenBg}`,
+                          boxShadow: '0 0 8px #22c55e',
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: t.text,
+                          fontSize: '16px',
+                          fontWeight: conversation.unread > 0 ? '700' : '600',
+                        }}
+                      >
+                        {conversation.name}
+                      </span>
+                      <span
+                        style={{
+                          color: conversation.unread > 0 ? t.accent : t.textMuted,
                           fontSize: '12px',
-                          fontWeight: '700',
+                          fontWeight: conversation.unread > 0 ? '600' : '400',
+                        }}
+                      >
+                        {conversation.time}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <p
+                        style={{
+                          color: conversation.unread > 0 ? t.text : t.textMuted,
+                          fontSize: '14px',
+                          margin: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontWeight: conversation.unread > 0 ? '500' : '400',
+                          maxWidth: conversation.unread > 0 ? '200px' : '230px',
+                        }}
+                      >
+                        {conversation.lastMessage}
+                      </p>
+                      {conversation.unread > 0 && (
+                        <div
+                          style={{
+                            minWidth: '22px',
+                            height: '22px',
+                            borderRadius: '11px',
+                            background: t.accent,
+                            color: '#fff',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '0 6px',
+                            boxShadow: `0 0 10px ${t.accentGlow}`,
+                          }}
+                        >
+                          {conversation.unread}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+            {/* Scheduled Tab Content */}
+            {activeTab === 'scheduled' && (
+              <>
+                {loadingScheduled ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      padding: '40px 20px',
+                      color: t.textMuted,
+                    }}
+                  >
+                    Loading scheduled messages...
+                  </div>
+                ) : scheduledMessages.length === 0 ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '60px 20px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '50%',
+                        background: t.cardBg,
+                        border: `1px solid ${t.cardBorder}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      {Icons.scheduled(t.textMuted)}
+                    </div>
+                    <h3
+                      style={{
+                        color: t.text,
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        margin: '0 0 8px',
+                      }}
+                    >
+                      No Scheduled Messages
+                    </h3>
+                    <p
+                      style={{
+                        color: t.textMuted,
+                        fontSize: '14px',
+                        margin: 0,
+                        maxWidth: '240px',
+                        lineHeight: '1.5',
+                      }}
+                    >
+                      Birthday automation messages will appear here when scheduled.
+                    </p>
+                  </div>
+                ) : (
+                  scheduledMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '14px 8px',
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        borderBottom: `1px solid ${t.cardBorder}`,
+                      }}
+                    >
+                      {/* Avatar - matching chat list size (56px) */}
+                      <div
+                        style={{
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '50%',
+                          background: `linear-gradient(135deg, ${getStatusColor(msg.status)}, ${getStatusColor(msg.status)}88)`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          padding: '0 6px',
-                          boxShadow: `0 0 10px ${t.accentGlow}`,
+                          flexShrink: 0,
+                          position: 'relative',
                         }}
                       >
-                        {conversation.unread}
+                        {getStatusIcon(msg.status, true)}
+                        {/* Status indicator dot */}
+                        {msg.status === 'pending' && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: '2px',
+                              right: '2px',
+                              width: '14px',
+                              height: '14px',
+                              background: t.accent,
+                              borderRadius: '50%',
+                              border: `3px solid ${t.screenBg}`,
+                              boxShadow: `0 0 8px ${t.accentGlow}`,
+                            }}
+                          />
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+
+                      {/* Message Info - matching chat list structure */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '4px',
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: t.text,
+                              fontSize: '16px',
+                              fontWeight: '600',
+                            }}
+                          >
+                            {msg.contact_name || msg.phone}
+                          </span>
+                          <span
+                            style={{
+                              color: getStatusColor(msg.status),
+                              fontSize: '12px',
+                              fontWeight: '500',
+                            }}
+                          >
+                            {formatScheduledTime(msg.scheduled_for)}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <p
+                            style={{
+                              color: t.textMuted,
+                              fontSize: '14px',
+                              margin: 0,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              fontWeight: '400',
+                              maxWidth: msg.status === 'pending' ? '180px' : '230px',
+                            }}
+                          >
+                            {msg.message_body}
+                          </p>
+
+                          {/* Status badge / Cancel button */}
+                          {msg.status === 'pending' ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleCancelScheduledMessage(msg.id)
+                              }}
+                              style={{
+                                background: 'none',
+                                border: `1px solid ${t.cardBorder}`,
+                                borderRadius: '8px',
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              {Icons.trash('#ef4444')}
+                              Cancel
+                            </button>
+                          ) : (
+                            <div
+                              style={{
+                                minWidth: 'auto',
+                                padding: '2px 10px',
+                                borderRadius: '11px',
+                                background: `${getStatusColor(msg.status)}22`,
+                                color: getStatusColor(msg.status),
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                textTransform: 'capitalize',
+                              }}
+                            >
+                              {msg.status}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </>
+            )}
           </div>
 
           {/* Bottom Navigation */}

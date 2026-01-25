@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useLocalStorage, useToggle } from '@/hooks'
 import { toast } from 'sonner'
+import { automationService } from '@/services/AutomationService'
 
 // Default settings structure (shared with SettingsPage)
 const DEFAULT_SETTINGS = {
@@ -306,6 +307,71 @@ const Icons = {
     >
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+    </svg>
+  ),
+  automation: (color) => (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+    </svg>
+  ),
+  gift: (color) => (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="20 12 20 22 4 22 4 12" />
+      <rect x="2" y="7" width="20" height="5" />
+      <line x1="12" y1="22" x2="12" y2="7" />
+      <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" />
+      <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
+    </svg>
+  ),
+  plus: (color) => (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+  calendar: (color) => (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   ),
   download: (color) => (
@@ -772,6 +838,508 @@ if (typeof document !== 'undefined' && !document.getElementById('phone-settings-
   document.head.appendChild(style)
 }
 
+// Automations Modal Component
+function AutomationsModal({ open, onClose, theme: t }) {
+  const [rules, setRules] = useState([])
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingRule, setEditingRule] = useState(null)
+
+  // Form state
+  const [ruleName, setRuleName] = useState('')
+  const [messageBody, setMessageBody] = useState('')
+  const [sendTime, setSendTime] = useState('09:00')
+
+  useEffect(() => {
+    if (open) {
+      loadRules()
+    }
+  }, [open])
+
+  const loadRules = async () => {
+    try {
+      const data = await automationService.getAutomationRules()
+      setRules(data)
+    } catch (err) {
+      console.error('Failed to load automation rules:', err)
+    }
+  }
+
+  const handleToggleRule = async (ruleId, isActive) => {
+    try {
+      await automationService.toggleAutomationRule(ruleId, isActive)
+      setRules((prev) => prev.map((r) => (r.id === ruleId ? { ...r, is_active: isActive } : r)))
+      toast.success(isActive ? 'Automation enabled' : 'Automation disabled')
+    } catch (err) {
+      toast.error('Failed to update automation')
+    }
+  }
+
+  const handleDeleteRule = async (ruleId) => {
+    try {
+      await automationService.deleteAutomationRule(ruleId)
+      setRules((prev) => prev.filter((r) => r.id !== ruleId))
+      toast.success('Automation deleted')
+    } catch (err) {
+      toast.error('Failed to delete automation')
+    }
+  }
+
+  const handleSaveRule = async () => {
+    if (!ruleName.trim() || !messageBody.trim()) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+
+    try {
+      const rule = {
+        id: editingRule?.id,
+        name: ruleName.trim(),
+        message_body: messageBody.trim(),
+        send_time: sendTime,
+        trigger_type: 'birthday_month',
+        is_active: editingRule?.is_active ?? true,
+      }
+
+      await automationService.saveAutomationRule(rule)
+      await loadRules()
+
+      setShowAddModal(false)
+      setEditingRule(null)
+      setRuleName('')
+      setMessageBody('')
+      setSendTime('09:00')
+
+      toast.success(editingRule ? 'Automation updated' : 'Automation created')
+    } catch (err) {
+      toast.error('Failed to save automation')
+    }
+  }
+
+  const openEditModal = (rule) => {
+    setEditingRule(rule)
+    setRuleName(rule.name)
+    setMessageBody(rule.message_body)
+    setSendTime(rule.send_time || '09:00')
+    setShowAddModal(true)
+  }
+
+  const openNewModal = () => {
+    setEditingRule(null)
+    setRuleName('')
+    setMessageBody(
+      'Happy Birthday, {name}! Stop by the store this month for a special birthday gift on us.'
+    )
+    setSendTime('09:00')
+    setShowAddModal(true)
+  }
+
+  if (!open) return null
+
+  // Add/Edit Modal
+  if (showAddModal) {
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: t.bg,
+          zIndex: 60,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: '60px 16px 16px',
+            borderBottom: `1px solid ${t.cardBorder}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <button
+            onClick={() => {
+              setShowAddModal(false)
+              setEditingRule(null)
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: t.accent,
+              cursor: 'pointer',
+              fontSize: '16px',
+            }}
+          >
+            Cancel
+          </button>
+          <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+            {editingRule ? 'Edit Automation' : 'New Automation'}
+          </h2>
+          <button
+            onClick={handleSaveRule}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: t.accent,
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '600',
+            }}
+          >
+            Save
+          </button>
+        </div>
+
+        {/* Form */}
+        <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
+          {/* Info Banner */}
+          <div
+            style={{
+              background: t.cardBg,
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '24px',
+              border: `1px solid ${t.cardBorder}`,
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'flex-start',
+            }}
+          >
+            {Icons.gift(t.accent)}
+            <div>
+              <div
+                style={{ color: t.text, fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}
+              >
+                Birthday Month Automation
+              </div>
+              <div style={{ color: t.textMuted, fontSize: '12px', lineHeight: '1.4' }}>
+                Messages will be sent to contacts during their birthday month. Use {'{name}'} to
+                personalize.
+              </div>
+            </div>
+          </div>
+
+          {/* Rule Name */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                color: t.textMuted,
+                fontSize: '13px',
+                marginBottom: '8px',
+                fontWeight: '500',
+              }}
+            >
+              Automation Name *
+            </label>
+            <input
+              type="text"
+              value={ruleName}
+              onChange={(e) => setRuleName(e.target.value)}
+              placeholder="Birthday Voucher"
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                border: `1px solid ${t.cardBorder}`,
+                background: t.searchBg,
+                color: t.text,
+                fontSize: '16px',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          {/* Message Body */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                color: t.textMuted,
+                fontSize: '13px',
+                marginBottom: '8px',
+                fontWeight: '500',
+              }}
+            >
+              Message *
+            </label>
+            <textarea
+              value={messageBody}
+              onChange={(e) => setMessageBody(e.target.value)}
+              placeholder="Happy Birthday, {name}! Stop by the store this month..."
+              rows={4}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                border: `1px solid ${t.cardBorder}`,
+                background: t.searchBg,
+                color: t.text,
+                fontSize: '16px',
+                outline: 'none',
+                resize: 'vertical',
+                fontFamily: 'inherit',
+              }}
+            />
+            <span
+              style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
+            >
+              Variables: {'{name}'}, {'{firstName}'}
+            </span>
+          </div>
+
+          {/* Send Time */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                color: t.textMuted,
+                fontSize: '13px',
+                marginBottom: '8px',
+                fontWeight: '500',
+              }}
+            >
+              Send Time
+            </label>
+            <input
+              type="time"
+              value={sendTime}
+              onChange={(e) => setSendTime(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                border: `1px solid ${t.cardBorder}`,
+                background: t.searchBg,
+                color: t.text,
+                fontSize: '16px',
+                outline: 'none',
+              }}
+            />
+            <span
+              style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
+            >
+              Messages will be queued to send at this time
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Main Automations List
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: t.bg,
+        zIndex: 55,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: '60px 16px 16px',
+          borderBottom: `1px solid ${t.cardBorder}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: t.accent,
+            cursor: 'pointer',
+            fontSize: '16px',
+          }}
+        >
+          Back
+        </button>
+        <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+          Automations
+        </h2>
+        <button
+          onClick={openNewModal}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: t.accent,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {Icons.plus(t.accent)}
+        </button>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+        {rules.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ marginBottom: '16px' }}>{Icons.gift(t.textMuted)}</div>
+            <p style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: '0 0 8px' }}>
+              No Automations Yet
+            </p>
+            <p
+              style={{
+                color: t.textMuted,
+                fontSize: '14px',
+                margin: '0 0 24px',
+                lineHeight: '1.5',
+              }}
+            >
+              Create a birthday automation to automatically send messages to contacts during their
+              birthday month.
+            </p>
+            <button
+              onClick={openNewModal}
+              style={{
+                padding: '14px 28px',
+                borderRadius: '12px',
+                border: 'none',
+                background: t.accent,
+                color: '#fff',
+                fontSize: '15px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                boxShadow: `0 4px 15px ${t.accentGlow}`,
+              }}
+            >
+              Create Automation
+            </button>
+          </div>
+        ) : (
+          <div>
+            {rules.map((rule) => (
+              <div
+                key={rule.id}
+                style={{
+                  background: t.cardBg,
+                  borderRadius: '16px',
+                  border: `1px solid ${t.cardBorder}`,
+                  marginBottom: '12px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '12px',
+                      background: rule.is_active ? `${t.accent}22` : t.cardBg,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {Icons.gift(rule.is_active ? t.accent : t.textMuted)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        color: t.text,
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {rule.name}
+                    </div>
+                    <div style={{ color: t.textMuted, fontSize: '13px' }}>
+                      Birthday Month • {rule.send_time || '09:00'}
+                    </div>
+                  </div>
+                  <Toggle
+                    enabled={rule.is_active}
+                    onChange={(val) => handleToggleRule(rule.id, val)}
+                    theme={t}
+                  />
+                </div>
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderTop: `1px solid ${t.cardBorder}`,
+                    background: t.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
+                  }}
+                >
+                  <p
+                    style={{
+                      color: t.textMuted,
+                      fontSize: '13px',
+                      margin: 0,
+                      lineHeight: '1.4',
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {rule.message_body}
+                  </p>
+                </div>
+                <div
+                  style={{
+                    padding: '8px 16px',
+                    borderTop: `1px solid ${t.cardBorder}`,
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: '8px',
+                  }}
+                >
+                  <button
+                    onClick={() => openEditModal(rule)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: `1px solid ${t.cardBorder}`,
+                      background: 'transparent',
+                      color: t.accent,
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteRule(rule.id)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: `${t.danger}22`,
+                      color: t.danger,
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function PhoneSettingsPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -784,6 +1352,11 @@ export default function PhoneSettingsPage() {
     useToggle(false)
   const [showDeleteConfirm, , { setTrue: openDeleteConfirm, setFalse: closeDeleteConfirm }] =
     useToggle(false)
+  const [
+    showAutomationsModal,
+    ,
+    { setTrue: openAutomationsModal, setFalse: closeAutomationsModal },
+  ] = useToggle(false)
 
   // Loading states
   const [isExporting, , { setTrue: startExporting, setFalse: stopExporting }] = useToggle(false)
@@ -907,6 +1480,9 @@ export default function PhoneSettingsPage() {
         onSelect={setTheme}
         theme={t}
       />
+
+      {/* Automations Modal */}
+      <AutomationsModal open={showAutomationsModal} onClose={closeAutomationsModal} theme={t} />
 
       {/* Confirm Dialogs */}
       <ConfirmDialog
@@ -1134,6 +1710,12 @@ export default function PhoneSettingsPage() {
                 </span>
               </div>
               <SettingsRow icon={Icons.user} label="Edit Profile" onClick={() => {}} theme={t} />
+              <SettingsRow
+                icon={Icons.automation}
+                label="Automations"
+                onClick={openAutomationsModal}
+                theme={t}
+              />
               <SettingsRow
                 icon={Icons.database}
                 label="Storage & Data"
