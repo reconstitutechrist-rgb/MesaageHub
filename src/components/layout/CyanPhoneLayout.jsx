@@ -23,17 +23,17 @@ export function CyanPhoneLayout() {
           : 'bg-gradient-to-br from-slate-100 via-slate-50 to-white'
       )}
     >
-      {/* Ambient glow effect */}
+      {/* Ambient glow effect - reduced blur for mobile crispness */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div
           className={cn(
-            'absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl',
+            'absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-2xl',
             isDark ? 'bg-cyan-500/5' : 'bg-cyan-500/10'
           )}
         />
         <div
           className={cn(
-            'absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl',
+            'absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-2xl',
             isDark ? 'bg-cyan-500/5' : 'bg-cyan-500/10'
           )}
         />
@@ -48,15 +48,15 @@ export function CyanPhoneLayout() {
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-safe bg-gradient-to-t from-background to-transparent pointer-events-none">
         <div
           className={cn(
-            'mx-auto mb-4 md:mb-6 max-w-md backdrop-blur-xl rounded-2xl border transition-all duration-300 pointer-events-auto',
+            'mx-auto mb-4 md:mb-6 max-w-md backdrop-blur-md rounded-2xl border transition-all duration-300 pointer-events-auto',
             isDark
-              ? 'bg-slate-800/60 border-slate-700/50'
-              : 'bg-white/80 border-slate-200 shadow-lg'
+              ? 'bg-slate-800/70 border-slate-700/50'
+              : 'bg-white/85 border-slate-200 shadow-lg'
           )}
           style={{
             boxShadow: isDark
-              ? 'inset 0 1px 1px rgba(255,255,255,0.05), 0 8px 32px -8px rgba(0,0,0,0.5)'
-              : 'inset 0 1px 1px rgba(255,255,255,0.9), 0 8px 32px -8px rgba(6,182,212,0.15)',
+              ? 'inset 0 1px 1px rgba(255,255,255,0.05), 0 4px 16px -4px rgba(0,0,0,0.5)'
+              : 'inset 0 1px 1px rgba(255,255,255,0.9), 0 4px 16px -4px rgba(6,182,212,0.15)',
           }}
         >
           <div className="flex items-center justify-around h-16 px-2">
