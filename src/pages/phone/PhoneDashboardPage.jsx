@@ -826,7 +826,10 @@ export default function PhoneDashboardPage() {
         </div>
 
         <div
-          onClick={() => setShowAIStudio(true)}
+          onClick={() => {
+            console.log('Opening AI Studio')
+            setShowAIStudio(true)
+          }}
           style={{
             padding: '20px',
             borderRadius: '20px',
