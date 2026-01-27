@@ -1,220 +1,25 @@
-# MessageHub Development Instructions
-
-## Project Overview
-
-MessageHub is a marketing/messaging platform with a phone-style UI. It includes an AI Studio for creating marketing content, campaign management, contact management, and messaging features.
-
-## Tech Stack
-
-- **Framework:** React (Vite)
-- **Styling:** Tailwind CSS + inline styles for phone UI theming
-- **UI Components:** Radix UI primitives (`src/components/ui/`)
-- **Backend:** Supabase (auth, database, storage, edge functions)
-- **Mobile:** Capacitor for native builds
-- **State:** React hooks (no Redux/Zustand)
-
-## Key Architecture Patterns
-
-### Services (`src/services/`)
-
-All services follow this pattern:
-
-```javascript
-class ServiceName {
-  async methodName() {
-    try {
-      // logic
-      return { success: true, data: result }
-    } catch (error) {
-      console.error('Error:', error)
-      return { success: false, error: error.message }
-    }
-  }
-}
-export const serviceName = new ServiceName()
-```
-
-**Existing Services:**
-
-- `DatabaseService.js` - Local SQLite/localStorage abstraction
-- `MediaLibraryService.js` - Media asset storage (has demo mode fallback)
-- `AIService.js` - AI content generation (mock, ready for Gemini/OpenAI)
-- `AutomationService.js` - Automation rules and scheduled messages
-- `TwilioService.js` - SMS via Supabase Edge Functions
-- `SyncService.js` - Local ↔ Supabase sync
-
-### Hooks (`src/hooks/`)
-
-Custom hooks for reusable logic:
-
-- `useLayerManager.js` - Multi-layer canvas state management
-- `useCanvasEditor.js` - Combined canvas editor with AI integration
-- `useWindowSize.js`, `useDebounce.js`, `useLocalStorage.js`, etc.
-
-All hooks exported from `src/hooks/index.js`.
-
-### Components
-
-**UI Primitives (`src/components/ui/`):**
-
-- Radix UI-based: Button, Input, Dialog, Sheet, Tabs, etc.
-- Use `cn()` utility for class composition
-
-**Common Components (`src/components/common/`):**
-
-- Reusable across the app: ComposeModal, MarketingAIModal, MessageBubble, etc.
-
-**Phone Pages (`src/pages/phone/`):**
-
-- PhoneDashboardPage.jsx - Main dashboard with AI Studio (AIStudioFullScreen component embedded)
-- PhoneChatsPage.jsx - Messaging interface
-- PhoneContactsPage.jsx - Contact management
-- PhoneSettingsPage.jsx - Settings
-
-### Theming
-
-Phone UI uses inline styles with theme objects:
-
-```javascript
-const themes = {
-  cyanDark: { bg, cardBg, cardBorder, accent, text, textMuted, isDark: true },
-  purpleDark: { ... },
-  cyanLight: { ..., isDark: false },
-  purpleLight: { ... }
-}
-```
-
-Access via `t.accent`, `t.cardBg`, etc.
-
-## AI Studio Architecture
-
-### Components
-
-1. **AIStudioFullScreen** (in PhoneDashboardPage.jsx) - Full-featured editor
-   - Platform presets (Instagram, Facebook, TikTok, etc.)
-   - Marketing template library
-   - Multi-layer text support
-   - High-resolution export
-
-2. **MarketingAIModal** (src/components/common/) - Simple modal version
-   - Image-based canvas sizing
-   - Single text overlay
-   - Quick ad creation
-
-### Layer System
-
-```javascript
-const layer = {
-  id: string,
-  type: 'text' | 'image' | 'background',
-  name: string,
-  visible: boolean,
-  locked: boolean,
-  zIndex: number,
-  data: {
-    /* type-specific: text, x, y, color, fontSize, etc. */
-  },
-}
-```
-
-### Canvas Utilities (`src/lib/canvasUtils.js`)
-
-- `drawBackground()`, `drawText()`, `drawImage()`
-- `drawTemplateElements()`, `drawGrid()`
-- `createExportCanvas()` for high-res export
-
-### Platform Templates (`src/lib/platformTemplates.js`)
-
-- `platformPresets` - Dimensions for social platforms
-- `marketingTemplates` - Pre-built design templates
-- `gradientPresets` - Background gradients
-- `scaleToFit()` - Scaling utility
-
-## Coding Conventions
-
-### File Naming
-
-- Components: PascalCase (`MarketingAIModal.jsx`)
-- Hooks: camelCase with `use` prefix (`useLayerManager.js`)
-- Services: PascalCase (`AIService.js`)
-- Utilities: camelCase (`canvasUtils.js`)
-
-### Imports
-
-Use path aliases:
-
-```javascript
-import { Button } from '@/components/ui/button'
-import { aiService } from '@/services/AIService'
-import { useLayerManager } from '@/hooks/useLayerManager'
-```
-
-### Error Handling
-
-- Services return `{ success, data, error }` tuples
-- Use try-catch with console.error logging
-- Toast notifications via `sonner`: `toast.success()`, `toast.error()`
-
-### Demo Mode
-
-When Supabase isn't configured, services should fall back to mock data:
-
-```javascript
-import { isSupabaseConfigured } from '@/lib/supabase'
-
-if (!isSupabaseConfigured) {
-  // Return mock data
-}
-```
-
-## Key Files Reference
-
-| File                                         | Purpose                                           |
-| -------------------------------------------- | ------------------------------------------------- |
-| `src/pages/phone/PhoneDashboardPage.jsx`     | Main dashboard + AIStudioFullScreen (~2500 lines) |
-| `src/components/common/MarketingAIModal.jsx` | Simple AI ad creator modal                        |
-| `src/services/AIService.js`                  | AI content generation service                     |
-| `src/hooks/useLayerManager.js`               | Multi-layer state management                      |
-| `src/hooks/useCanvasEditor.js`               | Combined canvas editor hook                       |
-| `src/lib/canvasUtils.js`                     | Canvas drawing utilities                          |
-| `src/lib/platformTemplates.js`               | Social platform presets & templates               |
-| `src/lib/supabase.js`                        | Supabase client configuration                     |
-
-## Testing Checklist
-
-When modifying AI Studio:
-
-- [ ] AI generation works (mock returns expected data)
-- [ ] Text overlay drag works
-- [ ] Platform presets apply correctly
-- [ ] Marketing templates render
-- [ ] High-res export maintains quality
-- [ ] Multiple text layers can be added
-- [ ] Layers are independently selectable
-- [ ] Export includes all visible layers
-
-## Future Considerations
-
-1. **Real AI Integration** - AIService is ready for Gemini/OpenAI via `setProvider()`
-2. **Undo/Redo** - Can be added to useLayerManager
-3. **More Layer Types** - Shapes, stickers, filters
-4. **Collaboration** - Real-time editing via Supabase Realtime
+name: thorough-coding
+description: "Comprehensive coding practices combining architectural thinking, scalability, and thorough verification across all application types (mobile, desktop, web, backend). Use this skill when writing, modifying, reviewing, or debugging code to ensure: (1) scalable, modern architectural design, (2) use of efficient libraries and patterns, (3) creative synthesis balancing user requests with better approaches, (4) thorough line-by-line verification, (5) complete removal of hardcoded values, (6) proper feature integration, and (7) careful import analysis. Critical for preventing incomplete implementations, over-engineered solutions, missed hardcoded presets, and accidental code deletion while optimizing for scale and speed."
 
 ---
 
-# Comprehensive Coding Practices
+# Thorough Coding
 
 ## Core Principles
 
 **NEVER ASSUME. ALWAYS VERIFY.**
-Enforce exhaustive verification practices to prevent incomplete implementations, missed hardcoded values, and unintentional code removal.
+
+This skill enforces exhaustive verification practices to prevent incomplete implementations, missed hardcoded values, and unintentional code removal.
 
 **THINK ARCHITECTURALLY. BUILD FOR SCALE.**
+
 Balance thoroughness with modern, scalable architecture. Don't just implement literally—consider efficiency, scalability, and creative synthesis.
 
 ## Architectural Decision Framework
 
 ### Before Writing Any Code
+
+Every implementation must start with architectural thinking:
 
 **1. Scale Analysis**
 
@@ -228,6 +33,7 @@ Balance thoroughness with modern, scalable architecture. Don't just implement li
 - Does a battle-tested library already solve this?
 - What are current best practices for this problem?
 - Am I reinventing a wheel that exists in a modern, maintained package?
+- What do industry leaders use for this pattern?
 
 **3. Architectural Flow**
 
@@ -240,23 +46,56 @@ Balance thoroughness with modern, scalable architecture. Don't just implement li
 
 - User asked for X, but is Y a better solution?
 - Can I achieve the goal more efficiently?
+- Are there performance optimizations to consider upfront?
 - Should I suggest a better approach while still honoring the request?
+
+### The Scalability vs. Thoroughness Balance
+
+**Anti-pattern:** Being so literal and thorough that you over-engineer or miss the optimal architecture
+**Best practice:** Thorough verification + scalable, modern design
+
+Examples:
+
+❌ **Literal but not scalable:**
+User: "Store user preferences in a JSON file"
+Bad: Literally implement JSON file storage with thorough error handling
+✓ **Creative synthesis:**
+Good: "I can implement JSON file storage as requested, but for scaling beyond a few users, I'd recommend using a database or Redis. Would you like me to implement the JSON version with an architecture that makes it easy to migrate to a database later?"
+
+❌ **Thorough but outdated:**
+Bad: Implement custom form validation with 100 lines of thorough checking
+✓ **Modern and efficient:**
+Good: Use Zod or Yup with thorough schema definition (10 lines, battle-tested)
+
+### Mandatory Architectural Questions
+
+Before implementing any feature, ask yourself:
+
+1. **Library Check**: "Does a modern library handle this better than custom code?"
+2. **Scale Check**: "Will this work with 1000x the current load?"
+3. **Pattern Check**: "Am I following current architectural best practices?"
+4. **Flow Check**: "Does this integrate cleanly with the system architecture?"
+5. **Synthesis Check**: "Is there a better way to achieve the user's goal?"
 
 ### When to Suggest Alternatives
 
-Always suggest better approaches when:
+**Always suggest better approaches when:**
 
 - User's request would create performance bottlenecks at scale
 - A modern library solves it better than custom implementation
 - The architectural pattern doesn't align with best practices
+- There's a more efficient way to achieve the same goal
 
-How to suggest:
+**How to suggest:**
 
 1. Acknowledge the request
 2. Explain the scalability/efficiency concern
 3. Propose the better approach
 4. Offer to implement their original way if they prefer
 5. Explain tradeoffs clearly
+
+Example:
+"You asked me to implement a custom authentication system. I can do that thoroughly, but I'd strongly recommend using NextAuth.js or Auth0 instead because: (1) they're battle-tested for security, (2) they handle edge cases you might not anticipate, (3) they scale automatically, and (4) they're industry standard. I can implement either approach—which would you prefer?"
 
 ## Critical Rules
 
@@ -280,7 +119,13 @@ NEVER hardcode any values in code:
 - No hardcoded API endpoints or URLs
 - No hardcoded default states or initial values
 
-Instead use: configuration files, environment variables, user-provided inputs, theme/styling systems, clearly documented constants.
+**Instead:**
+
+- Use configuration files
+- Use environment variables
+- Use user-provided inputs
+- Use theme/styling systems
+- Create clearly documented constants with configuration sources
 
 ### 3. Import Investigation Protocol
 
@@ -292,20 +137,22 @@ Before removing ANY import or dependency:
 4. Check related files that might depend on it
 5. Only remove if you can prove it's genuinely unused
 
-NEVER remove an import just because a linter says it's unused without manual verification.
+**NEVER remove an import just because a linter says it's unused without manual verification.**
 
 ### 4. Feature Implementation Verification
 
 When implementing a feature, verify COMPLETE integration:
 
-- Implementation exists in the correct location
-- Feature is properly imported where needed
-- Feature is called/invoked in the right places
-- Feature is connected to UI/API/data flow as required
-- Feature has all necessary dependencies
-- Feature actually works in the full pipeline
+1. Implementation exists in the correct location
+2. Feature is properly imported where needed
+3. Feature is called/invoked in the right places
+4. Feature is connected to UI/API/data flow as required
+5. Feature has all necessary dependencies
+6. Feature actually works in the full pipeline
 
 ### 5. Removal Verification Protocol
+
+When asked to remove something (code, presets, hardcoded values):
 
 **Phase 1 - Initial Search:**
 
@@ -317,72 +164,132 @@ When implementing a feature, verify COMPLETE integration:
 
 **Phase 3 - Pattern Search:** 8. Look for similar patterns that should also be removed 9. Check if the same concept appears elsewhere 10. Document final count of removals
 
-## AI-Specific Mitigations
+## AI-Specific Limitations & Mitigations
+
+These rules address common AI coding pitfalls that cause project delays and errors.
 
 ### 1. Context Window & Conversation Consistency
 
-**Maintain a Decision Log:**
+**Problem:** In long conversations, I may lose track of earlier decisions, contradict myself, or forget what was already implemented.
 
-```markdown
+**Mandatory Practices:**
+
+**Maintain a Decision Log**
+At the start of each significant change, create or update a decision log:
+
+```
 ## Current Implementation State
-
 - Feature X: Implemented in files A, B, C using library Y
-- Color system: Using theme provider
+- Color system: Now using theme provider, removed all hardcoded colors
 - Authentication: Using NextAuth with database sessions
+- State management: Using Zustand, not Redux
 ```
 
-**Consistency Checks:**
+**Consistency Checks**
+Before making any change:
 
-- Before making any change, check if it contradicts earlier decisions
-- If it does, explicitly call it out
-- Update the decision log after implementing
+1. Review the decision log
+2. Check if this contradicts earlier decisions
+3. If it does, explicitly call it out: "This contradicts our earlier decision to use X. Should we proceed with this change or maintain consistency?"
+4. Update the decision log after implementing
 
-**Conversation Checkpoints:**
-Every 10-15 messages or major feature, provide a summary of:
+**Conversation Checkpoints**
+Every 10-15 messages or major feature, provide a summary:
 
-- What's been implemented
-- Current architectural decisions
-- Remaining work
+- "So far we've implemented: [list]"
+- "Current architectural decisions: [list]"
+- "Remaining work: [list]"
+- This helps maintain consistency and catch contradictions
 
 ### 2. File Size & Complexity Awareness
 
-**Always Check File Size First:**
+**Problem:** I might suggest changes without realizing files are massive (5000+ lines) or miss side effects in large codebases.
+
+**Mandatory Practices:**
+
+**Always Check File Size First**
+Before modifying any file:
+
+```bash
+wc -l filename.js
+```
 
 - Under 200 lines: Standard approach
 - 200-500 lines: Extra caution on side effects
 - 500-1000 lines: Mandatory dependency mapping
 - 1000+ lines: Should probably be refactored, suggest splitting
 
-**Large File Protocol (500+ lines):**
+**Large File Protocol**
+For files over 500 lines:
 
 1. Create a dependency map of functions/components
 2. Search for all uses of what you're modifying
 3. Test/verify in smaller increments
-4. Consider suggesting refactoring
+4. Consider suggesting refactoring: "This file is 1200 lines. Before modifying, should we split it into smaller modules?"
+
+**Codebase Complexity Assessment**
+Before any major change:
+
+1. Count total files affected
+2. Estimate lines of code impacted
+3. Map dependencies between files
+4. If complexity is high, break into smaller PRs/tasks
 
 ### 3. Breaking Changes Detection
 
-Before ANY modification that changes function signatures, component props, API endpoints, data structures, or export names:
+**Problem:** I might refactor code without realizing it breaks other parts of the application.
 
-**Step 1 - Dependency Search:**
+**Mandatory Breaking Change Checklist:**
+
+**Before ANY modification that changes:**
+
+- Function signatures (parameters, return types)
+- Component props or interfaces
+- API endpoints or response structures
+- Data structures or schemas
+- Class/function names
+- Export names
+
+**Execute this protocol:**
+
+**Step 1: Dependency Search**
 
 ```bash
+# Search for all uses of the thing being changed
 grep -r "functionName" --include="*.js" --include="*.ts" --include="*.jsx" --include="*.tsx"
 ```
 
-**Step 2 - Impact Analysis:**
-List every file that imports or uses the changing code
+**Step 2: Impact Analysis**
+List every file that imports or uses the changing code:
 
-**Step 3 - Update Plan:**
-Document original signature, new signature, every location needing update
+- File A: Uses functionName on line 45
+- File B: Uses functionName on line 120, 145
+- File C: Type definition imports it
 
-**Step 4 - Verification:**
-After change, verify each dependent file was updated
+**Step 3: Update Plan**
+Before making the change, document:
 
-**Warning Communication:**
+- Original signature/interface
+- New signature/interface
+- Every location that needs updating
+- Estimated impact (breaking vs. non-breaking)
+
+**Step 4: Verification**
+After the change:
+
+- Verify each dependent file was updated
+- Check for TypeScript/linting errors
+- Confirm no runtime breaks
+
+**Warning Communication**
+Always warn about breaking changes:
 "⚠️ This change modifies the function signature, which will break 3 files: A.js, B.js, C.js. I'll update all of them, but please test thoroughly."
 
 ### 4. Edge Cases & Error States
+
+**Problem:** I often implement only the happy path, forgetting error states, loading states, and edge cases.
+
+**Mandatory Edge Case Checklist:**
 
 For EVERY implementation, verify these cases:
 
@@ -410,16 +317,19 @@ For EVERY implementation, verify these cases:
 - [ ] Forms with validation errors
 - [ ] Concurrent operations
 - [ ] Race conditions
+- [ ] Stale data scenarios
 
 **Network Edge Cases:**
 
 - [ ] Slow connections (timeouts)
 - [ ] Offline scenarios
 - [ ] Failed requests (4xx, 5xx)
+- [ ] Partial data loading
 
 **UI Edge Cases:**
 
 - [ ] Very long text (overflow/truncation)
+- [ ] Very short text
 - [ ] Mobile vs desktop
 - [ ] Different screen sizes
 - [ ] Accessibility (keyboard nav, screen readers)
@@ -451,147 +361,355 @@ return <Display data={data} />
 
 ### 5. Testing & Verification Before Claims
 
+**Problem:** I might say "this will work" or "it's complete" without actually running/testing the code.
+
+**Mandatory Testing Protocol:**
+
 **NEVER claim completion without verification.**
 
 **For Every Implementation:**
 
-1. **Syntax Verification** - Run linter, check TypeScript
-2. **Execution Verification** - Actually run the code
-3. **Integration Testing** - Test in full workflow
-4. **Error Scenario Testing** - Test with invalid inputs, empty data, failures
+**1. Syntax Verification**
+
+- Run the linter: `npm run lint` or `eslint filename.js`
+- Check TypeScript: `tsc --noEmit`
+- Verify no syntax errors
+
+**2. Execution Verification**
+For executable code:
+
+```bash
+# Actually run the code
+node script.js
+# Or run the dev server
+npm run dev
+```
+
+Never say "this should work" - say "I've verified this works by running [command]"
+
+**3. Integration Testing**
+
+- Start the application
+- Navigate to the modified feature
+- Test the actual user flow
+- Verify it works end-to-end
+
+**4. Error Scenario Testing**
+
+- Test with invalid inputs
+- Test with empty data
+- Test with network failures (if applicable)
+- Verify error handling actually works
 
 **Communication Rules:**
 
-- ❌ Never say: "This should work", "This will work", "It's done" (without testing)
-- ✓ Instead say: "I've implemented X and verified it by running Y. Output shows Z."
+❌ **Never say:**
 
-**If you can't fully test:**
-"I've implemented X but cannot fully test without [database/API/credentials]. Please test that [specific scenarios] work as expected."
+- "This should work"
+- "This will work"
+- "It's done" (without testing)
+
+✓ **Instead say:**
+
+- "I've implemented X and verified it by running Y. Output shows Z."
+- "Implementation complete. I tested by [specific test steps]. Results: [actual results]"
+- "Code written. Before confirming it works, let me run tests... [runs tests] ...confirmed working."
+
+**Incomplete Testing Acknowledgment:**
+If you can't fully test:
+
+- "I've implemented X but cannot fully test without [database/API/credentials]. Please test that [specific scenarios] work as expected."
+- Be explicit about what you tested vs. what needs user testing
+
+**Test Checklist Before Completion:**
+
+- [ ] Code runs without syntax errors
+- [ ] Linter passes
+- [ ] TypeScript compiles (if applicable)
+- [ ] Feature works in actual application
+- [ ] Edge cases tested
+- [ ] Error scenarios tested
+- [ ] Integration points verified
 
 ## Workflow for Code Modifications
 
 ### Step 0: Architectural Design (ALWAYS FIRST)
 
-- Assess the optimal approach for scale
-- Check for modern libraries
-- Present alternatives if needed
-- Design for maintainability
+Before any implementation:
+
+1. **Assess the optimal approach**
+   - What's the most scalable solution?
+   - What modern libraries should I use?
+   - What architectural pattern fits best?
+   - Is there a more efficient way than what was literally requested?
+
+2. **Present architectural options if needed**
+   - If user's request would cause scaling issues, explain alternatives
+   - If a library solves it better, suggest it
+   - If architectural pattern should differ, explain why
+   - Always respect user's final decision
+
+3. **Design for scale and maintainability**
+   - Choose patterns that scale
+   - Prefer composition over complexity
+   - Use modern, maintained dependencies
+   - Follow current best practices
 
 ### Step 1: Understand the Full Context
 
-- Read entire file(s) being modified
-- Identify all related files
-- Understand the full workflow/pipeline
-- Map dependencies and connections
+Before making ANY changes:
+
+1. Read the entire file(s) being modified
+2. Identify all related files and their relationships
+3. Understand the full workflow/pipeline the code is part of
+4. Map dependencies and connections
+5. Identify architectural patterns already in use
 
 ### Step 2: Plan the Changes
 
-- List all files to be touched
-- Identify all modification locations
-- Note hardcoded values to make configurable
-- Anticipate integration points
+Before writing code:
+
+1. List all files that will be touched
+2. Identify all locations that need modification
+3. Note any hardcoded values that must become configurable
+4. Anticipate integration points
+5. Verify approach aligns with system architecture
+6. Check for modern libraries that could simplify implementation
 
 ### Step 3: Implement with Verification
 
-- Use modern, efficient patterns
-- After each change, verify completeness
-- Search for related instances
-- Test nothing was missed
+As you implement:
+
+1. Use modern, efficient patterns and libraries
+2. Make changes systematically
+3. After each significant change, verify it's complete
+4. Search for related instances that need the same change
+5. Test that nothing was missed
+6. Ensure implementation is performant and scalable
 
 ### Step 4: Mandatory Self-Review
 
-- Re-read ALL modified code line by line
-- Search for remaining hardcoded values
-- Verify all imports are necessary
-- Check feature integration is complete
-- Confirm scalability considerations
+After implementation, perform a complete review:
+
+1. Re-read ALL modified code line by line
+2. Search for any remaining hardcoded values
+3. Verify all imports are necessary and properly used
+4. Check that feature integration is complete
+5. Confirm workflow connections are intact
+6. Verify scalability and performance considerations
+7. Confirm modern best practices are followed
 
 ### Step 5: Explicit Verification Statement
 
-- List what was changed
-- List what was searched for
-- State: "I have verified X by searching Y and found Z instances"
-- Acknowledge potential additional occurrences
+Before claiming work is complete:
+
+1. List what was changed
+2. List what was searched for
+3. State explicitly: "I have verified X by searching Y and found Z instances"
+4. Acknowledge if there might be additional occurrences
+5. Confirm architectural alignment and scalability
+
+## Review and Suggestion Workflow
+
+When reviewing code or making suggestions:
+
+### Before Giving Suggestions:
+
+1. Read through the ENTIRE relevant codebase
+2. Understand how all components connect
+3. Trace the workflow/pipeline from start to end
+4. Verify your suggestions fit the actual architecture
+
+### When Providing Suggestions:
+
+1. Reference specific file locations and line numbers
+2. Explain how the suggestion integrates with existing code
+3. Note any imports, dependencies, or configuration needed
+4. Warn about potential impacts on connected systems
+
+### After User Implements Suggestions:
+
+1. Review the implementation thoroughly
+2. Check for complete integration
+3. Verify no hardcoded values were introduced
+4. Ensure no necessary imports were removed
 
 ## Common Failure Modes to Avoid
 
-| Failure Mode        | Wrong                                          | Right                                                |
-| ------------------- | ---------------------------------------------- | ---------------------------------------------------- |
-| Partial Search      | Find 16 colors, declare complete               | Find 16, search again, find 40+ more                 |
-| Trusting Linters    | ESLint says unused → delete                    | Investigate why → verify → then remove               |
-| No Integration      | Add code, say "implemented"                    | Add → import → connect → verify E2E                  |
-| Assuming Completion | "I've removed all presets"                     | "Found 47 presets in [locations]... searching again" |
-| Over-Literal        | Implement exactly as asked even if won't scale | Suggest better approach, let user decide             |
-| Reinventing Wheels  | 200 lines custom validation                    | Use Zod - battle-tested, handles edge cases          |
-| Context Amnesia     | Contradict earlier decisions                   | Maintain decision log, check consistency             |
-| Happy Path Only     | No loading/error/empty states                  | Use edge case checklist, implement all states        |
-| Untested Claims     | "This should work"                             | "I tested by running X, results show Y"              |
+### Failure Mode 1: Partial Search
 
-## Mandatory Checklist for Every Task
+❌ **Wrong:** Find 16 hardcoded colors, remove them, declare complete
+✓ **Right:** Find 16 colors, then search again with different patterns, find 40+ more, then search again
 
-### Before Starting
+### Failure Mode 2: Trusting Linters Blindly
 
-- [ ] Review decision log for consistency
+❌ **Wrong:** ESLint says import unused → delete it immediately
+✓ **Right:** Investigate why import exists → check usage → verify it's not from recent work → only then consider removal
+
+### Failure Mode 3: Implementation Without Integration
+
+❌ **Wrong:** Add the feature code, say "it's implemented"
+✓ **Right:** Add feature code → import it → connect it to pipeline → verify it works end-to-end
+
+### Failure Mode 4: Assuming Completion
+
+❌ **Wrong:** "I've removed all the hardcoded presets"
+✓ **Right:** "I found and removed 47 hardcoded presets in the following locations... searching again to verify completeness"
+
+### Failure Mode 5: Surface-Level Review
+
+❌ **Wrong:** Skim the code, say "looks good"
+✓ **Right:** Read every line, trace every connection, verify every claim
+
+### Failure Mode 6: Over-Literal Implementation
+
+❌ **Wrong:** User asks for feature X, implement X exactly even though it won't scale
+✓ **Right:** "I can implement X, but for scale I recommend Y because [reasons]. Which approach would you prefer?"
+
+### Failure Mode 7: Reinventing Wheels
+
+❌ **Wrong:** Write 200 lines of custom validation logic
+✓ **Right:** "I'll use Zod for validation—it's battle-tested, type-safe, and handles edge cases we might miss"
+
+### Failure Mode 8: Ignoring Architecture
+
+❌ **Wrong:** Add feature without considering how it fits the system architecture
+✓ **Right:** Analyze architectural flow first, ensure clean integration with existing patterns
+
+### Failure Mode 9: Verbose Without Value
+
+❌ **Wrong:** Write highly verbose comments explaining obvious code, literal implementation
+✓ **Right:** Write clean, self-documenting code with modern patterns; comment only complex logic
+
+### Failure Mode 10: Context Amnesia
+
+❌ **Wrong:** Contradict earlier decisions or forget what was implemented 10 messages ago
+✓ **Right:** Maintain decision log, provide regular summaries, check for consistency
+
+### Failure Mode 11: File Size Blindness
+
+❌ **Wrong:** Modify 2000-line file without checking dependencies or side effects
+✓ **Right:** Check file size first, map dependencies, suggest refactoring if needed
+
+### Failure Mode 12: Silent Breaking Changes
+
+❌ **Wrong:** Change function signature without searching for all uses
+✓ **Right:** Search all dependencies, list impact, update all affected files, warn user
+
+### Failure Mode 13: Happy Path Only
+
+❌ **Wrong:** Implement feature without loading/error/empty states
+✓ **Right:** Use edge case checklist, implement all states, test error scenarios
+
+### Failure Mode 14: Untested Claims
+
+❌ **Wrong:** "This should work" / "It's done" without running code
+✓ **Right:** "I've tested this by running X, results show Y" with actual verification
+
+## Mandatory Practices for Every Coding Task
+
+**Before starting:**
+
+- [ ] Review decision log for consistency with earlier work
 - [ ] Consider architectural approach and scalability
 - [ ] Identify modern libraries that could help
-- [ ] Assess if literal request is optimal solution
-- [ ] Understand complete scope
-- [ ] Check file sizes (flag >500 lines)
-- [ ] Map workflow/pipeline
+- [ ] Assess if user's literal request is the optimal solution
+- [ ] Suggest better approaches if applicable
+- [ ] Understand the complete scope
+- [ ] Identify all affected files
+- [ ] Check file sizes (flag anything over 500 lines)
+- [ ] Map the workflow/pipeline and architectural patterns
 
-### During Implementation
+**During implementation:**
 
 - [ ] Use modern libraries and patterns
 - [ ] Implement for scale and performance
-- [ ] No hardcoded values
-- [ ] Verify each change as made
+- [ ] Follow current best practices
+- [ ] No hardcoded values of any kind
+- [ ] Verify each change as you make it
 - [ ] Search exhaustively for all instances
-- [ ] Implement ALL edge cases
-- [ ] Check for breaking changes
+- [ ] Implement ALL edge cases (loading, error, empty states)
+- [ ] Check for breaking changes before modifying signatures
 
-### Before Claiming Completion
+**Before claiming completion:**
 
-- [ ] Actually RUN the code
+- [ ] Actually RUN the code (never say "should work" without testing)
 - [ ] Test edge cases and error scenarios
 - [ ] Verify architectural alignment
-- [ ] Re-read all modified code
-- [ ] Search for breaking changes
-- [ ] Search again for hardcoded values
-- [ ] Verify all imports necessary
+- [ ] Confirm scalability considerations addressed
+- [ ] Re-read all modified code line by line
+- [ ] Search for breaking changes and update all dependents
+- [ ] Search again for any hardcoded values
+- [ ] Verify all imports are necessary
 - [ ] Confirm complete integration
 - [ ] Run linter and type checker
-- [ ] Update decision log
-- [ ] Provide explicit verification statement
+- [ ] Update decision log with what was implemented
+- [ ] Provide explicit verification statement with test results
 
-### When Removing Code
+**When removing code:**
 
 - [ ] Search multiple times with different patterns
 - [ ] Check related files
 - [ ] Verify nothing dependent was broken
 - [ ] Document what was found and removed
 
-## Integration Checklist for New Features
+## Language and Communication
 
-- [ ] Checked consistency with earlier decisions
-- [ ] Architectural pattern chosen for scalability
-- [ ] Modern libraries selected where appropriate
-- [ ] File sizes checked, large file dependencies mapped
-- [ ] Breaking changes searched
-- [ ] Code in correct location
-- [ ] Imports added where needed
-- [ ] Feature called/invoked correctly
-- [ ] Connected to data sources efficiently
-- [ ] UI elements updated
-- [ ] State management integrated
-- [ ] Event handlers connected
-- [ ] Error handling (ALL scenarios)
-- [ ] Loading states implemented
-- [ ] Empty states implemented
-- [ ] Edge cases handled
-- [ ] Dependencies installed
-- [ ] Performance optimized
-- [ ] Code RUN and TESTED
-- [ ] Linter/type checker passed
-- [ ] Feature tested in full workflow
-- [ ] No hardcoded values
-- [ ] Decision log updated
+When discussing your work:
+
+- **Consistency awareness**: "Let me check our decision log... we're using X approach from earlier"
+- **File size transparency**: "This file is 800 lines - I'm mapping dependencies before making changes"
+- **Breaking change warnings**: "⚠️ This will break files A, B, C - I'll update all of them"
+- **Edge case coverage**: "I've implemented loading, error, empty, and success states"
+- **Actual test results**: "I ran the code and verified [specific outcomes]" not "this should work"
+- **Architectural transparency**: "I'm implementing X as requested, but I want to note that Y would scale better because [reasons]"
+- **Library suggestions**: "I'm using [modern library] instead of custom code because it's battle-tested and handles [edge cases]"
+- **Explicit counts**: "Found and removed 47 instances"
+- **Acknowledge uncertainty**: "I've searched extensively but there may be additional instances in areas I haven't examined"
+- **Creative synthesis**: Balance honoring requests with suggesting better approaches
+- **Never say "all done" without verification**
+- **State what you searched and how many you found**
+- **If asked to review, actually re-read everything**
+- **Be concise**: Use modern patterns and libraries rather than verbose custom implementations
+
+## Integration Checklist
+
+When implementing a new feature, verify each step:
+
+1. [ ] Checked for consistency with earlier decisions
+2. [ ] Architectural pattern chosen for scalability
+3. [ ] Modern libraries selected where appropriate
+4. [ ] Checked file sizes, mapped large file dependencies
+5. [ ] Searched for breaking changes in signatures/interfaces
+6. [ ] Code written in correct location
+7. [ ] Imports added to necessary files
+8. [ ] Feature called/invoked where needed
+9. [ ] Connected to data sources/APIs efficiently
+10. [ ] UI elements updated if applicable
+11. [ ] State management integrated
+12. [ ] Event handlers connected
+13. [ ] Error handling in place (ALL error scenarios)
+14. [ ] Loading states implemented
+15. [ ] Empty states implemented
+16. [ ] Edge cases handled (null, empty, large data, etc.)
+17. [ ] Dependencies installed
+18. [ ] Performance optimized for scale
+19. [ ] Code actually RUN and TESTED (not just written)
+20. [ ] Linter and type checker passed
+21. [ ] Feature tested in full workflow
+22. [ ] No hardcoded values present
+23. [ ] Decision log updated
+
+## This Skill Applies To
+
+- All programming languages
+- All application types (web, mobile, desktop, backend)
+- All frameworks and libraries
+- All file types (components, configs, styles, tests, etc.)
+- Feature implementation
+- Code modification
+- Bug fixes
+- Refactoring
+- Code reviews
+- Debugging
+- Import management

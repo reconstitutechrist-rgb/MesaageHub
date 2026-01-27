@@ -270,6 +270,159 @@ class MediaLibraryService {
     }
   }
 
+  // ============================================
+  // CDN Helper Methods (Phase 4)
+  // ============================================
+
+  /**
+   * Persist AI-generated image to CDN
+   * Used by Edge Function for auto-caching generated images
+   * @param {string} base64Data - Base64 encoded image data (with or without prefix)
+   * @param {string} aiModel - The AI model used (e.g., 'imagen-4.0', 'gemini')
+   * @param {string} userId - The user ID
+   * @returns {Promise<object>} - CDN URL and storage path
+   */
+  async persistAIImageToCDN(base64Data, aiModel = 'unknown', userId = 'demo-user') {
+    if (!isSupabaseConfigured) {
+      // Demo mode - return mock CDN URL
+      return {
+        success: true,
+        cdnUrl: `data:image/png;base64,${base64Data.replace(/^data:image\/\w+;base64,/, '')}`,
+        storagePath: `mock/${userId}/ai-generated/${aiModel}/${Date.now()}.png`,
+      }
+    }
+
+    try {
+      // Strip data URL prefix if present
+      const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, '')
+
+      // Convert base64 to Blob
+      const byteCharacters = atob(base64Clean)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: 'image/png' })
+
+      // Generate unique path with model info for analytics
+      const timestamp = Date.now()
+      const hash = Math.random().toString(36).substring(2, 10)
+      const storagePath = `${userId}/ai-generated/${aiModel}/${timestamp}-${hash}.png`
+
+      // Upload to Supabase Storage with long cache
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(storagePath, blob, {
+          contentType: 'image/png',
+          cacheControl: '31536000', // 1 year cache
+          upsert: false,
+        })
+
+      if (uploadError) throw uploadError
+
+      // Get public CDN URL
+      const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath)
+
+      return {
+        success: true,
+        cdnUrl: urlData.publicUrl,
+        storagePath,
+      }
+    } catch (error) {
+      console.error('Failed to persist AI image to CDN:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Copy video from external URL to CDN
+   * Used to cache videos from Veo/Sora on our CDN
+   * @param {string} externalUrl - External video URL (from Veo or Sora)
+   * @param {string} aiModel - The AI model used (e.g., 'veo-3.1', 'sora-2')
+   * @param {string} userId - The user ID
+   * @returns {Promise<object>} - CDN URL and storage path
+   */
+  async copyVideoToCDN(externalUrl, aiModel = 'unknown', userId = 'demo-user') {
+    if (!isSupabaseConfigured) {
+      // Demo mode - return original URL
+      return {
+        success: true,
+        cdnUrl: externalUrl,
+        storagePath: `mock/${userId}/ai-videos/${aiModel}/${Date.now()}.mp4`,
+      }
+    }
+
+    try {
+      // Fetch video from external URL
+      const response = await fetch(externalUrl)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video: ${response.status}`)
+      }
+      const blob = await response.blob()
+
+      // Generate unique path
+      const timestamp = Date.now()
+      const hash = Math.random().toString(36).substring(2, 10)
+      const storagePath = `${userId}/ai-videos/${aiModel}/${timestamp}-${hash}.mp4`
+
+      // Upload to Supabase Storage with long cache
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(storagePath, blob, {
+          contentType: 'video/mp4',
+          cacheControl: '31536000', // 1 year cache
+          upsert: false,
+        })
+
+      if (uploadError) throw uploadError
+
+      // Get public CDN URL
+      const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath)
+
+      return {
+        success: true,
+        cdnUrl: urlData.publicUrl,
+        storagePath,
+      }
+    } catch (error) {
+      console.error('Failed to copy video to CDN:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Get CDN URL with optional image transforms
+   * Supabase Storage supports on-the-fly transforms for images
+   * @param {string} storagePath - The storage path
+   * @param {object} options - Transform options
+   * @returns {string} - CDN URL with transforms
+   */
+  getCDNUrl(storagePath, options = {}) {
+    const { width, height, quality, format } = options
+
+    if (!isSupabaseConfigured) {
+      return storagePath // Return as-is in demo mode
+    }
+
+    const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath)
+
+    let url = data.publicUrl
+
+    // Add transform parameters if specified
+    const params = []
+    if (width) params.push(`width=${width}`)
+    if (height) params.push(`height=${height}`)
+    if (quality) params.push(`quality=${quality}`)
+    if (format) params.push(`format=${format}`)
+
+    if (params.length > 0) {
+      url += (url.includes('?') ? '&' : '?') + params.join('&')
+    }
+
+    return url
+  }
+
   /**
    * Get media library stats
    * @param {string} userId - The user ID

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 
 /**
  * Layer types supported by the canvas editor
@@ -8,6 +8,11 @@ export const LayerType = {
   IMAGE: 'image',
   BACKGROUND: 'background',
 }
+
+/**
+ * Maximum number of history states to keep for undo/redo
+ */
+const HISTORY_LIMIT = 50
 
 /**
  * Create a new text layer with default values
@@ -141,6 +146,66 @@ export function useLayerManager(initialLayers = []) {
   const [layers, setLayers] = useState(initialLayers)
   const [selectedLayerId, setSelectedLayerId] = useState(null)
 
+  // History for undo/redo
+  const historyRef = useRef([initialLayers])
+  const historyIndexRef = useRef(0)
+
+  /**
+   * Push current state to history (called after state changes)
+   */
+  const pushToHistory = useCallback((newLayers) => {
+    // Truncate any redo states
+    historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1)
+
+    // Add new state
+    historyRef.current.push(JSON.parse(JSON.stringify(newLayers)))
+
+    // Enforce history limit
+    if (historyRef.current.length > HISTORY_LIMIT) {
+      historyRef.current.shift()
+    } else {
+      historyIndexRef.current++
+    }
+  }, [])
+
+  /**
+   * Check if undo is available
+   */
+  const canUndo = useMemo(() => {
+    return historyIndexRef.current > 0
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layers]) // Re-compute when layers change
+
+  /**
+   * Check if redo is available
+   */
+  const canRedo = useMemo(() => {
+    return historyIndexRef.current < historyRef.current.length - 1
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layers]) // Re-compute when layers change
+
+  /**
+   * Undo last action
+   */
+  const undo = useCallback(() => {
+    if (historyIndexRef.current > 0) {
+      historyIndexRef.current--
+      const previousState = historyRef.current[historyIndexRef.current]
+      setLayers(JSON.parse(JSON.stringify(previousState)))
+    }
+  }, [])
+
+  /**
+   * Redo last undone action
+   */
+  const redo = useCallback(() => {
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      historyIndexRef.current++
+      const nextState = historyRef.current[historyIndexRef.current]
+      setLayers(JSON.parse(JSON.stringify(nextState)))
+    }
+  }, [])
+
   /**
    * Get layers sorted by zIndex for rendering
    */
@@ -158,10 +223,17 @@ export function useLayerManager(initialLayers = []) {
   /**
    * Add a new layer
    */
-  const addLayer = useCallback((layer) => {
-    setLayers((prev) => [...prev, layer])
-    setSelectedLayerId(layer.id)
-  }, [])
+  const addLayer = useCallback(
+    (layer) => {
+      setLayers((prev) => {
+        const newLayers = [...prev, layer]
+        pushToHistory(newLayers)
+        return newLayers
+      })
+      setSelectedLayerId(layer.id)
+    },
+    [pushToHistory]
+  )
 
   /**
    * Add a new text layer with optional initial text
@@ -182,29 +254,40 @@ export function useLayerManager(initialLayers = []) {
    */
   const removeLayer = useCallback(
     (layerId) => {
-      setLayers((prev) => prev.filter((l) => l.id !== layerId))
+      setLayers((prev) => {
+        const newLayers = prev.filter((l) => l.id !== layerId)
+        pushToHistory(newLayers)
+        return newLayers
+      })
       if (selectedLayerId === layerId) {
         setSelectedLayerId(null)
       }
     },
-    [selectedLayerId]
+    [selectedLayerId, pushToHistory]
   )
 
   /**
    * Update a layer's properties
    */
-  const updateLayer = useCallback((layerId, updates) => {
-    setLayers((prev) =>
-      prev.map((layer) => {
-        if (layer.id !== layerId) return layer
-        return {
-          ...layer,
-          ...updates,
-          data: updates.data ? { ...layer.data, ...updates.data } : layer.data,
+  const updateLayer = useCallback(
+    (layerId, updates, skipHistory = false) => {
+      setLayers((prev) => {
+        const newLayers = prev.map((layer) => {
+          if (layer.id !== layerId) return layer
+          return {
+            ...layer,
+            ...updates,
+            data: updates.data ? { ...layer.data, ...updates.data } : layer.data,
+          }
+        })
+        if (!skipHistory) {
+          pushToHistory(newLayers)
         }
+        return newLayers
       })
-    )
-  }, [])
+    },
+    [pushToHistory]
+  )
 
   /**
    * Update the selected layer's data
@@ -254,42 +337,52 @@ export function useLayerManager(initialLayers = []) {
   /**
    * Move a layer up in z-order
    */
-  const moveLayerUp = useCallback((layerId) => {
-    setLayers((prev) => {
-      const sorted = [...prev].sort((a, b) => a.zIndex - b.zIndex)
-      const index = sorted.findIndex((l) => l.id === layerId)
-      if (index === sorted.length - 1) return prev // Already at top
+  const moveLayerUp = useCallback(
+    (layerId) => {
+      setLayers((prev) => {
+        const sorted = [...prev].sort((a, b) => a.zIndex - b.zIndex)
+        const index = sorted.findIndex((l) => l.id === layerId)
+        if (index === sorted.length - 1) return prev // Already at top
 
-      const currentLayer = sorted[index]
-      const layerAbove = sorted[index + 1]
+        const currentLayer = sorted[index]
+        const layerAbove = sorted[index + 1]
 
-      return prev.map((l) => {
-        if (l.id === currentLayer.id) return { ...l, zIndex: layerAbove.zIndex }
-        if (l.id === layerAbove.id) return { ...l, zIndex: currentLayer.zIndex }
-        return l
+        const newLayers = prev.map((l) => {
+          if (l.id === currentLayer.id) return { ...l, zIndex: layerAbove.zIndex }
+          if (l.id === layerAbove.id) return { ...l, zIndex: currentLayer.zIndex }
+          return l
+        })
+        pushToHistory(newLayers)
+        return newLayers
       })
-    })
-  }, [])
+    },
+    [pushToHistory]
+  )
 
   /**
    * Move a layer down in z-order
    */
-  const moveLayerDown = useCallback((layerId) => {
-    setLayers((prev) => {
-      const sorted = [...prev].sort((a, b) => a.zIndex - b.zIndex)
-      const index = sorted.findIndex((l) => l.id === layerId)
-      if (index === 0) return prev // Already at bottom
+  const moveLayerDown = useCallback(
+    (layerId) => {
+      setLayers((prev) => {
+        const sorted = [...prev].sort((a, b) => a.zIndex - b.zIndex)
+        const index = sorted.findIndex((l) => l.id === layerId)
+        if (index === 0) return prev // Already at bottom
 
-      const currentLayer = sorted[index]
-      const layerBelow = sorted[index - 1]
+        const currentLayer = sorted[index]
+        const layerBelow = sorted[index - 1]
 
-      return prev.map((l) => {
-        if (l.id === currentLayer.id) return { ...l, zIndex: layerBelow.zIndex }
-        if (l.id === layerBelow.id) return { ...l, zIndex: currentLayer.zIndex }
-        return l
+        const newLayers = prev.map((l) => {
+          if (l.id === currentLayer.id) return { ...l, zIndex: layerBelow.zIndex }
+          if (l.id === layerBelow.id) return { ...l, zIndex: currentLayer.zIndex }
+          return l
+        })
+        pushToHistory(newLayers)
+        return newLayers
       })
-    })
-  }, [])
+    },
+    [pushToHistory]
+  )
 
   /**
    * Duplicate a layer
@@ -325,14 +418,21 @@ export function useLayerManager(initialLayers = []) {
   const clearLayers = useCallback(() => {
     setLayers([])
     setSelectedLayerId(null)
-  }, [])
+    pushToHistory([])
+  }, [pushToHistory])
 
   /**
    * Set all layers at once (for bulk operations or restoration)
    */
-  const setAllLayers = useCallback((newLayers) => {
-    setLayers(newLayers)
-  }, [])
+  const setAllLayers = useCallback(
+    (newLayers, skipHistory = false) => {
+      setLayers(newLayers)
+      if (!skipHistory) {
+        pushToHistory(newLayers)
+      }
+    },
+    [pushToHistory]
+  )
 
   /**
    * Get all text layers
@@ -374,5 +474,11 @@ export function useLayerManager(initialLayers = []) {
     toggleLayerLock,
     moveLayerUp,
     moveLayerDown,
+
+    // Undo/Redo
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   }
 }

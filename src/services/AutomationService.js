@@ -105,7 +105,7 @@ class AutomationService {
 
   // --- Template Variable Substitution ---
 
-  substituteVariables(template, contact, context = {}) {
+  substituteVariables(template, contact, _context = {}) {
     if (!template) return ''
 
     return template

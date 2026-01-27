@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { mediaLibraryService } from '@/services/MediaLibraryService'
+import { designProjectService } from '@/services/DesignProjectService'
 
 // Theme options (matching other phone pages)
 const themes = {
@@ -112,7 +113,7 @@ const filterTabs = [
   { id: 'all', label: 'All' },
   { id: 'images', label: 'Images' },
   { id: 'videos', label: 'Videos' },
-  { id: 'ai', label: 'AI Generated' },
+  { id: 'projects', label: 'Projects' },
 ]
 
 export default function MediaLibraryPage() {
@@ -121,6 +122,7 @@ export default function MediaLibraryPage() {
 
   const [theme, setTheme] = useState('cyanDark')
   const [mediaItems, setMediaItems] = useState([])
+  const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState('all')
   const [selectMode, setSelectMode] = useState(false)
@@ -165,22 +167,40 @@ export default function MediaLibraryPage() {
     setLoading(false)
   }, [user?.id])
 
+  const loadProjects = useCallback(async () => {
+    const result = await designProjectService.listProjects(user?.id || 'demo-user')
+    if (result.success) {
+      setProjects(result.data)
+    }
+  }, [user?.id])
+
   useEffect(() => {
     loadMedia()
-  }, [loadMedia])
+    loadProjects()
+  }, [loadMedia, loadProjects])
 
   const filteredMedia = useMemo(() => {
+    if (activeFilter === 'projects') return [] // Projects shown separately
     switch (activeFilter) {
       case 'images':
         return mediaItems.filter((m) => m.type === 'image')
       case 'videos':
         return mediaItems.filter((m) => m.type === 'video')
-      case 'ai':
-        return mediaItems.filter((m) => m.source === 'ai-studio')
       default:
         return mediaItems
     }
   }, [mediaItems, activeFilter])
+
+  const handleOpenProject = (project) => {
+    // Navigate to AI Studio with project data
+    navigate('/dashboard', { state: { openProject: project } })
+  }
+
+  const handleDeleteProject = async (projectId) => {
+    if (!confirm('Delete this project?')) return
+    await designProjectService.deleteProject(projectId, user?.id || 'demo-user')
+    loadProjects()
+  }
 
   const toggleSelectItem = (item) => {
     setSelectedItems((prev) => {
@@ -405,12 +425,116 @@ export default function MediaLibraryPage() {
             ))}
           </div>
 
-          {/* Media Grid */}
+          {/* Media Grid / Projects Grid */}
           <div style={{ flex: 1, overflow: 'auto', padding: '0 8px' }}>
             {loading ? (
               <div style={{ textAlign: 'center', padding: '60px', color: t.textMuted }}>
                 Loading...
               </div>
+            ) : activeFilter === 'projects' ? (
+              // Projects Grid
+              projects.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px', color: t.textMuted }}>
+                  <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎨</div>
+                  <div>No saved projects</div>
+                  <div style={{ fontSize: '12px', marginTop: '8px' }}>
+                    Create designs in AI Studio and save them here
+                  </div>
+                </div>
+              ) : (
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '8px' }}
+                >
+                  {projects.map((project) => (
+                    <div
+                      key={project.id}
+                      style={{
+                        display: 'flex',
+                        background: t.cardBg,
+                        border: `1px solid ${t.cardBorder}`,
+                        borderRadius: '12px',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {/* Project Thumbnail */}
+                      <button
+                        onClick={() => handleOpenProject(project)}
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          background: project.thumbnail_url
+                            ? `url(${project.thumbnail_url}) center/cover`
+                            : `linear-gradient(135deg, ${t.accent}33, ${t.accent}11)`,
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {!project.thumbnail_url && Icons.sparkles(t.accent)}
+                      </button>
+
+                      {/* Project Info */}
+                      <button
+                        onClick={() => handleOpenProject(project)}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          textAlign: 'left',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: t.text,
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {project.name}
+                        </div>
+                        <div style={{ color: t.textMuted, fontSize: '12px' }}>
+                          {project.platform_preset?.replace(/-/g, ' ') || 'Custom'}
+                        </div>
+                        <div style={{ color: t.textMuted, fontSize: '11px' }}>
+                          {new Date(project.updated_at).toLocaleDateString()}
+                        </div>
+                      </button>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteProject(project.id)
+                        }}
+                        style={{
+                          width: '44px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          opacity: 0.6,
+                        }}
+                      >
+                        {Icons.trash(t.textMuted)}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )
             ) : filteredMedia.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px', color: t.textMuted }}>
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>📷</div>

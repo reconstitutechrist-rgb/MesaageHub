@@ -4,10 +4,20 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import { ToastProvider } from '@/components/providers/ToastProvider'
 import { CallProvider } from '@/components/providers/CallProvider'
+import { PhoneThemeProvider } from '@/context/PhoneThemeContext'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { AppRoutes } from '@/config/routes'
+import { syncService } from '@/services/SyncService'
 
 function ThemeManager({ children }) {
+  useEffect(() => {
+    // Initialize sync service (for mobile/Capacitor only)
+    syncService.initialize().catch(() => {
+      // SyncService requires Capacitor - ignore in web mode
+    })
+    return () => syncService.destroy()
+  }, [])
+
   useEffect(() => {
     try {
       // Load saved settings
@@ -59,13 +69,15 @@ function App() {
       <BrowserRouter>
         <ThemeManager>
           <ThemeProvider defaultTheme="system" storageKey="messagehub-theme">
-            <AuthProvider>
-              <ToastProvider>
-                <CallProvider>
-                  <AppRoutes />
-                </CallProvider>
-              </ToastProvider>
-            </AuthProvider>
+            <PhoneThemeProvider>
+              <AuthProvider>
+                <ToastProvider>
+                  <CallProvider>
+                    <AppRoutes />
+                  </CallProvider>
+                </ToastProvider>
+              </AuthProvider>
+            </PhoneThemeProvider>
           </ThemeProvider>
         </ThemeManager>
       </BrowserRouter>

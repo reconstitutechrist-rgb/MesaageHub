@@ -390,6 +390,35 @@ const Icons = {
       <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   ),
+  creditCard: (color) => (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+      <line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+  ),
+  cloud: (color) => (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
+    </svg>
+  ),
 }
 
 // Toggle Switch Component
@@ -869,7 +898,7 @@ function AutomationsModal({ open, onClose, theme: t }) {
       await automationService.toggleAutomationRule(ruleId, isActive)
       setRules((prev) => prev.map((r) => (r.id === ruleId ? { ...r, is_active: isActive } : r)))
       toast.success(isActive ? 'Automation enabled' : 'Automation disabled')
-    } catch (err) {
+    } catch {
       toast.error('Failed to update automation')
     }
   }
@@ -879,7 +908,7 @@ function AutomationsModal({ open, onClose, theme: t }) {
       await automationService.deleteAutomationRule(ruleId)
       setRules((prev) => prev.filter((r) => r.id !== ruleId))
       toast.success('Automation deleted')
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete automation')
     }
   }
@@ -910,7 +939,7 @@ function AutomationsModal({ open, onClose, theme: t }) {
       setSendTime('09:00')
 
       toast.success(editingRule ? 'Automation updated' : 'Automation created')
-    } catch (err) {
+    } catch {
       toast.error('Failed to save automation')
     }
   }
@@ -1340,6 +1369,352 @@ function AutomationsModal({ open, onClose, theme: t }) {
   )
 }
 
+// Subscription Modal Component
+function SubscriptionModal({ open, onClose, theme: t }) {
+  if (!open) return null
+
+  // Mock subscription data
+  const currentTier = 'free'
+  const usage = {
+    aiGenerations: { used: 45, limit: 50 },
+    videoRenders: { used: 2, limit: 5 },
+    contacts: { used: 100, limit: 500 },
+  }
+
+  const tiers = {
+    free: { name: 'Free', price: '$0/mo', color: t.textMuted },
+    pro: { name: 'Pro', price: '$19/mo', color: t.accent },
+    enterprise: { name: 'Enterprise', price: '$99/mo', color: '#f59e0b' },
+  }
+
+  const usagePercent = (used, limit) => Math.min(Math.round((used / limit) * 100), 100)
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: t.bg,
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: '60px 16px 16px',
+          borderBottom: `1px solid ${t.cardBorder}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: t.accent,
+            cursor: 'pointer',
+            fontSize: '16px',
+          }}
+        >
+          Close
+        </button>
+        <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+          Subscription
+        </h2>
+        <div style={{ width: '50px' }} />
+      </div>
+
+      <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
+        {/* Current Plan */}
+        <div
+          style={{
+            padding: '20px',
+            borderRadius: '16px',
+            background: t.cardBg,
+            border: `1px solid ${t.cardBorder}`,
+            marginBottom: '24px',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-block',
+              padding: '6px 16px',
+              borderRadius: '20px',
+              background: `${tiers[currentTier].color}22`,
+              color: tiers[currentTier].color,
+              fontSize: '14px',
+              fontWeight: '600',
+              marginBottom: '8px',
+            }}
+          >
+            {tiers[currentTier].name}
+          </div>
+          <p style={{ color: t.text, fontSize: '24px', fontWeight: '700', margin: '8px 0' }}>
+            {tiers[currentTier].price}
+          </p>
+          <p style={{ color: t.textMuted, fontSize: '13px', margin: 0 }}>
+            Current billing period ends Feb 28, 2026
+          </p>
+        </div>
+
+        {/* Usage Section */}
+        <h3 style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: '0 0 16px' }}>
+          Usage This Month
+        </h3>
+
+        {Object.entries(usage).map(([key, { used, limit }]) => {
+          const percent = usagePercent(used, limit)
+          const isWarning = percent >= 80
+          return (
+            <div
+              key={key}
+              style={{
+                padding: '16px',
+                borderRadius: '12px',
+                background: t.cardBg,
+                border: `1px solid ${t.cardBorder}`,
+                marginBottom: '12px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: '8px',
+                }}
+              >
+                <span style={{ color: t.text, fontSize: '14px', fontWeight: '500' }}>
+                  {key === 'aiGenerations'
+                    ? 'AI Generations'
+                    : key === 'videoRenders'
+                      ? 'Video Renders'
+                      : 'Contacts'}
+                </span>
+                <span
+                  style={{
+                    color: isWarning ? '#f59e0b' : t.textMuted,
+                    fontSize: '14px',
+                    fontWeight: '500',
+                  }}
+                >
+                  {used} / {limit}
+                </span>
+              </div>
+              <div
+                style={{
+                  height: '8px',
+                  borderRadius: '4px',
+                  background: `${t.accent}22`,
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${percent}%`,
+                    borderRadius: '4px',
+                    background: isWarning ? 'linear-gradient(90deg, #f59e0b, #ef4444)' : t.accent,
+                    transition: 'width 0.3s ease',
+                  }}
+                />
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Upgrade Button */}
+        <button
+          style={{
+            width: '100%',
+            padding: '16px',
+            borderRadius: '12px',
+            border: 'none',
+            background: `linear-gradient(135deg, ${t.accent}, ${t.accent}dd)`,
+            color: '#fff',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            marginTop: '16px',
+          }}
+        >
+          Upgrade to Pro
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Sync Status Modal Component
+function SyncModal({ open, onClose, theme: t }) {
+  if (!open) return null
+
+  const syncStatus = {
+    lastSync: new Date(Date.now() - 120000).toISOString(), // 2 min ago
+    pendingChanges: 0,
+    isOnline: true,
+  }
+
+  const formatLastSync = (isoString) => {
+    const diff = Date.now() - new Date(isoString).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins} min ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    return new Date(isoString).toLocaleDateString()
+  }
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: t.bg,
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: '60px 16px 16px',
+          borderBottom: `1px solid ${t.cardBorder}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: t.accent,
+            cursor: 'pointer',
+            fontSize: '16px',
+          }}
+        >
+          Close
+        </button>
+        <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+          Sync Status
+        </h2>
+        <div style={{ width: '50px' }} />
+      </div>
+
+      <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
+        {/* Status Card */}
+        <div
+          style={{
+            padding: '24px',
+            borderRadius: '16px',
+            background: t.cardBg,
+            border: `1px solid ${t.cardBorder}`,
+            marginBottom: '24px',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              background: `${t.success}22`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={t.success}
+              strokeWidth="2"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <p style={{ color: t.text, fontSize: '18px', fontWeight: '600', margin: '0 0 8px' }}>
+            All Synced
+          </p>
+          <p style={{ color: t.textMuted, fontSize: '14px', margin: 0 }}>
+            Last synced: {formatLastSync(syncStatus.lastSync)}
+          </p>
+        </div>
+
+        {/* Status Details */}
+        <div
+          style={{
+            padding: '16px',
+            borderRadius: '12px',
+            background: t.cardBg,
+            border: `1px solid ${t.cardBorder}`,
+            marginBottom: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span style={{ color: t.text, fontSize: '14px' }}>Connection</span>
+          <span
+            style={{
+              color: syncStatus.isOnline ? t.success : t.danger,
+              fontSize: '14px',
+              fontWeight: '500',
+            }}
+          >
+            {syncStatus.isOnline ? 'Online' : 'Offline'}
+          </span>
+        </div>
+
+        <div
+          style={{
+            padding: '16px',
+            borderRadius: '12px',
+            background: t.cardBg,
+            border: `1px solid ${t.cardBorder}`,
+            marginBottom: '24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span style={{ color: t.text, fontSize: '14px' }}>Pending Changes</span>
+          <span style={{ color: t.textMuted, fontSize: '14px', fontWeight: '500' }}>
+            {syncStatus.pendingChanges}
+          </span>
+        </div>
+
+        {/* Sync Now Button */}
+        <button
+          style={{
+            width: '100%',
+            padding: '16px',
+            borderRadius: '12px',
+            border: `1px solid ${t.cardBorder}`,
+            background: t.cardBg,
+            color: t.text,
+            fontSize: '16px',
+            fontWeight: '500',
+            cursor: 'pointer',
+          }}
+        >
+          Sync Now
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function PhoneSettingsPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -1357,6 +1732,8 @@ export default function PhoneSettingsPage() {
     ,
     { setTrue: openAutomationsModal, setFalse: closeAutomationsModal },
   ] = useToggle(false)
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+  const [showSyncModal, setShowSyncModal] = useState(false)
 
   // Loading states
   const [isExporting, , { setTrue: startExporting, setFalse: stopExporting }] = useToggle(false)
@@ -1518,6 +1895,12 @@ export default function PhoneSettingsPage() {
 
       {/* Automations Modal */}
       <AutomationsModal open={showAutomationsModal} onClose={closeAutomationsModal} theme={t} />
+      <SubscriptionModal
+        open={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        theme={t}
+      />
+      <SyncModal open={showSyncModal} onClose={() => setShowSyncModal(false)} theme={t} />
 
       {/* Confirm Dialogs */}
       <ConfirmDialog
@@ -1745,6 +2128,20 @@ export default function PhoneSettingsPage() {
                 </span>
               </div>
               <SettingsRow icon={Icons.user} label="Edit Profile" onClick={() => {}} theme={t} />
+              <SettingsRow
+                icon={Icons.creditCard}
+                label="Subscription Plan"
+                value="Free"
+                onClick={() => setShowSubscriptionModal(true)}
+                theme={t}
+              />
+              <SettingsRow
+                icon={Icons.cloud}
+                label="Sync Status"
+                value="Synced"
+                onClick={() => setShowSyncModal(true)}
+                theme={t}
+              />
               <SettingsRow
                 icon={Icons.automation}
                 label="Automations"
