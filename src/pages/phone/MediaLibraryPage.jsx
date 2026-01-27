@@ -3,66 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { mediaLibraryService } from '@/services/MediaLibraryService'
 import { designProjectService } from '@/services/DesignProjectService'
-
-// Theme options (matching other phone pages)
-const themes = {
-  cyanDark: {
-    name: 'Cyan Glow',
-    bg: 'linear-gradient(145deg, #0a1628 0%, #0d1f35 50%, #0a1628 100%)',
-    cardBg: 'rgba(6, 182, 212, 0.08)',
-    cardBorder: 'rgba(6, 182, 212, 0.2)',
-    accent: '#06b6d4',
-    accentGlow: 'rgba(6, 182, 212, 0.4)',
-    text: '#e2e8f0',
-    textMuted: '#94a3b8',
-    navBg: 'rgba(6, 182, 212, 0.05)',
-    isDark: true,
-    screenBg: '#0a1628',
-    avatarColors: ['#06b6d4', '#0891b2', '#0e7490', '#155e75'],
-  },
-  purpleDark: {
-    name: 'Purple Glow',
-    bg: 'linear-gradient(145deg, #1a0a28 0%, #2d1045 50%, #1a0a28 100%)',
-    cardBg: 'rgba(168, 85, 247, 0.08)',
-    cardBorder: 'rgba(168, 85, 247, 0.2)',
-    accent: '#a855f7',
-    accentGlow: 'rgba(168, 85, 247, 0.4)',
-    text: '#f3e8ff',
-    textMuted: '#c4b5fd',
-    navBg: 'rgba(168, 85, 247, 0.05)',
-    isDark: true,
-    screenBg: '#1a0a28',
-    avatarColors: ['#a855f7', '#9333ea', '#7c3aed', '#6d28d9'],
-  },
-  cyanLight: {
-    name: 'Soft Cyan',
-    bg: 'linear-gradient(145deg, #ffffff 0%, #f0fdfa 50%, #ffffff 100%)',
-    cardBg: 'rgba(6, 182, 212, 0.06)',
-    cardBorder: 'rgba(6, 182, 212, 0.15)',
-    accent: '#0891b2',
-    accentGlow: 'rgba(6, 182, 212, 0.25)',
-    text: '#164e63',
-    textMuted: '#64748b',
-    navBg: 'rgba(255, 255, 255, 0.9)',
-    isDark: false,
-    screenBg: '#f0fdfa',
-    avatarColors: ['#06b6d4', '#0891b2', '#0e7490', '#155e75'],
-  },
-  purpleLight: {
-    name: 'Soft Purple',
-    bg: 'linear-gradient(145deg, #ffffff 0%, #faf5ff 50%, #ffffff 100%)',
-    cardBg: 'rgba(168, 85, 247, 0.06)',
-    cardBorder: 'rgba(168, 85, 247, 0.15)',
-    accent: '#9333ea',
-    accentGlow: 'rgba(168, 85, 247, 0.25)',
-    text: '#581c87',
-    textMuted: '#64748b',
-    navBg: 'rgba(255, 255, 255, 0.9)',
-    isDark: false,
-    screenBg: '#faf5ff',
-    avatarColors: ['#a855f7', '#9333ea', '#7c3aed', '#6d28d9'],
-  },
-}
+import { themes } from '@/constants/phoneThemes'
 
 // SVG Icons
 const Icons = {

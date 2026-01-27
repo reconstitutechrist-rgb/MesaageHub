@@ -164,16 +164,6 @@ export function AIStudio({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [state, onClose])
 
-  // Debug logging on mount
-  useEffect(() => {
-    console.log('AIStudio Component Mounted', {
-      isMobile,
-      hasCanvas: !!canvasRef.current,
-      canvasDims: { w: state.canvasWidth, h: state.canvasHeight }
-    })
-    return () => console.log('AIStudio Component Unmounted')
-  }, [isMobile, state.canvasWidth, state.canvasHeight])
-
   return (
     <div
       style={{

@@ -4,74 +4,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { useLocalStorage, useDebounce } from '@/hooks'
 import { toast } from 'sonner'
 import { initialContacts } from '@/data/mockData'
-
-// 4 Theme Options
-const themes = {
-  cyanDark: {
-    name: 'Cyan Glow',
-    bg: 'linear-gradient(145deg, #0a1628 0%, #0d1f35 50%, #0a1628 100%)',
-    cardBg: 'rgba(6, 182, 212, 0.08)',
-    cardBorder: 'rgba(6, 182, 212, 0.2)',
-    accent: '#06b6d4',
-    accentGlow: 'rgba(6, 182, 212, 0.4)',
-    text: '#e2e8f0',
-    textMuted: '#94a3b8',
-    searchBg: 'rgba(6, 182, 212, 0.1)',
-    navBg: 'rgba(6, 182, 212, 0.05)',
-    avatarColors: ['#06b6d4', '#0891b2', '#0e7490', '#155e75'],
-    isDark: true,
-    screenBg: '#0a1628',
-    danger: '#ef4444',
-  },
-  purpleDark: {
-    name: 'Purple Glow',
-    bg: 'linear-gradient(145deg, #1a0a28 0%, #2d1045 50%, #1a0a28 100%)',
-    cardBg: 'rgba(168, 85, 247, 0.08)',
-    cardBorder: 'rgba(168, 85, 247, 0.2)',
-    accent: '#a855f7',
-    accentGlow: 'rgba(168, 85, 247, 0.4)',
-    text: '#f3e8ff',
-    textMuted: '#c4b5fd',
-    searchBg: 'rgba(168, 85, 247, 0.1)',
-    navBg: 'rgba(168, 85, 247, 0.05)',
-    avatarColors: ['#a855f7', '#9333ea', '#7c3aed', '#6d28d9'],
-    isDark: true,
-    screenBg: '#1a0a28',
-    danger: '#ef4444',
-  },
-  cyanLight: {
-    name: 'Soft Cyan',
-    bg: 'linear-gradient(145deg, #ffffff 0%, #f0fdfa 50%, #ffffff 100%)',
-    cardBg: 'rgba(6, 182, 212, 0.06)',
-    cardBorder: 'rgba(6, 182, 212, 0.15)',
-    accent: '#0891b2',
-    accentGlow: 'rgba(6, 182, 212, 0.25)',
-    text: '#164e63',
-    textMuted: '#64748b',
-    searchBg: 'rgba(6, 182, 212, 0.08)',
-    navBg: 'rgba(255, 255, 255, 0.9)',
-    avatarColors: ['#06b6d4', '#0891b2', '#0e7490', '#155e75'],
-    isDark: false,
-    screenBg: '#f0fdfa',
-    danger: '#dc2626',
-  },
-  purpleLight: {
-    name: 'Soft Purple',
-    bg: 'linear-gradient(145deg, #ffffff 0%, #faf5ff 50%, #ffffff 100%)',
-    cardBg: 'rgba(168, 85, 247, 0.06)',
-    cardBorder: 'rgba(168, 85, 247, 0.15)',
-    accent: '#9333ea',
-    accentGlow: 'rgba(168, 85, 247, 0.25)',
-    text: '#581c87',
-    textMuted: '#64748b',
-    searchBg: 'rgba(168, 85, 247, 0.08)',
-    navBg: 'rgba(255, 255, 255, 0.9)',
-    avatarColors: ['#a855f7', '#9333ea', '#7c3aed', '#6d28d9'],
-    isDark: false,
-    screenBg: '#faf5ff',
-    danger: '#dc2626',
-  },
-}
+import { themes } from '@/constants/phoneThemes'
 
 // SVG Icons
 const Icons = {

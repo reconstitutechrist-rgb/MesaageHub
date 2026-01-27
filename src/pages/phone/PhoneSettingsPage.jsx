@@ -4,6 +4,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { useLocalStorage, useToggle } from '@/hooks'
 import { toast } from 'sonner'
 import { automationService } from '@/services/AutomationService'
+import { themes } from '@/constants/phoneThemes'
 
 // Default settings structure (shared with SettingsPage)
 const DEFAULT_SETTINGS = {
@@ -23,82 +24,6 @@ const DEFAULT_SETTINGS = {
     compactMode: false,
     colorTheme: 'cyanDark',
     layoutTheme: 'cyan',
-  },
-}
-
-// 4 Theme Options
-const themes = {
-  cyanDark: {
-    name: 'Cyan Glow',
-    description: 'Dark theme with cyan accents',
-    bg: 'linear-gradient(145deg, #0a1628 0%, #0d1f35 50%, #0a1628 100%)',
-    cardBg: 'rgba(6, 182, 212, 0.08)',
-    cardBorder: 'rgba(6, 182, 212, 0.2)',
-    accent: '#06b6d4',
-    accentGlow: 'rgba(6, 182, 212, 0.4)',
-    text: '#e2e8f0',
-    textMuted: '#94a3b8',
-    searchBg: 'rgba(6, 182, 212, 0.1)',
-    navBg: 'rgba(6, 182, 212, 0.05)',
-    isDark: true,
-    screenBg: '#0a1628',
-    danger: '#ef4444',
-    success: '#22c55e',
-    preview: { bg: '#0a1628', accent: '#06b6d4' },
-  },
-  purpleDark: {
-    name: 'Purple Glow',
-    description: 'Dark theme with purple accents',
-    bg: 'linear-gradient(145deg, #1a0a28 0%, #2d1045 50%, #1a0a28 100%)',
-    cardBg: 'rgba(168, 85, 247, 0.08)',
-    cardBorder: 'rgba(168, 85, 247, 0.2)',
-    accent: '#a855f7',
-    accentGlow: 'rgba(168, 85, 247, 0.4)',
-    text: '#f3e8ff',
-    textMuted: '#c4b5fd',
-    searchBg: 'rgba(168, 85, 247, 0.1)',
-    navBg: 'rgba(168, 85, 247, 0.05)',
-    isDark: true,
-    screenBg: '#1a0a28',
-    danger: '#ef4444',
-    success: '#22c55e',
-    preview: { bg: '#1a0a28', accent: '#a855f7' },
-  },
-  cyanLight: {
-    name: 'Soft Cyan',
-    description: 'Light theme with cyan accents',
-    bg: 'linear-gradient(145deg, #ffffff 0%, #f0fdfa 50%, #ffffff 100%)',
-    cardBg: 'rgba(6, 182, 212, 0.06)',
-    cardBorder: 'rgba(6, 182, 212, 0.15)',
-    accent: '#0891b2',
-    accentGlow: 'rgba(6, 182, 212, 0.25)',
-    text: '#164e63',
-    textMuted: '#64748b',
-    searchBg: 'rgba(6, 182, 212, 0.08)',
-    navBg: 'rgba(255, 255, 255, 0.9)',
-    isDark: false,
-    screenBg: '#f0fdfa',
-    danger: '#dc2626',
-    success: '#16a34a',
-    preview: { bg: '#f0fdfa', accent: '#0891b2' },
-  },
-  purpleLight: {
-    name: 'Soft Purple',
-    description: 'Light theme with purple accents',
-    bg: 'linear-gradient(145deg, #ffffff 0%, #faf5ff 50%, #ffffff 100%)',
-    cardBg: 'rgba(168, 85, 247, 0.06)',
-    cardBorder: 'rgba(168, 85, 247, 0.15)',
-    accent: '#9333ea',
-    accentGlow: 'rgba(168, 85, 247, 0.25)',
-    text: '#581c87',
-    textMuted: '#64748b',
-    searchBg: 'rgba(168, 85, 247, 0.08)',
-    navBg: 'rgba(255, 255, 255, 0.9)',
-    isDark: false,
-    screenBg: '#faf5ff',
-    danger: '#dc2626',
-    success: '#16a34a',
-    preview: { bg: '#faf5ff', accent: '#9333ea' },
   },
 }
 
