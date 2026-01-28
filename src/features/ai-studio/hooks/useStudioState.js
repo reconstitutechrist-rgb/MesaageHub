@@ -554,6 +554,25 @@ export function useStudioState(options = {}) {
     setVideoCurrentTime(0)
   }, [])
 
+  // Modal controls (defined early so they can be used by project handlers)
+  const openModal = useCallback((modalName) => {
+    setModals((prev) => ({ ...prev, [modalName]: true }))
+  }, [])
+
+  const closeModal = useCallback((modalName) => {
+    setModals((prev) => ({ ...prev, [modalName]: false }))
+  }, [])
+
+  const closeAllModals = useCallback(() => {
+    setModals({
+      export: false,
+      templates: false,
+      platforms: false,
+      videoExport: false,
+      save: false,
+    })
+  }, [])
+
   // ============================================================================
   // Project Save/Load Handlers
   // ============================================================================
@@ -640,25 +659,6 @@ export function useStudioState(options = {}) {
     },
     [layerManager, closeAllModals]
   )
-
-  // Modal controls
-  const openModal = useCallback((modalName) => {
-    setModals((prev) => ({ ...prev, [modalName]: true }))
-  }, [])
-
-  const closeModal = useCallback((modalName) => {
-    setModals((prev) => ({ ...prev, [modalName]: false }))
-  }, [])
-
-  const closeAllModals = useCallback(() => {
-    setModals({
-      export: false,
-      templates: false,
-      platforms: false,
-      videoExport: false,
-      save: false,
-    })
-  }, [])
 
   // Reset all state
   const resetAll = useCallback(() => {
