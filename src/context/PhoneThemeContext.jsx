@@ -148,7 +148,14 @@ export function PhoneThemeProvider({ children }) {
 export function usePhoneTheme() {
   const context = useContext(PhoneThemeContext)
   if (!context) {
-    throw new Error('usePhoneTheme must be used within a PhoneThemeProvider')
+    // Return fallback during initialization to prevent crash on first render
+    return {
+      themeKey: 'cyanDark',
+      theme: themes['cyanDark'],
+      setTheme: () => {},
+      themes,
+      isDark: true,
+    }
   }
   return context
 }
