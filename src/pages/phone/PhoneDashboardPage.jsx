@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { mediaLibraryService } from '@/services/MediaLibraryService'
 import { ComposeModal } from '@/components/common/ComposeModal'
 import { useWindowSize } from '@/hooks/useWindowSize'
-import { AIStudio } from '@/features/ai-studio'
 import { themes } from '@/constants/phoneThemes'
+
+// Lazy load AIStudio to avoid TDZ issues with minified bundles
+const AIStudio = lazy(() => import('@/features/ai-studio').then((m) => ({ default: m.AIStudio })))
 
 // SVG Icons
 const Icons = {
@@ -645,16 +647,34 @@ export default function PhoneDashboardPage() {
       }}
     >
       {showAIStudio && (
-        <AIStudio
-          onClose={() => {
-            setShowAIStudio(false)
-            setProjectToOpen(null)
-          }}
-          onExport={handleAIStudioExport}
-          onSendAsCampaign={handleSendAsCampaign}
-          isMobile={isMobile}
-          openProject={projectToOpen}
-        />
+        <Suspense
+          fallback={
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: t.bg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2000,
+              }}
+            >
+              <div style={{ color: t.text, fontSize: '16px' }}>Loading AI Studio...</div>
+            </div>
+          }
+        >
+          <AIStudio
+            onClose={() => {
+              setShowAIStudio(false)
+              setProjectToOpen(null)
+            }}
+            onExport={handleAIStudioExport}
+            onSendAsCampaign={handleSendAsCampaign}
+            isMobile={isMobile}
+            openProject={projectToOpen}
+          />
+        </Suspense>
       )}
 
       {/* Compose Modal for Campaign */}
