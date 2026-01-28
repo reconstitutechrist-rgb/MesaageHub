@@ -1,2 +1,2 @@
 export { PhoneThemeProvider, usePhoneTheme } from './PhoneThemeContext'
-export { phoneThemes } from './phoneThemes'
+export { themes as phoneThemes } from '@/constants/phoneThemes'

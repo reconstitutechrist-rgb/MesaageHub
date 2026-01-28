@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
-import { phoneThemes as themes } from './phoneThemes'
+import { themes } from '@/constants/phoneThemes'
 
 /**
  * Phone UI Theme System
