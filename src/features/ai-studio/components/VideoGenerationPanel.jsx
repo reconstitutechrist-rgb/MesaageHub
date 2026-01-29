@@ -42,7 +42,7 @@ export function VideoGenerationPanel({
             display: 'block',
             fontSize: '12px',
             fontWeight: '500',
-            color: theme.textSecondary,
+            color: theme.textMuted,
             marginBottom: '6px',
           }}
         >
@@ -58,7 +58,7 @@ export function VideoGenerationPanel({
             minHeight: '80px',
             padding: '10px 12px',
             borderRadius: '8px',
-            border: `1px solid ${theme.border}`,
+            border: `1px solid ${theme.cardBorder}`,
             background: theme.bg,
             color: theme.text,
             fontSize: '13px',
@@ -82,8 +82,8 @@ export function VideoGenerationPanel({
           padding: '12px 16px',
           borderRadius: '8px',
           border: 'none',
-          background: canGenerate ? theme.accent : theme.bgSecondary,
-          color: canGenerate ? '#fff' : theme.textSecondary,
+          background: canGenerate ? theme.accent : theme.cardBg,
+          color: canGenerate ? '#fff' : theme.textMuted,
           cursor: canGenerate ? 'pointer' : 'not-allowed',
           fontWeight: '600',
           fontSize: '14px',

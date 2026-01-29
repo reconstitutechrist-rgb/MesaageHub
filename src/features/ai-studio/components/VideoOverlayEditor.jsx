@@ -54,8 +54,8 @@ export function VideoOverlayEditor({ overlay }) {
       style={{
         padding: '12px',
         borderRadius: '8px',
-        background: isSelected ? `${theme.accent}15` : theme.bgSecondary,
-        border: `1px solid ${isSelected ? theme.accent : theme.border}`,
+        background: isSelected ? `${theme.accent}15` : theme.cardBg,
+        border: `1px solid ${isSelected ? theme.accent : theme.cardBorder}`,
         transition: 'all 0.2s ease',
         cursor: 'pointer',
       }}
@@ -115,7 +115,7 @@ export function VideoOverlayEditor({ overlay }) {
         <label style={labelStyle(theme)}>Position</label>
         <div style={{ display: 'flex', gap: '12px' }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '10px', color: theme.textSecondary, marginBottom: '4px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
               X: {Math.round(overlay.position.x)}%
             </div>
             <input
@@ -129,7 +129,7 @@ export function VideoOverlayEditor({ overlay }) {
             />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '10px', color: theme.textSecondary, marginBottom: '4px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
               Y: {Math.round(overlay.position.y)}%
             </div>
             <input
@@ -147,10 +147,10 @@ export function VideoOverlayEditor({ overlay }) {
 
       {/* Timing sliders */}
       <div style={{ marginBottom: '12px' }}>
-        <label style={labelStyle(theme)}>{StudioIcons.clock(theme.textSecondary, 12)} Timing</label>
+        <label style={labelStyle(theme)}>{StudioIcons.clock(theme.textMuted, 12)} Timing</label>
         <div style={{ display: 'flex', gap: '12px' }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '10px', color: theme.textSecondary, marginBottom: '4px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
               Start: {overlay.timing.start.toFixed(1)}s
             </div>
             <input
@@ -165,7 +165,7 @@ export function VideoOverlayEditor({ overlay }) {
             />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '10px', color: theme.textSecondary, marginBottom: '4px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
               End: {overlay.timing.end.toFixed(1)}s
             </div>
             <input
@@ -246,7 +246,8 @@ export function VideoOverlayEditor({ overlay }) {
                     padding: '6px 8px',
                     borderRadius: '4px',
                     border: 'none',
-                    background: overlay.style?.fontSize === preset.value ? theme.accent : theme.bg,
+                    background:
+                      overlay.style?.fontSize === preset.value ? theme.accent : theme.searchBg,
                     color: overlay.style?.fontSize === preset.value ? '#fff' : theme.text,
                     fontSize: '11px',
                     cursor: 'pointer',
@@ -301,7 +302,7 @@ const labelStyle = (theme) => ({
   gap: '4px',
   fontSize: '11px',
   fontWeight: '500',
-  color: theme.textSecondary,
+  color: theme.textMuted,
   marginBottom: '6px',
 })
 
@@ -309,8 +310,8 @@ const inputStyle = (theme) => ({
   width: '100%',
   padding: '8px 10px',
   borderRadius: '6px',
-  border: `1px solid ${theme.border}`,
-  background: theme.bg,
+  border: `1px solid ${theme.cardBorder}`,
+  background: theme.searchBg,
   color: theme.text,
   fontSize: '13px',
   outline: 'none',
@@ -320,8 +321,8 @@ const selectStyle = (theme) => ({
   width: '100%',
   padding: '8px 10px',
   borderRadius: '6px',
-  border: `1px solid ${theme.border}`,
-  background: theme.bg,
+  border: `1px solid ${theme.cardBorder}`,
+  background: theme.searchBg,
   color: theme.text,
   fontSize: '13px',
   outline: 'none',
@@ -333,7 +334,7 @@ const sliderStyle = (theme) => ({
   height: '4px',
   WebkitAppearance: 'none',
   appearance: 'none',
-  background: theme.border,
+  background: theme.cardBorder,
   borderRadius: '2px',
   cursor: 'pointer',
 })

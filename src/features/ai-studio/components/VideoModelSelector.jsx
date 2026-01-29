@@ -16,7 +16,7 @@ export function VideoModelSelector({ selectedModel, onModelChange, disabled = fa
         style={{
           display: 'flex',
           gap: '8px',
-          background: theme.bgSecondary,
+          background: theme.cardBg,
           borderRadius: '8px',
           padding: '4px',
         }}
@@ -35,7 +35,7 @@ export function VideoModelSelector({ selectedModel, onModelChange, disabled = fa
                 border: 'none',
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 background: isSelected ? theme.accent : 'transparent',
-                color: isSelected ? '#fff' : theme.textSecondary,
+                color: isSelected ? '#fff' : theme.textMuted,
                 fontWeight: isSelected ? '600' : '400',
                 fontSize: '13px',
                 transition: 'all 0.2s ease',
@@ -62,7 +62,7 @@ export function VideoModelSelector({ selectedModel, onModelChange, disabled = fa
         <div
           style={{
             fontSize: '11px',
-            color: theme.textSecondary,
+            color: theme.textMuted,
             padding: '8px 12px',
             background: `${theme.accent}15`,
             borderRadius: '6px',
