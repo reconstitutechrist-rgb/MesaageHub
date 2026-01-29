@@ -12,6 +12,7 @@ export { StudioMobileControls } from './components/StudioMobileControls'
 export { ExportOptionsModal } from './components/modals/ExportOptionsModal'
 export { TemplateBrowserModal } from './components/modals/TemplateBrowserModal'
 export { PlatformPickerModal } from './components/modals/PlatformPickerModal'
+export { VideoExportModal } from './components/modals/VideoExportModal'
 
 // Store (Zustand)
 export { useStudioStore, getStudioState, subscribeToStudio } from './store'
