@@ -25,6 +25,7 @@ import {
   useTemplateCategories,
   usePlatformPresets,
   useSelectedPlatform,
+  useActiveTemplate,
   useIsRenderingVideo,
   useRenderProgress,
   useFinalVideoUrl,
@@ -73,6 +74,7 @@ export function AIStudio({
   const templateCategories = useTemplateCategories()
   const platformPresets = usePlatformPresets()
   const selectedPlatform = useSelectedPlatform()
+  const activeTemplate = useActiveTemplate()
   const isRenderingVideo = useIsRenderingVideo()
   const renderProgress = useRenderProgress()
   const finalVideoUrl = useFinalVideoUrl()
@@ -257,6 +259,7 @@ export function AIStudio({
         onClose={() => closeModal('templates')}
         templates={marketingTemplates}
         categories={templateCategories}
+        activeTemplateId={activeTemplate?.id}
         onSelect={(template) => {
           setActiveTemplate(template)
           closeModal('templates')
