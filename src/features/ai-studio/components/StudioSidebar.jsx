@@ -603,7 +603,7 @@ export function StudioSidebar() {
             {StudioIcons.grid(theme.accent, 18)} Templates
           </h3>
           <button
-            onClick={() => openModal('templateLibrary')}
+            onClick={() => openModal('templates')}
             style={{
               background: 'none',
               border: 'none',

@@ -41,7 +41,7 @@ export function StudioLayersPanel() {
   const hasImage = !!imageFile
 
   // Action handlers
-  const handleResizeCanvas = () => openModal('platformSelector')
+  const handleResizeCanvas = () => openModal('platforms')
   const handleResetAll = () => resetAll()
 
   return (
