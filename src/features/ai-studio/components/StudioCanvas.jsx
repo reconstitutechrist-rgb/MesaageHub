@@ -35,7 +35,7 @@ import {
  */
 const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref) {
   // Get state from Zustand store
-  const { width, height, exportWidth, exportHeight } = useCanvasDimensions()
+  const { canvasWidth, canvasHeight, exportWidth, exportHeight } = useCanvasDimensions()
   const background = useBackground()
   const imageFile = useImageFile()
   const layers = useSortedLayers()
@@ -108,7 +108,7 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
         zIndex: layer.zIndex,
       })
     })
-  }, [layers, width, height])
+  }, [layers, canvasWidth, canvasHeight])
 
   // Draw canvas
   const render = useCallback(() => {
@@ -205,7 +205,7 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   // Re-render when dependencies change
   useEffect(() => {
     render()
-  }, [render, imageFile, width, height])
+  }, [render, imageFile, canvasWidth, canvasHeight])
 
   // Re-render when image loads
   useEffect(() => {
@@ -535,8 +535,8 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   return (
     <canvas
       ref={canvasRef}
-      width={width}
-      height={height}
+      width={canvasWidth}
+      height={canvasHeight}
       style={{
         cursor: isDraggingRef.current ? 'grabbing' : 'grab',
         touchAction: 'none',
