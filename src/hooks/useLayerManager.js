@@ -1,3 +1,12 @@
+/**
+ * @deprecated This hook is deprecated. Use the Zustand store instead:
+ *
+ * import { LayerType } from '@/features/ai-studio/store'
+ * import { useLayers, useLayerActions } from '@/features/ai-studio/store/selectors'
+ *
+ * The Zustand store provides better performance through selective subscriptions
+ * and integrated undo/redo functionality.
+ */
 import { useState, useCallback, useMemo, useRef } from 'react'
 
 /**

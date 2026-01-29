@@ -1,6 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
-import { useStudioState } from './hooks/useStudioState'
 import { StudioHeader } from './components/StudioHeader'
 import { StudioCanvas } from './components/StudioCanvas'
 import { StudioSidebar } from './components/StudioSidebar'
@@ -12,12 +11,42 @@ import {
   PlatformPickerModal,
   VideoExportModal,
 } from './components/modals'
+import {
+  // State selectors
+  useCurrentPreset,
+  useCanvasDimensions,
+  useCanUndo,
+  useCanRedo,
+  useModals,
+  useProjectName,
+  useIsSaving,
+  useSaveError,
+  useMarketingTemplates,
+  useTemplateCategories,
+  usePlatformPresets,
+  useSelectedPlatform,
+  useIsRenderingVideo,
+  useRenderProgress,
+  useFinalVideoUrl,
+  useGeneratedVideoUrl,
+  useVideoOverlays,
+  // Action selectors
+  useLayerActions,
+  useUIActions,
+  useCanvasActions,
+  useVideoActions,
+} from './store/selectors'
 
 /**
  * AIStudio - Main orchestrator component for the AI-powered design studio
  *
  * This is the entry point for the modular AI Studio feature.
- * It coordinates all sub-components and manages shared state.
+ * Child components use Zustand store directly for their state.
+ * This component handles:
+ * - Export/download functionality
+ * - Keyboard shortcuts
+ * - Modal orchestration
+ * - Save dialog
  */
 export function AIStudio({
   onClose,
@@ -31,13 +60,35 @@ export function AIStudio({
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveNameInput, setSaveNameInput] = useState('')
 
-  // Centralized state management
-  const state = useStudioState({ defaultPlatform: 'instagram-post' })
+  // Get only what AIStudio needs from store (not drilling down)
+  const currentPreset = useCurrentPreset()
+  const { exportWidth, exportHeight } = useCanvasDimensions()
+  const canUndo = useCanUndo()
+  const canRedo = useCanRedo()
+  const modals = useModals()
+  const projectName = useProjectName()
+  const isSaving = useIsSaving()
+  const saveError = useSaveError()
+  const marketingTemplates = useMarketingTemplates()
+  const templateCategories = useTemplateCategories()
+  const platformPresets = usePlatformPresets()
+  const selectedPlatform = useSelectedPlatform()
+  const isRenderingVideo = useIsRenderingVideo()
+  const renderProgress = useRenderProgress()
+  const finalVideoUrl = useFinalVideoUrl()
+  const generatedVideoUrl = useGeneratedVideoUrl()
+  const videoOverlays = useVideoOverlays()
+
+  // Get actions from store
+  const { undo, redo } = useLayerActions()
+  const { openModal, closeModal, closeAllModals, saveProject, loadProject } = useUIActions()
+  const { setSelectedPlatform, setActiveTemplate } = useCanvasActions()
+  const { renderFinalVideo } = useVideoActions()
 
   // Load project if passed in props (only on mount)
   useEffect(() => {
     if (openProject) {
-      state.loadProject(openProject)
+      loadProject(openProject)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -50,12 +101,12 @@ export function AIStudio({
       const dataUrl = await canvasRef.current.exportAsDataUrl('image/png', 1.0)
       if (dataUrl) {
         // Open export options modal
-        state.openModal('export')
+        openModal('export')
       }
     } catch (error) {
       console.error('Export failed:', error)
     }
-  }, [state])
+  }, [openModal])
 
   // Download handler
   const handleDownload = useCallback(async () => {
@@ -68,13 +119,13 @@ export function AIStudio({
         link.download = `design-${Date.now()}.png`
         link.href = dataUrl
         link.click()
-        state.closeModal('export')
+        closeModal('export')
         onExport?.(dataUrl)
       }
     } catch (error) {
       console.error('Download failed:', error)
     }
-  }, [state, onExport])
+  }, [closeModal, onExport])
 
   // Send as campaign handler
   const handleSendAsCampaign = useCallback(async () => {
@@ -83,54 +134,27 @@ export function AIStudio({
     try {
       const dataUrl = await canvasRef.current.exportAsDataUrl('image/png', 1.0)
       if (dataUrl) {
-        state.closeModal('export')
+        closeModal('export')
         onSendAsCampaign?.(dataUrl)
       }
     } catch (error) {
       console.error('Send as campaign failed:', error)
     }
-  }, [state, onSendAsCampaign])
+  }, [closeModal, onSendAsCampaign])
 
   // Save project handler
   const handleSaveClick = useCallback(() => {
-    setSaveNameInput(state.projectName || '')
+    setSaveNameInput(projectName || '')
     setSaveDialogOpen(true)
-  }, [state.projectName])
+  }, [projectName])
 
   const handleSaveConfirm = useCallback(async () => {
     const name = saveNameInput.trim() || 'Untitled Design'
-    const result = await state.saveProject(name)
+    const result = await saveProject(name)
     if (result) {
       setSaveDialogOpen(false)
     }
-  }, [saveNameInput, state])
-
-  // Primary text drag handlers
-  const handlePrimaryTextDrag = useCallback(
-    (position) => {
-      state.setTextOverlay({ x: position.x, y: position.y })
-    },
-    [state]
-  )
-
-  // Layer drag handler
-  const handleLayerDrag = useCallback(
-    (layerId, position) => {
-      state.updateLayer(layerId, { data: { x: position.x, y: position.y } }, true) // Skip history during drag
-    },
-    [state]
-  )
-
-  const handleLayerDragEnd = useCallback(
-    (layerId) => {
-      // Push to history after drag ends
-      const layer = state.layers.find((l) => l.id === layerId)
-      if (layer) {
-        state.updateLayer(layerId, { data: layer.data })
-      }
-    },
-    [state]
-  )
+  }, [saveNameInput, saveProject])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -138,22 +162,17 @@ export function AIStudio({
       // Undo: Ctrl+Z / Cmd+Z
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault()
-        state.undo()
+        undo()
       }
       // Redo: Ctrl+Shift+Z / Cmd+Shift+Z or Ctrl+Y
       if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault()
-        state.redo()
+        redo()
       }
       // Escape: Close modals or studio
       if (e.key === 'Escape') {
-        if (
-          state.modals.export ||
-          state.modals.templates ||
-          state.modals.platforms ||
-          state.modals.videoExport
-        ) {
-          state.closeAllModals()
+        if (modals.export || modals.templates || modals.platforms || modals.videoExport) {
+          closeAllModals()
         } else {
           onClose?.()
         }
@@ -162,7 +181,7 @@ export function AIStudio({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [state, onClose])
+  }, [undo, redo, modals, closeAllModals, onClose])
 
   return (
     <div
@@ -177,14 +196,14 @@ export function AIStudio({
     >
       {/* Header */}
       <StudioHeader
-        currentPreset={state.currentPreset}
-        exportWidth={state.exportWidth}
-        exportHeight={state.exportHeight}
-        onPlatformClick={() => state.openModal('platforms')}
-        onUndo={state.undo}
-        onRedo={state.redo}
-        canUndo={state.canUndo}
-        canRedo={state.canRedo}
+        currentPreset={currentPreset}
+        exportWidth={exportWidth}
+        exportHeight={exportHeight}
+        onPlatformClick={() => openModal('platforms')}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onSave={handleSaveClick}
         onExport={handleExport}
         onClose={onClose}
@@ -192,70 +211,8 @@ export function AIStudio({
 
       {/* Main content area */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Desktop: Left Sidebar */}
-        {!isMobile && (
-          <StudioSidebar
-            // Upload
-            imageFile={state.imageFile}
-            onImageUpload={state.setImageFile}
-            // AI - Copy generation
-            prompt={state.prompt}
-            onPromptChange={state.setPrompt}
-            onGenerate={state.generate}
-            isGenerating={state.isGenerating}
-            onAnalyzeImage={state.analyzeImage}
-            isAnalyzing={state.isAnalyzing}
-            // AI - Background generation (Phase 2)
-            backgroundPrompt={state.backgroundPrompt}
-            onBackgroundPromptChange={state.setBackgroundPrompt}
-            onGenerateBackground={state.generateBackground}
-            isGeneratingBackground={state.isGeneratingBackground}
-            generatedBackground={state.generatedBackground}
-            // AI - Subject processing (Phase 2)
-            onRemoveBackground={state.removeBackground}
-            isRemovingBackground={state.isRemovingBackground}
-            subjectImage={state.subjectImage}
-            // AI - Typography (Phase 2)
-            onSuggestTypography={state.suggestTypography}
-            isSuggestingTypography={state.isSuggestingTypography}
-            // AI - Auto-level (Phase 2)
-            onAutoLevel={state.autoLevel}
-            isAutoLeveling={state.isAutoLeveling}
-            // AI - Video generation (Phase 3)
-            videoModel={state.videoModel}
-            onVideoModelChange={state.setVideoModel}
-            videoPrompt={state.videoPrompt}
-            onVideoPromptChange={state.setVideoPrompt}
-            onGenerateVideo={state.generateVideo}
-            isGeneratingVideo={state.isGeneratingVideo}
-            videoGenerationProgress={state.videoGenerationProgress}
-            generatedVideoUrl={state.generatedVideoUrl}
-            videoError={state.videoError}
-            // Video overlays (Phase 3)
-            videoOverlays={state.videoOverlays}
-            selectedOverlayId={state.selectedOverlayId}
-            onSelectOverlay={state.selectOverlay}
-            onAddVideoOverlay={state.addVideoOverlay}
-            onUpdateVideoOverlay={state.updateVideoOverlay}
-            onRemoveVideoOverlay={state.removeVideoOverlay}
-            videoDuration={state.videoDuration}
-            // Video rendering (Phase 3)
-            onRenderFinalVideo={state.renderFinalVideo}
-            isRenderingVideo={state.isRenderingVideo}
-            onOpenVideoExport={() => state.openModal('videoExport')}
-            // Templates
-            templates={state.marketingTemplates}
-            activeTemplateId={state.activeTemplateId}
-            onTemplateSelect={state.selectTemplate}
-            onOpenTemplateLibrary={() => state.openModal('templates')}
-            // Background
-            background={state.background}
-            onBackgroundChange={state.setBackground}
-            // Text
-            textOverlay={state.textOverlay}
-            onTextChange={state.setTextOverlay}
-          />
-        )}
+        {/* Desktop: Left Sidebar - gets state from store */}
+        {!isMobile && <StudioSidebar />}
 
         {/* Canvas Area */}
         <div
@@ -269,22 +226,9 @@ export function AIStudio({
             overflow: 'hidden',
           }}
         >
+          {/* StudioCanvas gets state from store */}
           <StudioCanvas
             ref={canvasRef}
-            width={state.canvasWidth}
-            height={state.canvasHeight}
-            exportWidth={state.exportWidth}
-            exportHeight={state.exportHeight}
-            background={state.background}
-            imageFile={state.imageFile}
-            layers={state.sortedLayers}
-            primaryTextOverlay={state.textOverlay}
-            activeTemplate={state.activeTemplate}
-            selectedLayerId={state.selectedLayerId}
-            onLayerSelect={state.selectLayer}
-            onPrimaryTextDrag={handlePrimaryTextDrag}
-            onLayerDrag={handleLayerDrag}
-            onLayerDragEnd={handleLayerDragEnd}
             style={{
               borderRadius: '12px',
               boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
@@ -292,138 +236,59 @@ export function AIStudio({
           />
         </div>
 
-        {/* Desktop: Right Sidebar (Layers Panel) */}
-        {!isMobile && (
-          <StudioLayersPanel
-            primaryText={state.textOverlay?.text}
-            layers={state.layers}
-            selectedLayerId={state.selectedLayerId}
-            onSelectLayer={state.selectLayer}
-            onToggleVisibility={state.toggleLayerVisibility}
-            onRemoveLayer={state.removeLayer}
-            onAddTextLayer={() => state.addTextLayer()}
-            hasImage={!!state.imageFile}
-            onResizeCanvas={() => state.openModal('platforms')}
-            onResetAll={state.resetAll}
-          />
-        )}
+        {/* Desktop: Right Sidebar (Layers Panel) - gets state from store */}
+        {!isMobile && <StudioLayersPanel />}
       </div>
 
-      {/* Mobile: Bottom Controls */}
-      {isMobile && (
-        <StudioMobileControls
-          // Upload
-          imageFile={state.imageFile}
-          onImageUpload={state.setImageFile}
-          // AI - Copy generation
-          prompt={state.prompt}
-          onPromptChange={state.setPrompt}
-          onGenerate={state.generate}
-          isGenerating={state.isGenerating}
-          onAnalyzeImage={state.analyzeImage}
-          isAnalyzing={state.isAnalyzing}
-          // AI - Background generation (Phase 2)
-          backgroundPrompt={state.backgroundPrompt}
-          onBackgroundPromptChange={state.setBackgroundPrompt}
-          onGenerateBackground={state.generateBackground}
-          isGeneratingBackground={state.isGeneratingBackground}
-          generatedBackground={state.generatedBackground}
-          // AI - Subject processing (Phase 2)
-          onRemoveBackground={state.removeBackground}
-          isRemovingBackground={state.isRemovingBackground}
-          subjectImage={state.subjectImage}
-          // AI - Auto-level (Phase 2)
-          onAutoLevel={state.autoLevel}
-          isAutoLeveling={state.isAutoLeveling}
-          // AI - Typography (Phase 2)
-          onSuggestTypography={state.suggestTypography}
-          isSuggestingTypography={state.isSuggestingTypography}
-          // AI - Video generation (Phase 3)
-          videoModel={state.videoModel}
-          onVideoModelChange={state.setVideoModel}
-          videoPrompt={state.videoPrompt}
-          onVideoPromptChange={state.setVideoPrompt}
-          onGenerateVideo={state.generateVideo}
-          isGeneratingVideo={state.isGeneratingVideo}
-          videoGenerationProgress={state.videoGenerationProgress}
-          generatedVideoUrl={state.generatedVideoUrl}
-          videoError={state.videoError}
-          // Video overlays (Phase 3)
-          videoOverlays={state.videoOverlays}
-          selectedOverlayId={state.selectedOverlayId}
-          onSelectOverlay={state.selectOverlay}
-          onAddVideoOverlay={state.addVideoOverlay}
-          onUpdateVideoOverlay={state.updateVideoOverlay}
-          onRemoveVideoOverlay={state.removeVideoOverlay}
-          videoDuration={state.videoDuration}
-          // Video rendering (Phase 3)
-          onOpenVideoExport={() => state.openModal('videoExport')}
-          isRenderingVideo={state.isRenderingVideo}
-          // Text
-          textOverlay={state.textOverlay}
-          onTextChange={state.setTextOverlay}
-          // Templates
-          templates={state.marketingTemplates}
-          templateCategories={state.templateCategories}
-          activeTemplateId={state.activeTemplateId}
-          onTemplateSelect={state.selectTemplate}
-          onClearTemplate={state.clearTemplate}
-          // Platform
-          platformPresets={state.platformPresets}
-          selectedPlatform={state.selectedPlatform}
-          currentPreset={state.currentPreset}
-          exportWidth={state.exportWidth}
-          exportHeight={state.exportHeight}
-          onPlatformSelect={(id) => state.setSelectedPlatform(id)}
-        />
-      )}
+      {/* Mobile: Bottom Controls - gets state from store */}
+      {isMobile && <StudioMobileControls />}
 
       {/* Modals */}
       <ExportOptionsModal
-        isOpen={state.modals.export}
-        onClose={() => state.closeModal('export')}
+        isOpen={modals.export}
+        onClose={() => closeModal('export')}
         onDownload={handleDownload}
         onSendAsCampaign={handleSendAsCampaign}
-        onContinueEditing={() => state.closeModal('export')}
+        onContinueEditing={() => closeModal('export')}
       />
 
       <TemplateBrowserModal
-        isOpen={state.modals.templates}
-        onClose={() => state.closeModal('templates')}
-        templates={state.marketingTemplates}
-        categories={state.templateCategories}
+        isOpen={modals.templates}
+        onClose={() => closeModal('templates')}
+        templates={marketingTemplates}
+        categories={templateCategories}
         onSelect={(template) => {
-          state.selectTemplate(template)
-          state.closeModal('templates')
+          setActiveTemplate(template)
+          closeModal('templates')
         }}
       />
 
       <PlatformPickerModal
-        isOpen={state.modals.platforms}
-        onClose={() => state.closeModal('platforms')}
-        presets={state.platformPresets}
-        selectedPlatformId={state.selectedPlatform}
+        isOpen={modals.platforms}
+        onClose={() => closeModal('platforms')}
+        presets={platformPresets}
+        selectedPlatformId={selectedPlatform}
         onSelect={(id) => {
-          state.setSelectedPlatform(id)
-          state.closeModal('platforms')
+          setSelectedPlatform(id)
+          closeModal('platforms')
         }}
       />
 
       <VideoExportModal
-        isOpen={state.modals.videoExport}
-        onClose={() => state.closeModal('videoExport')}
-        isRendering={state.isRenderingVideo}
-        renderProgress={state.renderProgress}
-        finalVideoUrl={state.finalVideoUrl}
-        generatedVideoUrl={state.generatedVideoUrl}
-        onRenderWithOverlays={state.renderFinalVideo}
+        isOpen={modals.videoExport}
+        onClose={() => closeModal('videoExport')}
+        isRendering={isRenderingVideo}
+        renderProgress={renderProgress}
+        finalVideoUrl={finalVideoUrl}
+        generatedVideoUrl={generatedVideoUrl}
+        onRenderWithOverlays={renderFinalVideo}
         onDownload={() => {
-          state.closeModal('videoExport')
+          closeModal('videoExport')
         }}
         onSendAsCampaign={(videoUrl) => {
           onSendAsCampaign?.(videoUrl)
         }}
-        hasOverlays={state.videoOverlays?.length > 0}
+        hasOverlays={videoOverlays?.length > 0}
       />
 
       {/* Save Project Dialog */}
@@ -478,9 +343,9 @@ export function AIStudio({
                 if (e.key === 'Enter') handleSaveConfirm()
               }}
             />
-            {state.saveError && (
+            {saveError && (
               <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px' }}>
-                {state.saveError}
+                {saveError}
               </div>
             )}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -501,7 +366,7 @@ export function AIStudio({
               </button>
               <button
                 onClick={handleSaveConfirm}
-                disabled={state.isSaving}
+                disabled={isSaving}
                 style={{
                   padding: '10px 24px',
                   borderRadius: '10px',
@@ -510,11 +375,11 @@ export function AIStudio({
                   color: '#fff',
                   fontSize: '14px',
                   fontWeight: '600',
-                  cursor: state.isSaving ? 'not-allowed' : 'pointer',
-                  opacity: state.isSaving ? 0.7 : 1,
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  opacity: isSaving ? 0.7 : 1,
                 }}
               >
-                {state.isSaving ? 'Saving...' : 'Save'}
+                {isSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>

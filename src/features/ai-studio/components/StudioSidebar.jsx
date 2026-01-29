@@ -4,9 +4,43 @@ import { StudioIcons } from '../utils/StudioIcons'
 import { SOLID_COLORS, TEXT_COLORS } from '../utils/studioConstants'
 import { VideoGenerationPanel } from './VideoGenerationPanel'
 import { VideoOverlayEditor } from './VideoOverlayEditor'
+import {
+  // State selectors
+  useImageFile,
+  usePrompt,
+  useIsGenerating,
+  useIsAnalyzing,
+  useBackgroundPrompt,
+  useIsGeneratingBackground,
+  useGeneratedBackground,
+  useIsRemovingBackground,
+  useSubjectImage,
+  useIsSuggestingTypography,
+  useIsAutoLeveling,
+  useVideoModel,
+  useVideoPrompt,
+  useIsGeneratingVideo,
+  useVideoGenerationProgress,
+  useGeneratedVideoUrl,
+  useVideoError,
+  useVideoOverlays,
+  useIsRenderingVideo,
+  useActiveTemplate,
+  useBackground,
+  useTextOverlay,
+  useMarketingTemplates,
+  // Action selectors
+  useCanvasActions,
+  useAIActions,
+  useVideoActions,
+  useUIActions,
+  useTextOverlayActions,
+} from '../store/selectors'
 
 /**
  * StudioSidebar - Desktop left sidebar with all studio controls
+ *
+ * Uses Zustand store for all state and actions.
  *
  * Sections:
  * 1. Upload Media
@@ -15,78 +49,53 @@ import { VideoOverlayEditor } from './VideoOverlayEditor'
  * 4. Background Colors
  * 5. Text Overlay
  */
-export function StudioSidebar({
-  // Upload
-  imageFile,
-  onImageUpload,
-
-  // AI - Copy generation
-  prompt,
-  onPromptChange,
-  onGenerate,
-  isGenerating,
-  onAnalyzeImage,
-  isAnalyzing,
-
-  // AI - Background generation (Phase 2)
-  backgroundPrompt,
-  onBackgroundPromptChange,
-  onGenerateBackground,
-  isGeneratingBackground,
-  generatedBackground,
-
-  // AI - Subject processing (Phase 2)
-  onRemoveBackground,
-  isRemovingBackground,
-  subjectImage,
-
-  // AI - Typography (Phase 2)
-  onSuggestTypography,
-  isSuggestingTypography,
-
-  // AI - Auto-level (Phase 2)
-  onAutoLevel,
-  isAutoLeveling,
-
-  // AI - Video generation (Phase 3)
-  videoModel,
-  onVideoModelChange,
-  videoPrompt,
-  onVideoPromptChange,
-  onGenerateVideo,
-  isGeneratingVideo,
-  videoGenerationProgress,
-  generatedVideoUrl,
-  videoError,
-  // Video overlays (Phase 3)
-  videoOverlays,
-  selectedOverlayId,
-  onSelectOverlay,
-  onAddVideoOverlay,
-  onUpdateVideoOverlay,
-  onRemoveVideoOverlay,
-  videoDuration,
-  // Video rendering (Phase 3)
-  onRenderFinalVideo: _onRenderFinalVideo,
-  isRenderingVideo,
-  onOpenVideoExport,
-
-  // Templates
-  templates = [],
-  activeTemplateId,
-  onTemplateSelect,
-  onClearTemplate,
-  onOpenTemplateLibrary,
-
-  // Background
-  background,
-  onBackgroundChange,
-
-  // Text
-  textOverlay,
-  onTextChange,
-}) {
+export function StudioSidebar() {
   const { theme } = usePhoneTheme()
+
+  // Get state from Zustand store
+  const imageFile = useImageFile()
+  const prompt = usePrompt()
+  const isGenerating = useIsGenerating()
+  const isAnalyzing = useIsAnalyzing()
+  const backgroundPrompt = useBackgroundPrompt()
+  const isGeneratingBackground = useIsGeneratingBackground()
+  const generatedBackground = useGeneratedBackground()
+  const isRemovingBackground = useIsRemovingBackground()
+  const subjectImage = useSubjectImage()
+  const isSuggestingTypography = useIsSuggestingTypography()
+  const isAutoLeveling = useIsAutoLeveling()
+  const videoModel = useVideoModel()
+  const videoPrompt = useVideoPrompt()
+  const isGeneratingVideo = useIsGeneratingVideo()
+  const videoGenerationProgress = useVideoGenerationProgress()
+  const generatedVideoUrl = useGeneratedVideoUrl()
+  const videoError = useVideoError()
+  const videoOverlays = useVideoOverlays()
+  const isRenderingVideo = useIsRenderingVideo()
+  const activeTemplate = useActiveTemplate()
+  const background = useBackground()
+  const textOverlay = useTextOverlay()
+  const templates = useMarketingTemplates()
+
+  // Get actions from Zustand store
+  const { setImageFile, setBackground, setActiveTemplate, clearTemplate } = useCanvasActions()
+  const {
+    setPrompt,
+    generate,
+    analyzeImage,
+    setBackgroundPrompt,
+    generateBackground,
+    removeBackground,
+    suggestTypography,
+    autoLevel,
+  } = useAIActions()
+  const { setVideoModel, setVideoPrompt, generateVideo, addVideoOverlay } = useVideoActions()
+  const { openModal } = useUIActions()
+  const { setTextOverlay } = useTextOverlayActions()
+
+  // Derived state
+  const activeTemplateId = activeTemplate?.id
+  const templatesList = Object.values(templates || {})
 
   return (
     <div
@@ -133,7 +142,7 @@ export function StudioSidebar({
           <input
             type="file"
             accept="image/*,video/*"
-            onChange={(e) => e.target.files?.[0] && onImageUpload(e.target.files[0])}
+            onChange={(e) => e.target.files?.[0] && setImageFile(e.target.files[0])}
             style={{ display: 'none' }}
           />
           <div
@@ -180,7 +189,7 @@ export function StudioSidebar({
             type="text"
             placeholder="Describe your marketing content..."
             value={prompt}
-            onChange={(e) => onPromptChange(e.target.value)}
+            onChange={(e) => setPrompt(e.target.value)}
             style={{
               padding: '14px 16px',
               borderRadius: '12px',
@@ -192,7 +201,7 @@ export function StudioSidebar({
             }}
           />
           <button
-            onClick={onGenerate}
+            onClick={generate}
             disabled={isGenerating || !prompt}
             style={{
               padding: '14px',
@@ -234,7 +243,7 @@ export function StudioSidebar({
           {/* Analyze Image Button - only show when image is uploaded */}
           {imageFile && (
             <button
-              onClick={onAnalyzeImage}
+              onClick={analyzeImage}
               disabled={isAnalyzing}
               style={{
                 padding: '12px',
@@ -293,7 +302,7 @@ export function StudioSidebar({
             type="text"
             placeholder="Describe background... (marble desk, beach sunset)"
             value={backgroundPrompt || ''}
-            onChange={(e) => onBackgroundPromptChange?.(e.target.value)}
+            onChange={(e) => setBackgroundPrompt(e.target.value)}
             style={{
               padding: '14px 16px',
               borderRadius: '12px',
@@ -305,7 +314,7 @@ export function StudioSidebar({
             }}
           />
           <button
-            onClick={onGenerateBackground}
+            onClick={generateBackground}
             disabled={isGeneratingBackground || !backgroundPrompt}
             style={{
               padding: '14px',
@@ -379,7 +388,7 @@ export function StudioSidebar({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {/* Remove Background Button */}
             <button
-              onClick={onRemoveBackground}
+              onClick={removeBackground}
               disabled={isRemovingBackground}
               style={{
                 padding: '12px',
@@ -418,7 +427,7 @@ export function StudioSidebar({
             {/* Auto-Level Button - only show when both subject and generated background exist */}
             {(subjectImage || imageFile) && generatedBackground && (
               <button
-                onClick={onAutoLevel}
+                onClick={autoLevel}
                 disabled={isAutoLeveling}
                 style={{
                   padding: '12px',
@@ -491,10 +500,10 @@ export function StudioSidebar({
 
         <VideoGenerationPanel
           videoModel={videoModel}
-          onModelChange={onVideoModelChange}
+          onModelChange={setVideoModel}
           videoPrompt={videoPrompt}
-          onPromptChange={onVideoPromptChange}
-          onGenerate={onGenerateVideo}
+          onPromptChange={setVideoPrompt}
+          onGenerate={generateVideo}
           isGenerating={isGeneratingVideo}
           progress={videoGenerationProgress}
           generatedVideoUrl={generatedVideoUrl}
@@ -516,7 +525,7 @@ export function StudioSidebar({
                 Video Overlays
               </span>
               <button
-                onClick={() => onAddVideoOverlay?.()}
+                onClick={() => addVideoOverlay()}
                 style={{
                   padding: '4px 10px',
                   borderRadius: '6px',
@@ -537,21 +546,13 @@ export function StudioSidebar({
             {/* Overlay list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {videoOverlays?.map((overlay) => (
-                <VideoOverlayEditor
-                  key={overlay.id}
-                  overlay={overlay}
-                  videoDuration={videoDuration || 8}
-                  onUpdate={onUpdateVideoOverlay}
-                  onRemove={onRemoveVideoOverlay}
-                  isSelected={selectedOverlayId === overlay.id}
-                  onSelect={onSelectOverlay}
-                />
+                <VideoOverlayEditor key={overlay.id} overlay={overlay} />
               ))}
             </div>
 
             {/* Export button */}
             <button
-              onClick={onOpenVideoExport}
+              onClick={() => openModal('videoExport')}
               disabled={isRenderingVideo}
               style={{
                 width: '100%',
@@ -602,7 +603,7 @@ export function StudioSidebar({
             {StudioIcons.grid(theme.accent, 18)} Templates
           </h3>
           <button
-            onClick={onOpenTemplateLibrary}
+            onClick={() => openModal('templateLibrary')}
             style={{
               background: 'none',
               border: 'none',
@@ -616,10 +617,10 @@ export function StudioSidebar({
           </button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          {templates.slice(0, 4).map((template) => (
+          {templatesList.slice(0, 4).map((template) => (
             <button
               key={template.id}
-              onClick={() => onTemplateSelect(template)}
+              onClick={() => setActiveTemplate(template)}
               style={{
                 padding: '12px 8px',
                 borderRadius: '12px',
@@ -672,7 +673,7 @@ export function StudioSidebar({
         </div>
         {activeTemplateId && (
           <button
-            onClick={onClearTemplate}
+            onClick={clearTemplate}
             style={{
               width: '100%',
               marginTop: '8px',
@@ -722,7 +723,7 @@ export function StudioSidebar({
             {SOLID_COLORS.map((color) => (
               <button
                 key={color}
-                onClick={() => onBackgroundChange({ type: 'solid', value: color })}
+                onClick={() => setBackground({ type: 'solid', value: color })}
                 style={{
                   width: '28px',
                   height: '28px',
@@ -755,7 +756,7 @@ export function StudioSidebar({
             {gradientPresets.slice(0, 6).map((gradient) => (
               <button
                 key={gradient.id}
-                onClick={() => onBackgroundChange({ type: 'gradient', value: gradient.colors })}
+                onClick={() => setBackground({ type: 'gradient', value: gradient.colors })}
                 title={gradient.label}
                 style={{
                   width: '28px',
@@ -795,7 +796,7 @@ export function StudioSidebar({
             type="text"
             placeholder="Enter text..."
             value={textOverlay?.text || ''}
-            onChange={(e) => onTextChange({ text: e.target.value })}
+            onChange={(e) => setTextOverlay({ text: e.target.value })}
             style={{
               padding: '14px 16px',
               borderRadius: '12px',
@@ -823,7 +824,7 @@ export function StudioSidebar({
               {TEXT_COLORS.map((color) => (
                 <button
                   key={color}
-                  onClick={() => onTextChange({ color })}
+                  onClick={() => setTextOverlay({ color })}
                   style={{
                     width: '32px',
                     height: '32px',
@@ -860,7 +861,7 @@ export function StudioSidebar({
               min="24"
               max="120"
               value={textOverlay?.fontSize || 48}
-              onChange={(e) => onTextChange({ fontSize: parseInt(e.target.value) })}
+              onChange={(e) => setTextOverlay({ fontSize: parseInt(e.target.value) })}
               style={{ width: '100%', accentColor: theme.accent }}
             />
           </div>
@@ -868,7 +869,7 @@ export function StudioSidebar({
           {/* AI Typography Placement (Phase 2) */}
           {textOverlay?.text && (
             <button
-              onClick={onSuggestTypography}
+              onClick={suggestTypography}
               disabled={isSuggestingTypography}
               style={{
                 padding: '12px',

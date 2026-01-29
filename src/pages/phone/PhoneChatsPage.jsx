@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, memo, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { MediaAttachmentSheet } from '@/components/common/MediaAttachmentSheet'
-import { useToggle } from '@/hooks'
-import { automationService } from '@/services/AutomationService'
+import { VirtualList } from '@/components/common/VirtualList'
+import { useToggle, useWindowSize } from '@/hooks'
+import { useScheduledMessages, useCancelScheduledMessage } from '@/hooks/queries'
 import { toast } from 'sonner'
 import { themes } from '@/constants/phoneThemes'
 
@@ -251,6 +252,131 @@ const getInitials = (name) =>
     .slice(0, 2)
 const getAvatarColor = (name, colors) => colors[name.charCodeAt(0) % colors.length]
 
+// Memoized Conversation Item Component - prevents re-renders of all items when one changes
+const ConversationItem = memo(function ConversationItem({ conversation, theme: t, onSelect }) {
+  return (
+    <div
+      onClick={() => onSelect(conversation.id)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '14px 8px',
+        borderRadius: '16px',
+        cursor: 'pointer',
+        borderBottom: `1px solid ${t.cardBorder}`,
+      }}
+    >
+      <div
+        style={{
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          background: conversation.isCampaign
+            ? `linear-gradient(135deg, ${t.accent}, ${t.accentDark})`
+            : `linear-gradient(135deg, ${getAvatarColor(conversation.name, t.avatarColors)}, ${getAvatarColor(conversation.name, t.avatarColors)}88)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          fontSize: conversation.isCampaign ? '20px' : '18px',
+          fontWeight: '600',
+          position: 'relative',
+          flexShrink: 0,
+        }}
+      >
+        {conversation.isCampaign ? Icons.megaphone('#fff') : getInitials(conversation.name)}
+        {conversation.online && !conversation.isCampaign && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '2px',
+              right: '2px',
+              width: '14px',
+              height: '14px',
+              background: '#22c55e',
+              borderRadius: '50%',
+              border: `3px solid ${t.screenBg}`,
+              boxShadow: '0 0 8px #22c55e',
+            }}
+          />
+        )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '4px',
+          }}
+        >
+          <span
+            style={{
+              color: t.text,
+              fontSize: '16px',
+              fontWeight: conversation.unread > 0 ? '700' : '600',
+            }}
+          >
+            {conversation.name}
+          </span>
+          <span
+            style={{
+              color: conversation.unread > 0 ? t.accent : t.textMuted,
+              fontSize: '12px',
+              fontWeight: conversation.unread > 0 ? '600' : '400',
+            }}
+          >
+            {conversation.time}
+          </span>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <p
+            style={{
+              color: conversation.unread > 0 ? t.text : t.textMuted,
+              fontSize: '14px',
+              margin: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontWeight: conversation.unread > 0 ? '500' : '400',
+              maxWidth: conversation.unread > 0 ? '200px' : '230px',
+            }}
+          >
+            {conversation.lastMessage}
+          </p>
+          {conversation.unread > 0 && (
+            <div
+              style={{
+                minWidth: '22px',
+                height: '22px',
+                borderRadius: '11px',
+                background: t.accent,
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 6px',
+                boxShadow: `0 0 10px ${t.accentGlow}`,
+              }}
+            >
+              {conversation.unread}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+})
+
 // Phone Keyboard Component
 function PhoneKeyboard({ onKeyPress, onBackspace, onSend, theme: t, inputValue }) {
   const [activeKey, setActiveKey] = useState(null)
@@ -447,6 +573,15 @@ function ComposeModal({ open, onClose, theme: t, contacts, mode, onSend }) {
   const [attachments, setAttachments] = useState([])
   const fileInputRef = useRef(null)
   const recordingInterval = useRef(null)
+
+  // Cleanup recording interval on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current)
+      }
+    }
+  }, [])
 
   const filteredContacts = useMemo(() => {
     if (!searchQuery) return contacts.slice(0, 5)
@@ -952,8 +1087,18 @@ export default function PhoneChatsPage() {
 
   // Tab state for Chats vs Scheduled
   const [activeTab, setActiveTab] = useState('chats')
-  const [scheduledMessages, setScheduledMessages] = useState([])
-  const [loadingScheduled, setLoadingScheduled] = useState(false)
+
+  // TanStack Query for scheduled messages with caching
+  const { data: scheduledMessages = [], isLoading: loadingScheduled } = useScheduledMessages(
+    {},
+    { enabled: activeTab === 'scheduled' }
+  )
+
+  // Mutation for canceling scheduled messages
+  const cancelMessageMutation = useCancelScheduledMessage()
+
+  // Window size for virtual list height calculation
+  const { height: windowHeight } = useWindowSize()
 
   const t = themes[theme]
 
@@ -1017,6 +1162,17 @@ export default function PhoneChatsPage() {
     )
   }, [conversations, searchQuery])
 
+  // Memoized render function for VirtualList
+  const renderConversationItem = useCallback(
+    (conversation) => (
+      <ConversationItem conversation={conversation} theme={t} onSelect={setSelectedChat} />
+    ),
+    [t]
+  )
+
+  // Calculate virtual list height (window height minus header/tabs/search area)
+  const chatListHeight = Math.max(windowHeight - 260, 300)
+
   const selectedConversation = conversations.find((c) => c.id === selectedChat)
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0)
 
@@ -1029,35 +1185,14 @@ export default function PhoneChatsPage() {
     if (selectedChat) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [selectedChat, selectedConversation?.messages])
 
-  // Load scheduled messages when tab changes to scheduled
-  useEffect(() => {
-    if (activeTab === 'scheduled') {
-      loadScheduledMessages()
-    }
-  }, [activeTab])
+  // Note: Scheduled messages are now loaded automatically by TanStack Query
+  // when activeTab === 'scheduled' (via the enabled option in useScheduledMessages)
 
-  const loadScheduledMessages = async () => {
-    setLoadingScheduled(true)
-    try {
-      const messages = await automationService.getScheduledMessages()
-      setScheduledMessages(messages)
-    } catch (error) {
-      console.error('Failed to load scheduled messages:', error)
-      toast.error('Failed to load scheduled messages')
-    } finally {
-      setLoadingScheduled(false)
-    }
-  }
-
-  const handleCancelScheduledMessage = async (messageId) => {
-    try {
-      await automationService.cancelScheduledMessage(messageId)
-      setScheduledMessages((prev) => prev.filter((m) => m.id !== messageId))
-      toast.success('Scheduled message cancelled')
-    } catch (error) {
-      console.error('Failed to cancel message:', error)
-      toast.error('Failed to cancel message')
-    }
+  const handleCancelScheduledMessage = (messageId) => {
+    cancelMessageMutation.mutate(messageId, {
+      onSuccess: () => toast.success('Scheduled message cancelled'),
+      onError: () => toast.error('Failed to cancel message'),
+    })
   }
 
   const formatScheduledTime = (isoString) => {
@@ -1377,135 +1512,27 @@ export default function PhoneChatsPage() {
             )}
           </div>
 
-          <div style={{ height: 'calc(100% - 260px)', overflowY: 'auto', padding: '0 12px' }}>
-            {/* Chats Tab Content */}
-            {activeTab === 'chats' &&
-              filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  onClick={() => setSelectedChat(conversation.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '14px 8px',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                    borderBottom: `1px solid ${t.cardBorder}`,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '56px',
-                      height: '56px',
-                      borderRadius: '50%',
-                      background: conversation.isCampaign
-                        ? `linear-gradient(135deg, ${t.accent}, ${t.accentDark})`
-                        : `linear-gradient(135deg, ${getAvatarColor(conversation.name, t.avatarColors)}, ${getAvatarColor(conversation.name, t.avatarColors)}88)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#fff',
-                      fontSize: conversation.isCampaign ? '20px' : '18px',
-                      fontWeight: '600',
-                      position: 'relative',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {conversation.isCampaign
-                      ? Icons.megaphone('#fff')
-                      : getInitials(conversation.name)}
-                    {conversation.online && !conversation.isCampaign && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          bottom: '2px',
-                          right: '2px',
-                          width: '14px',
-                          height: '14px',
-                          background: '#22c55e',
-                          borderRadius: '50%',
-                          border: `3px solid ${t.screenBg}`,
-                          boxShadow: '0 0 8px #22c55e',
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: t.text,
-                          fontSize: '16px',
-                          fontWeight: conversation.unread > 0 ? '700' : '600',
-                        }}
-                      >
-                        {conversation.name}
-                      </span>
-                      <span
-                        style={{
-                          color: conversation.unread > 0 ? t.accent : t.textMuted,
-                          fontSize: '12px',
-                          fontWeight: conversation.unread > 0 ? '600' : '400',
-                        }}
-                      >
-                        {conversation.time}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <p
-                        style={{
-                          color: conversation.unread > 0 ? t.text : t.textMuted,
-                          fontSize: '14px',
-                          margin: 0,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          fontWeight: conversation.unread > 0 ? '500' : '400',
-                          maxWidth: conversation.unread > 0 ? '200px' : '230px',
-                        }}
-                      >
-                        {conversation.lastMessage}
-                      </p>
-                      {conversation.unread > 0 && (
-                        <div
-                          style={{
-                            minWidth: '22px',
-                            height: '22px',
-                            borderRadius: '11px',
-                            background: t.accent,
-                            color: '#fff',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '0 6px',
-                            boxShadow: `0 0 10px ${t.accentGlow}`,
-                          }}
-                        >
-                          {conversation.unread}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {/* Chats Tab Content - Using VirtualList for performance with large lists */}
+          {activeTab === 'chats' && (
+            <div style={{ padding: '0 12px' }}>
+              <VirtualList
+                items={filteredConversations}
+                height={chatListHeight}
+                itemHeight={85}
+                renderItem={renderConversationItem}
+              />
+            </div>
+          )}
 
-            {/* Scheduled Tab Content */}
+          {/* Scheduled Tab Content */}
+          <div
+            style={{
+              height: 'calc(100% - 260px)',
+              overflowY: 'auto',
+              padding: '0 12px',
+              display: activeTab === 'scheduled' ? 'block' : 'none',
+            }}
+          >
             {activeTab === 'scheduled' && (
               <>
                 {loadingScheduled ? (

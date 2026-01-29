@@ -1,5 +1,13 @@
 import { useState, useCallback } from 'react'
 
+/**
+ * @deprecated Use TanStack Query mutations from '@/hooks/queries' instead.
+ * This hook is maintained for backward compatibility only.
+ *
+ * Example migration:
+ * Before: const { execute, isLoading } = useAsync(service.doAction)
+ * After:  const { mutate, isPending } = useMutation({ mutationFn: service.doAction })
+ */
 export function useAsync(asyncFunction) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)

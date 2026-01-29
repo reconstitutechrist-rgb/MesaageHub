@@ -24,4 +24,29 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React dependencies
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // UI components (Radix)
+          'vendor-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-popover',
+          ],
+          // Data fetching
+          'vendor-query': ['@tanstack/react-query'],
+          // Animation
+          'vendor-motion': ['framer-motion'],
+          // Charts (heavy, rarely used)
+          'vendor-charts': ['recharts'],
+        },
+      },
+    },
+  },
 })

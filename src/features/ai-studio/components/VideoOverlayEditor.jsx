@@ -1,10 +1,13 @@
 /**
  * VideoOverlayEditor - Edit overlay properties (content, position, timing, animation, style)
+ *
+ * Uses Zustand store for video state and actions.
  */
 
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { StudioIcons } from '../utils/StudioIcons'
 import { OVERLAY_ANIMATIONS, FONT_SIZE_PRESETS, FONT_WEIGHT_PRESETS } from '../utils/videoConstants'
+import { useVideoDuration, useVideoActions, useSelectedOverlayId } from '../store/selectors'
 
 // Color palette for overlay text
 const COLOR_PALETTE = [
@@ -18,15 +21,15 @@ const COLOR_PALETTE = [
   '#ec4899',
 ]
 
-export function VideoOverlayEditor({
-  overlay,
-  videoDuration,
-  onUpdate,
-  onRemove,
-  isSelected,
-  onSelect,
-}) {
+export function VideoOverlayEditor({ overlay }) {
   const { theme } = usePhoneTheme()
+
+  // Get state and actions from Zustand store
+  const videoDuration = useVideoDuration()
+  const selectedOverlayId = useSelectedOverlayId()
+  const { updateVideoOverlay, removeVideoOverlay, selectOverlay } = useVideoActions()
+
+  const isSelected = overlay?.id === selectedOverlayId
 
   if (!overlay) return null
 
@@ -34,20 +37,20 @@ export function VideoOverlayEditor({
     if (field.includes('.')) {
       // Handle nested fields like 'style.color' or 'timing.start'
       const [parent, child] = field.split('.')
-      onUpdate(overlay.id, {
+      updateVideoOverlay(overlay.id, {
         [parent]: {
           ...overlay[parent],
           [child]: value,
         },
       })
     } else {
-      onUpdate(overlay.id, { [field]: value })
+      updateVideoOverlay(overlay.id, { [field]: value })
     }
   }
 
   return (
     <div
-      onClick={() => onSelect?.(overlay.id)}
+      onClick={() => selectOverlay(overlay.id)}
       style={{
         padding: '12px',
         borderRadius: '8px',
@@ -75,7 +78,7 @@ export function VideoOverlayEditor({
         <button
           onClick={(e) => {
             e.stopPropagation()
-            onRemove(overlay.id)
+            removeVideoOverlay(overlay.id)
           }}
           style={{
             padding: '4px',

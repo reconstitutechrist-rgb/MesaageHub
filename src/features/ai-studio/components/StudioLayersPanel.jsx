@@ -1,9 +1,19 @@
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
-import { LayerType } from '@/hooks/useLayerManager'
 import { StudioIcons } from '../utils/StudioIcons'
+import {
+  useTextLayers,
+  useSelectedLayerId,
+  useImageFile,
+  useTextOverlayText,
+  useLayerActions,
+  useUIActions,
+  useGlobalActions,
+} from '../store/selectors'
 
 /**
  * StudioLayersPanel - Right sidebar for layer management
+ *
+ * Uses Zustand store for all state and actions.
  *
  * Shows:
  * - Primary text layer
@@ -13,28 +23,26 @@ import { StudioIcons } from '../utils/StudioIcons'
  * - Add layer button
  * - Quick actions
  */
-export function StudioLayersPanel({
-  // Primary text (legacy)
-  primaryText,
-
-  // Additional layers
-  layers = [],
-  selectedLayerId,
-  onSelectLayer,
-  onToggleVisibility,
-  onRemoveLayer,
-  onAddTextLayer,
-
-  // Image
-  hasImage,
-
-  // Quick actions
-  onResizeCanvas,
-  onResetAll,
-}) {
+export function StudioLayersPanel() {
   const { theme } = usePhoneTheme()
 
-  const textLayers = layers.filter((l) => l.type === LayerType.TEXT)
+  // Get state from Zustand store
+  const textLayers = useTextLayers()
+  const selectedLayerId = useSelectedLayerId()
+  const imageFile = useImageFile()
+  const primaryText = useTextOverlayText()
+
+  // Get actions from Zustand store
+  const { selectLayer, toggleLayerVisibility, removeLayer, addTextLayer } = useLayerActions()
+  const { openModal } = useUIActions()
+  const { resetAll } = useGlobalActions()
+
+  // Derived state
+  const hasImage = !!imageFile
+
+  // Action handlers
+  const handleResizeCanvas = () => openModal('platformSelector')
+  const handleResetAll = () => resetAll()
 
   return (
     <div
@@ -91,7 +99,7 @@ export function StudioLayersPanel({
           {textLayers.map((layer) => (
             <div
               key={layer.id}
-              onClick={() => onSelectLayer(layer.id)}
+              onClick={() => selectLayer(layer.id)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -114,7 +122,7 @@ export function StudioLayersPanel({
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  onToggleVisibility(layer.id)
+                  toggleLayerVisibility(layer.id)
                 }}
                 style={{
                   background: 'none',
@@ -130,7 +138,7 @@ export function StudioLayersPanel({
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  onRemoveLayer(layer.id)
+                  removeLayer(layer.id)
                 }}
                 style={{
                   background: 'none',
@@ -182,7 +190,7 @@ export function StudioLayersPanel({
 
           {/* Add Text Layer Button */}
           <button
-            onClick={onAddTextLayer}
+            onClick={addTextLayer}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -217,7 +225,7 @@ export function StudioLayersPanel({
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <button
-            onClick={onResizeCanvas}
+            onClick={handleResizeCanvas}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -236,7 +244,7 @@ export function StudioLayersPanel({
           </button>
 
           <button
-            onClick={onResetAll}
+            onClick={handleResetAll}
             style={{
               display: 'flex',
               alignItems: 'center',

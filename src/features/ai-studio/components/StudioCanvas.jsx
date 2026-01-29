@@ -1,6 +1,5 @@
 import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
-import { LayerType } from '@/hooks/useLayerManager'
 import {
   drawBackground,
   drawText,
@@ -15,51 +14,44 @@ import {
   canvasToBlob,
 } from '@/lib/canvasUtils'
 import { FALLBACK_COLORS } from '../utils/studioConstants'
+import { LayerType } from '../store'
+import {
+  useCanvasDimensions,
+  useBackground,
+  useImageFile,
+  useSortedLayers,
+  useTextOverlay,
+  useActiveTemplate,
+  useSelectedLayerId,
+  useLayerActions,
+  useTextOverlayActions,
+} from '../store/selectors'
 
 /**
  * StudioCanvas - Pure canvas rendering component for AI Studio
  *
- * Handles all canvas drawing and interaction, but no UI controls.
- * Receives all state as props and calls back on interactions.
+ * Uses Zustand store for all state. Handles all canvas drawing
+ * and interaction, but no UI controls.
  */
-const StudioCanvas = forwardRef(function StudioCanvas(
-  {
-    // Dimensions
-    width,
-    height,
-    exportWidth,
-    exportHeight,
+const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref) {
+  // Get state from Zustand store
+  const { width, height, exportWidth, exportHeight } = useCanvasDimensions()
+  const background = useBackground()
+  const imageFile = useImageFile()
+  const layers = useSortedLayers()
+  const primaryTextOverlay = useTextOverlay()
+  const activeTemplate = useActiveTemplate()
+  const selectedLayerId = useSelectedLayerId()
 
-    // Content
-    background,
-    imageFile,
-    layers = [],
-    primaryTextOverlay,
-    activeTemplate,
-
-    // Selection
-    selectedLayerId,
-    onLayerSelect,
-
-    // Drag handling
-    onPrimaryTextDragStart,
-    onPrimaryTextDrag,
-    onPrimaryTextDragEnd,
-    onLayerDragStart,
-    onLayerDrag,
-    onLayerDragEnd,
-
-    // Style
-    style,
-    className,
-  },
-  ref
-) {
+  // Get actions from Zustand store
+  const { selectLayer, updateLayer } = useLayerActions()
+  const { setTextOverlay } = useTextOverlayActions()
   const canvasRef = useRef(null)
   const imageRef = useRef(null)
   const isDraggingRef = useRef(false)
   const dragTargetRef = useRef(null) // 'primary' or layer id
   const dragOffsetRef = useRef({ x: 0, y: 0 })
+  const cachedBoundsRef = useRef(new Map()) // Cache layer bounds for hit testing
 
   const { theme, isDark } = usePhoneTheme()
   const fallbackBg = isDark ? FALLBACK_COLORS.dark : FALLBACK_COLORS.light
@@ -81,6 +73,42 @@ const StudioCanvas = forwardRef(function StudioCanvas(
         imageRef.current = null
       })
   }, [imageFile])
+
+  // Cache layer bounds for fast hit testing (avoids repeated measureText calls)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    const w = canvas.width
+    const h = canvas.height
+
+    // Clear old cache
+    cachedBoundsRef.current.clear()
+
+    // Calculate and cache bounds for each text layer
+    layers.forEach((layer) => {
+      if (layer.type !== LayerType.TEXT || !layer.visible || !layer.data?.text) return
+
+      const layerX = (layer.data.x / 100) * w
+      const layerY = (layer.data.y / 100) * h
+
+      const bounds = getTextBounds(ctx, {
+        text: layer.data.text,
+        x: layerX,
+        y: layerY,
+        fontSize: layer.data.fontSize,
+        fontWeight: layer.data.fontWeight || 'bold',
+      })
+
+      cachedBoundsRef.current.set(layer.id, {
+        bounds,
+        visible: layer.visible,
+        locked: layer.locked,
+        zIndex: layer.zIndex,
+      })
+    })
+  }, [layers, width, height])
 
   // Draw canvas
   const render = useCallback(() => {
@@ -229,31 +257,22 @@ const StudioCanvas = forwardRef(function StudioCanvas(
     [primaryTextOverlay]
   )
 
-  // Check if point is on a layer
+  // Check if point is on a layer using cached bounds (fast - no measureText calls)
   const getLayerAtPoint = useCallback(
     (x, y) => {
-      const canvas = canvasRef.current
-      if (!canvas) return null
+      const padding = 20
 
-      const ctx = canvas.getContext('2d')
+      // Check layers in reverse order (top first, by zIndex)
+      // Sort by zIndex descending for hit testing
+      const sortedLayers = [...layers]
+        .filter((l) => l.type === LayerType.TEXT && l.visible && l.data?.text)
+        .sort((a, b) => b.zIndex - a.zIndex)
 
-      // Check layers in reverse order (top first)
-      for (let i = layers.length - 1; i >= 0; i--) {
-        const layer = layers[i]
-        if (layer.type !== LayerType.TEXT || !layer.visible || !layer.data?.text) continue
+      for (const layer of sortedLayers) {
+        const cached = cachedBoundsRef.current.get(layer.id)
+        if (!cached || !cached.bounds || cached.locked) continue
 
-        const layerX = (layer.data.x / 100) * canvas.width
-        const layerY = (layer.data.y / 100) * canvas.height
-
-        const bounds = getTextBounds(ctx, {
-          text: layer.data.text,
-          x: layerX,
-          y: layerY,
-          fontSize: layer.data.fontSize,
-          fontWeight: layer.data.fontWeight || 'bold',
-        })
-
-        const padding = 20
+        const bounds = cached.bounds
         if (
           x >= bounds.x - padding &&
           x <= bounds.x + bounds.width + padding &&
@@ -282,7 +301,6 @@ const StudioCanvas = forwardRef(function StudioCanvas(
           x: coords.x - primaryTextOverlay.x,
           y: coords.y - primaryTextOverlay.y,
         }
-        onPrimaryTextDragStart?.()
         return
       }
 
@@ -298,23 +316,14 @@ const StudioCanvas = forwardRef(function StudioCanvas(
           x: coords.x - layerX,
           y: coords.y - layerY,
         }
-        onLayerSelect?.(layer.id)
-        onLayerDragStart?.(layer.id)
+        selectLayer(layer.id)
         return
       }
 
       // Click on empty space - clear selection
-      onLayerSelect?.(null)
+      selectLayer(null)
     },
-    [
-      getCanvasCoords,
-      isNearPrimaryText,
-      getLayerAtPoint,
-      primaryTextOverlay,
-      onPrimaryTextDragStart,
-      onLayerSelect,
-      onLayerDragStart,
-    ]
+    [getCanvasCoords, isNearPrimaryText, getLayerAtPoint, primaryTextOverlay, selectLayer]
   )
 
   const handlePointerMove = useCallback(
@@ -326,34 +335,42 @@ const StudioCanvas = forwardRef(function StudioCanvas(
       if (!canvas) return
 
       if (dragTargetRef.current === 'primary') {
-        onPrimaryTextDrag?.({
+        // Update primary text overlay position (no history during drag)
+        setTextOverlay({
           x: coords.x - dragOffsetRef.current.x,
           y: coords.y - dragOffsetRef.current.y,
         })
       } else if (dragTargetRef.current) {
-        // Layer drag - convert to percentage
-        onLayerDrag?.(dragTargetRef.current, {
-          x: ((coords.x - dragOffsetRef.current.x) / canvas.width) * 100,
-          y: ((coords.y - dragOffsetRef.current.y) / canvas.height) * 100,
-        })
+        // Layer drag - convert to percentage, skipHistory=true for smooth dragging
+        updateLayer(
+          dragTargetRef.current,
+          {
+            data: {
+              x: ((coords.x - dragOffsetRef.current.x) / canvas.width) * 100,
+              y: ((coords.y - dragOffsetRef.current.y) / canvas.height) * 100,
+            },
+          },
+          true // skipHistory during drag
+        )
       }
     },
-    [getCanvasCoords, onPrimaryTextDrag, onLayerDrag]
+    [getCanvasCoords, setTextOverlay, updateLayer]
   )
 
   const handlePointerUp = useCallback(() => {
-    if (isDraggingRef.current) {
-      if (dragTargetRef.current === 'primary') {
-        onPrimaryTextDragEnd?.()
-      } else if (dragTargetRef.current) {
-        onLayerDragEnd?.(dragTargetRef.current)
+    if (isDraggingRef.current && dragTargetRef.current && dragTargetRef.current !== 'primary') {
+      // Push final position to history after drag ends
+      const layer = layers.find((l) => l.id === dragTargetRef.current)
+      if (layer) {
+        // Force a history push by updating with skipHistory=false
+        updateLayer(dragTargetRef.current, { data: layer.data }, false)
       }
     }
 
     isDraggingRef.current = false
     dragTargetRef.current = null
     dragOffsetRef.current = { x: 0, y: 0 }
-  }, [onPrimaryTextDragEnd, onLayerDragEnd])
+  }, [layers, updateLayer])
 
   // Expose methods via ref
   useImperativeHandle(

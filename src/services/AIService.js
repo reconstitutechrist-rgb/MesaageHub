@@ -14,27 +14,51 @@ class AIService {
   /**
    * Call the ai-studio Edge Function
    * @private
+   * @param {string} action - The action to perform
+   * @param {object} payload - The payload to send
+   * @param {number} timeoutMs - Request timeout in milliseconds (default: 30000)
    */
-  async _callEdgeFunction(action, payload) {
+  async _callEdgeFunction(action, payload, timeoutMs = 30000) {
     if (this.useMock) {
       throw new Error('Edge Functions not configured - using mock')
     }
 
-    const response = await fetch(`${this.baseUrl}/functions/v1/ai-studio`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.anonKey}`,
-      },
-      body: JSON.stringify({ action, payload }),
-    })
+    // Create AbortController for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `Edge Function error: ${response.status}`)
+    try {
+      const response = await fetch(`${this.baseUrl}/functions/v1/ai-studio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.anonKey}`,
+        },
+        body: JSON.stringify({ action, payload }),
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        // Don't expose internal error details in production
+        const isDev = import.meta.env.DEV
+        const errorMessage = isDev
+          ? errorData.message || `Edge Function error: ${response.status}`
+          : response.status >= 500
+            ? 'Server error occurred. Please try again.'
+            : 'Request failed. Please try again.'
+        throw new Error(errorMessage)
+      }
+
+      return response.json()
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.')
+      }
+      throw error
+    } finally {
+      clearTimeout(timeoutId)
     }
-
-    return response.json()
   }
 
   /**

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { MediaAttachmentSheet } from './MediaAttachmentSheet'
 
 /**
@@ -116,6 +116,15 @@ export function ComposeModal({
   const [showMediaSheet, setShowMediaSheet] = useState(false)
   const fileInputRef = useRef(null)
   const recordingInterval = useRef(null)
+
+  // Cleanup recording interval on unmount or modal close
+  useEffect(() => {
+    return () => {
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current)
+      }
+    }
+  }, [])
 
   const filteredContacts = useMemo(() => {
     if (!searchQuery) return contacts.slice(0, 5)

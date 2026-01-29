@@ -13,8 +13,9 @@ export { ExportOptionsModal } from './components/modals/ExportOptionsModal'
 export { TemplateBrowserModal } from './components/modals/TemplateBrowserModal'
 export { PlatformPickerModal } from './components/modals/PlatformPickerModal'
 
-// Hooks
-export { useStudioState } from './hooks/useStudioState'
+// Store (Zustand)
+export { useStudioStore, getStudioState, subscribeToStudio } from './store'
+export * from './store/selectors'
 
 // Utils
 export * from './utils/studioConstants'

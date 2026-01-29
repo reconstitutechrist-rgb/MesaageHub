@@ -1,12 +1,50 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { StudioIcons } from '../utils/StudioIcons'
 import { TEXT_COLORS } from '../utils/studioConstants'
 import { VideoGenerationPanel } from './VideoGenerationPanel'
 import { VideoOverlayEditor } from './VideoOverlayEditor'
+import {
+  // State selectors
+  useImageFile,
+  usePrompt,
+  useIsGenerating,
+  useIsAnalyzing,
+  useBackgroundPrompt,
+  useIsGeneratingBackground,
+  useGeneratedBackground,
+  useIsRemovingBackground,
+  useSubjectImage,
+  useIsAutoLeveling,
+  useIsSuggestingTypography,
+  useTextOverlay,
+  useMarketingTemplates,
+  useTemplateCategories,
+  useActiveTemplate,
+  usePlatformPresets,
+  useSelectedPlatform,
+  useCurrentPreset,
+  useCanvasDimensions,
+  useVideoModel,
+  useVideoPrompt,
+  useIsGeneratingVideo,
+  useVideoGenerationProgress,
+  useGeneratedVideoUrl,
+  useVideoError,
+  useVideoOverlays,
+  useIsRenderingVideo,
+  // Action selectors
+  useCanvasActions,
+  useAIActions,
+  useVideoActions,
+  useUIActions,
+  useTextOverlayActions,
+} from '../store/selectors'
 
 /**
  * StudioMobileControls - Mobile tabbed control panel
+ *
+ * Uses Zustand store for all state and actions.
  *
  * Bottom panel with tabs for:
  * - Upload: File input for images
@@ -15,89 +53,72 @@ import { VideoOverlayEditor } from './VideoOverlayEditor'
  * - Text: Input, color picker, font size slider, AI typography
  * - Size: Platform presets grid
  */
-export function StudioMobileControls({
-  // Upload
-  imageFile,
-  onImageUpload,
-
-  // AI - Copy generation
-  prompt,
-  onPromptChange,
-  onGenerate,
-  isGenerating,
-  onAnalyzeImage,
-  isAnalyzing,
-
-  // AI - Background generation (Phase 2)
-  backgroundPrompt,
-  onBackgroundPromptChange,
-  onGenerateBackground,
-  isGeneratingBackground,
-  generatedBackground,
-
-  // AI - Subject processing (Phase 2)
-  onRemoveBackground,
-  isRemovingBackground,
-  subjectImage,
-
-  // AI - Auto-level (Phase 2)
-  onAutoLevel,
-  isAutoLeveling,
-
-  // AI - Typography (Phase 2)
-  onSuggestTypography,
-  isSuggestingTypography,
-
-  // Text
-  textOverlay,
-  onTextChange,
-
-  // Templates
-  templates = [],
-  templateCategories = [],
-  activeTemplateId,
-  onTemplateSelect,
-  onClearTemplate,
-
-  // Platform
-  platformPresets = {},
-  selectedPlatform,
-  currentPreset,
-  exportWidth,
-  exportHeight,
-  onPlatformSelect,
-
-  // AI - Video generation (Phase 3)
-  videoModel,
-  onVideoModelChange,
-  videoPrompt,
-  onVideoPromptChange,
-  onGenerateVideo,
-  isGeneratingVideo,
-  videoGenerationProgress,
-  generatedVideoUrl,
-  videoError,
-  // Video overlays (Phase 3)
-  videoOverlays,
-  selectedOverlayId,
-  onSelectOverlay,
-  onAddVideoOverlay,
-  onUpdateVideoOverlay,
-  onRemoveVideoOverlay,
-  videoDuration,
-  // Video rendering (Phase 3)
-  onOpenVideoExport,
-  isRenderingVideo,
-}) {
+export function StudioMobileControls() {
   const { theme } = usePhoneTheme()
   const [activeTab, setActiveTab] = useState('upload')
   const [templateCategory, setTemplateCategory] = useState('all')
 
+  // Get state from Zustand store
+  const imageFile = useImageFile()
+  const prompt = usePrompt()
+  const isGenerating = useIsGenerating()
+  const isAnalyzing = useIsAnalyzing()
+  const backgroundPrompt = useBackgroundPrompt()
+  const isGeneratingBackground = useIsGeneratingBackground()
+  const generatedBackground = useGeneratedBackground()
+  const isRemovingBackground = useIsRemovingBackground()
+  const subjectImage = useSubjectImage()
+  const isAutoLeveling = useIsAutoLeveling()
+  const isSuggestingTypography = useIsSuggestingTypography()
+  const textOverlay = useTextOverlay()
+  const templates = useMarketingTemplates()
+  const templateCategoriesData = useTemplateCategories()
+  const activeTemplate = useActiveTemplate()
+  const platformPresets = usePlatformPresets()
+  const selectedPlatform = useSelectedPlatform()
+  const currentPreset = useCurrentPreset()
+  const { exportWidth, exportHeight } = useCanvasDimensions()
+  const videoModel = useVideoModel()
+  const videoPrompt = useVideoPrompt()
+  const isGeneratingVideo = useIsGeneratingVideo()
+  const videoGenerationProgress = useVideoGenerationProgress()
+  const generatedVideoUrl = useGeneratedVideoUrl()
+  const videoError = useVideoError()
+  const videoOverlays = useVideoOverlays()
+  const isRenderingVideo = useIsRenderingVideo()
+
+  // Get actions from Zustand store
+  const { setImageFile, setSelectedPlatform, setActiveTemplate, clearTemplate } = useCanvasActions()
+  const {
+    setPrompt,
+    generate,
+    analyzeImage,
+    setBackgroundPrompt,
+    generateBackground,
+    removeBackground,
+    autoLevel,
+    suggestTypography,
+  } = useAIActions()
+  const { setVideoModel, setVideoPrompt, generateVideo, addVideoOverlay } = useVideoActions()
+  const { openModal } = useUIActions()
+  const { setTextOverlay } = useTextOverlayActions()
+
+  // Derived state
+  const activeTemplateId = activeTemplate?.id
+  const templatesList = useMemo(() => Object.values(templates || {}), [templates])
+  const templateCategories = useMemo(
+    () => Object.values(templateCategoriesData || {}),
+    [templateCategoriesData]
+  )
+
   // Filter templates by category
-  const filteredTemplates =
-    templateCategory === 'all'
-      ? templates
-      : templates.filter((t) => t.category === templateCategory)
+  const filteredTemplates = useMemo(
+    () =>
+      templateCategory === 'all'
+        ? templatesList
+        : templatesList.filter((t) => t.category === templateCategory),
+    [templatesList, templateCategory]
+  )
 
   const tabs = [
     { id: 'upload', icon: StudioIcons.upload, label: 'Upload' },
@@ -144,7 +165,7 @@ export function StudioMobileControls({
             <input
               type="file"
               accept="image/*,video/*"
-              onChange={(e) => e.target.files?.[0] && onImageUpload(e.target.files[0])}
+              onChange={(e) => e.target.files?.[0] && setImageFile(e.target.files[0])}
               style={{ display: 'none' }}
             />
             <div
@@ -179,7 +200,7 @@ export function StudioMobileControls({
               type="text"
               placeholder="Describe your marketing content..."
               value={prompt}
-              onChange={(e) => onPromptChange(e.target.value)}
+              onChange={(e) => setPrompt(e.target.value)}
               style={{
                 padding: '12px 14px',
                 borderRadius: '12px',
@@ -191,7 +212,7 @@ export function StudioMobileControls({
               }}
             />
             <button
-              onClick={onGenerate}
+              onClick={generate}
               disabled={isGenerating || !prompt}
               style={{
                 padding: '12px',
@@ -221,7 +242,7 @@ export function StudioMobileControls({
             {/* Analyze Image Button */}
             {imageFile && (
               <button
-                onClick={onAnalyzeImage}
+                onClick={analyzeImage}
                 disabled={isAnalyzing}
                 style={{
                   padding: '10px',
@@ -254,7 +275,7 @@ export function StudioMobileControls({
                 type="text"
                 placeholder="Describe background..."
                 value={backgroundPrompt || ''}
-                onChange={(e) => onBackgroundPromptChange?.(e.target.value)}
+                onChange={(e) => setBackgroundPrompt(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -269,7 +290,7 @@ export function StudioMobileControls({
                 }}
               />
               <button
-                onClick={onGenerateBackground}
+                onClick={generateBackground}
                 disabled={isGeneratingBackground || !backgroundPrompt}
                 style={{
                   width: '100%',
@@ -317,7 +338,7 @@ export function StudioMobileControls({
                 }}
               >
                 <button
-                  onClick={onRemoveBackground}
+                  onClick={removeBackground}
                   disabled={isRemovingBackground}
                   style={{
                     flex: 1,
@@ -336,7 +357,7 @@ export function StudioMobileControls({
                 </button>
                 {(subjectImage || imageFile) && generatedBackground && (
                   <button
-                    onClick={onAutoLevel}
+                    onClick={autoLevel}
                     disabled={isAutoLeveling}
                     style={{
                       flex: 1,
@@ -364,10 +385,10 @@ export function StudioMobileControls({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <VideoGenerationPanel
               videoModel={videoModel}
-              onModelChange={onVideoModelChange}
+              onModelChange={setVideoModel}
               videoPrompt={videoPrompt}
-              onPromptChange={onVideoPromptChange}
-              onGenerate={onGenerateVideo}
+              onPromptChange={setVideoPrompt}
+              onGenerate={generateVideo}
               isGenerating={isGeneratingVideo}
               progress={videoGenerationProgress}
               generatedVideoUrl={generatedVideoUrl}
@@ -389,7 +410,7 @@ export function StudioMobileControls({
                     Overlays
                   </span>
                   <button
-                    onClick={() => onAddVideoOverlay?.()}
+                    onClick={() => addVideoOverlay()}
                     style={{
                       padding: '4px 8px',
                       borderRadius: '6px',
@@ -406,15 +427,7 @@ export function StudioMobileControls({
 
                 {/* Compact overlay list for mobile */}
                 {videoOverlays?.slice(0, 2).map((overlay) => (
-                  <VideoOverlayEditor
-                    key={overlay.id}
-                    overlay={overlay}
-                    videoDuration={videoDuration || 8}
-                    onUpdate={onUpdateVideoOverlay}
-                    onRemove={onRemoveVideoOverlay}
-                    isSelected={selectedOverlayId === overlay.id}
-                    onSelect={onSelectOverlay}
-                  />
+                  <VideoOverlayEditor key={overlay.id} overlay={overlay} />
                 ))}
 
                 {videoOverlays?.length > 2 && (
@@ -432,7 +445,7 @@ export function StudioMobileControls({
 
                 {/* Export button */}
                 <button
-                  onClick={onOpenVideoExport}
+                  onClick={() => openModal('videoExport')}
                   disabled={isRenderingVideo}
                   style={{
                     width: '100%',
@@ -467,7 +480,7 @@ export function StudioMobileControls({
               type="text"
               placeholder="Enter text..."
               value={textOverlay?.text || ''}
-              onChange={(e) => onTextChange({ text: e.target.value })}
+              onChange={(e) => setTextOverlay({ text: e.target.value })}
               style={{
                 padding: '14px 16px',
                 borderRadius: '12px',
@@ -482,7 +495,7 @@ export function StudioMobileControls({
               {TEXT_COLORS.map((color) => (
                 <button
                   key={color}
-                  onClick={() => onTextChange({ color })}
+                  onClick={() => setTextOverlay({ color })}
                   style={{
                     width: '36px',
                     height: '36px',
@@ -506,14 +519,14 @@ export function StudioMobileControls({
                 min="24"
                 max="80"
                 value={textOverlay?.fontSize || 48}
-                onChange={(e) => onTextChange({ fontSize: parseInt(e.target.value) })}
+                onChange={(e) => setTextOverlay({ fontSize: parseInt(e.target.value) })}
                 style={{ flex: 1, accentColor: theme.accent }}
               />
             </div>
             {/* AI Typography Placement (Phase 2) */}
             {textOverlay?.text && (
               <button
-                onClick={onSuggestTypography}
+                onClick={suggestTypography}
                 disabled={isSuggestingTypography}
                 style={{
                   padding: '10px',
@@ -568,7 +581,7 @@ export function StudioMobileControls({
               {filteredTemplates.slice(0, 6).map((template) => (
                 <button
                   key={template.id}
-                  onClick={() => onTemplateSelect(template)}
+                  onClick={() => setActiveTemplate(template)}
                   style={{
                     padding: '6px',
                     borderRadius: '10px',
@@ -612,7 +625,7 @@ export function StudioMobileControls({
             </div>
             {activeTemplateId && (
               <button
-                onClick={onClearTemplate}
+                onClick={clearTemplate}
                 style={{
                   width: '100%',
                   marginTop: '8px',
@@ -652,7 +665,7 @@ export function StudioMobileControls({
                 .map(([id, preset]) => (
                   <button
                     key={id}
-                    onClick={() => onPlatformSelect(id, preset)}
+                    onClick={() => setSelectedPlatform(id)}
                     style={{
                       padding: '12px 10px',
                       borderRadius: '10px',

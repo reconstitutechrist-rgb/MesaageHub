@@ -17,7 +17,7 @@ class DatabaseService {
       this.db = await this.sqlite.createConnection(
         'messagehub_db',
         false,
-        'no-encryption',
+        'secret', // Enable SQLCipher encryption
         1,
         false
       )

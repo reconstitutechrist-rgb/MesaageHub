@@ -1,8 +1,12 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { mediaLibraryService } from '@/services/MediaLibraryService'
-import { designProjectService } from '@/services/DesignProjectService'
+import {
+  useMediaLibrary,
+  useBatchDeleteMedia,
+  useProjectsList,
+  useDeleteProject,
+} from '@/hooks/queries'
 import { themes } from '@/constants/phoneThemes'
 
 // SVG Icons
@@ -60,17 +64,29 @@ const filterTabs = [
 export default function MediaLibraryPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const userId = user?.id || 'demo-user'
 
   const [theme, setTheme] = useState('cyanDark')
-  const [mediaItems, setMediaItems] = useState([])
-  const [projects, setProjects] = useState([])
-  const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState('all')
   const [selectMode, setSelectMode] = useState(false)
   const [selectedItems, setSelectedItems] = useState([])
   const [previewItem, setPreviewItem] = useState(null)
 
   const t = themes[theme]
+
+  // TanStack Query hooks for data fetching with caching
+  const { data: mediaItems = [], isLoading: mediaLoading } = useMediaLibrary(userId)
+
+  const { data: projectsResult, isLoading: projectsLoading } = useProjectsList(userId)
+
+  const projects = projectsResult?.data || []
+
+  // Mutations for delete operations
+  const batchDeleteMutation = useBatchDeleteMedia()
+  const deleteProjectMutation = useDeleteProject()
+
+  // Combined loading state
+  const loading = mediaLoading || projectsLoading
 
   // Load theme from localStorage and listen for changes
   useEffect(() => {
@@ -99,27 +115,6 @@ export default function MediaLibraryPage() {
     }
   }, [])
 
-  const loadMedia = useCallback(async () => {
-    setLoading(true)
-    const result = await mediaLibraryService.getMediaLibrary(user?.id || 'demo-user')
-    if (result.success) {
-      setMediaItems(result.data)
-    }
-    setLoading(false)
-  }, [user?.id])
-
-  const loadProjects = useCallback(async () => {
-    const result = await designProjectService.listProjects(user?.id || 'demo-user')
-    if (result.success) {
-      setProjects(result.data)
-    }
-  }, [user?.id])
-
-  useEffect(() => {
-    loadMedia()
-    loadProjects()
-  }, [loadMedia, loadProjects])
-
   const filteredMedia = useMemo(() => {
     if (activeFilter === 'projects') return [] // Projects shown separately
     switch (activeFilter) {
@@ -137,10 +132,9 @@ export default function MediaLibraryPage() {
     navigate('/dashboard', { state: { openProject: project } })
   }
 
-  const handleDeleteProject = async (projectId) => {
+  const handleDeleteProject = (projectId) => {
     if (!confirm('Delete this project?')) return
-    await designProjectService.deleteProject(projectId, user?.id || 'demo-user')
-    loadProjects()
+    deleteProjectMutation.mutate({ projectId, userId })
   }
 
   const toggleSelectItem = (item) => {
@@ -153,16 +147,19 @@ export default function MediaLibraryPage() {
     })
   }
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedItems.length === 0) return
     if (!confirm(`Delete ${selectedItems.length} item(s)?`)) return
 
-    for (const item of selectedItems) {
-      await mediaLibraryService.deleteMedia(item.id, item.storage_path)
-    }
-    setSelectedItems([])
-    setSelectMode(false)
-    loadMedia()
+    batchDeleteMutation.mutate(
+      { items: selectedItems, userId },
+      {
+        onSuccess: () => {
+          setSelectedItems([])
+          setSelectMode(false)
+        },
+      }
+    )
   }
 
   const handleDownload = (item) => {

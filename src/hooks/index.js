@@ -1,11 +1,10 @@
+// Utility hooks
 export { useDebounce } from './useDebounce'
 export { useLocalStorage } from './useLocalStorage'
 export { useMediaQuery, useIsMobile, useIsTablet, useIsDesktop } from './useMediaQuery'
-export { useFetch } from './useFetch'
 export { useClickOutside } from './useClickOutside'
 export { useKeyboardShortcut, SHORTCUTS } from './useKeyboardShortcut'
 export { useToggle } from './useToggle'
-export { useAsync } from './useAsync'
 export { usePrevious } from './usePrevious'
 export { useWindowSize } from './useWindowSize'
 export {
@@ -18,3 +17,11 @@ export {
   layerToTextOverlay,
 } from './useLayerManager'
 export { useCanvasEditor } from './useCanvasEditor'
+export { useCanvasWorker } from './useCanvasWorker'
+
+// TanStack Query hooks - use these for data fetching
+export * from './queries'
+
+// Legacy hooks (deprecated - use TanStack Query hooks instead)
+export { useFetch } from './useFetch'
+export { useAsync } from './useAsync'

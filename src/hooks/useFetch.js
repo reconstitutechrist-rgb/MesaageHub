@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
+/**
+ * @deprecated Use TanStack Query hooks from '@/hooks/queries' instead.
+ * This hook is maintained for backward compatibility only.
+ *
+ * Example migration:
+ * Before: const { data, isLoading } = useFetch(() => service.getData())
+ * After:  const { data, isLoading } = useQuery({ queryKey: ['data'], queryFn: service.getData })
+ */
 export function useFetch(fetchFn, options = {}) {
   const { immediate = true, onSuccess, onError } = options
 

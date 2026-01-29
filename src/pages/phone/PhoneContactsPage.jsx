@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, memo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useLocalStorage, useDebounce } from '@/hooks'
@@ -115,6 +115,147 @@ const PREFERRED_METHODS = [
   { value: 'phone', label: 'Phone / SMS' },
   { value: 'email', label: 'Email' },
 ]
+
+// Memoized Contact Item Component - prevents re-renders when other contacts change
+const ContactItem = memo(function ContactItem({
+  contact,
+  theme: t,
+  isSelected,
+  onSelect,
+  onShowActionMenu,
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '14px',
+        padding: '14px',
+        marginBottom: '8px',
+        background: isSelected ? t.cardBg : 'transparent',
+        borderRadius: '16px',
+        border: `1px solid ${isSelected ? t.cardBorder : 'transparent'}`,
+        cursor: 'pointer',
+      }}
+      onClick={() => onSelect(contact.id)}
+    >
+      <div
+        style={{
+          width: '50px',
+          height: '50px',
+          borderRadius: '50%',
+          background: `linear-gradient(135deg, ${getAvatarColor(contact.name, t.avatarColors)}, ${getAvatarColor(contact.name, t.avatarColors)}88)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          fontSize: '18px',
+          fontWeight: '600',
+          boxShadow: `0 4px 15px ${getAvatarColor(contact.name, t.avatarColors)}40`,
+          position: 'relative',
+          opacity: contact.isBlocked ? 0.5 : 1,
+        }}
+      >
+        {getInitials(contact.name)}
+        {contact.isBlocked && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {Icons.ban('#fff')}
+          </div>
+        )}
+      </div>
+
+      <div style={{ flex: 1, opacity: contact.isBlocked ? 0.5 : 1 }}>
+        <div
+          style={{
+            color: t.text,
+            fontSize: '16px',
+            fontWeight: '600',
+            marginBottom: '4px',
+          }}
+        >
+          {contact.name}
+        </div>
+        <div style={{ color: t.textMuted, fontSize: '13px' }}>{contact.phone}</div>
+      </div>
+
+      {isSelected ? (
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: t.accent,
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: `0 4px 15px ${t.accentGlow}`,
+            }}
+          >
+            {Icons.phone('#fff')}
+          </button>
+          <button
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              border: `1px solid ${t.cardBorder}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {Icons.message(t.accent)}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onShowActionMenu(contact)
+            }}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              border: `1px solid ${t.cardBorder}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {Icons.moreVertical(t.textMuted)}
+          </button>
+        </div>
+      ) : (
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={t.textMuted}
+          strokeWidth="2"
+        >
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      )}
+    </div>
+  )
+})
 
 // Confirm Dialog Component
 function ConfirmDialog({
@@ -1295,6 +1436,10 @@ export default function PhoneContactsPage() {
     [setContacts]
   )
 
+  const handleSelectContact = useCallback((contactId) => {
+    setSelectedContact((prev) => (prev === contactId ? null : contactId))
+  }, [])
+
   return (
     <div
       style={{
@@ -1497,138 +1642,14 @@ export default function PhoneContactsPage() {
                 </div>
 
                 {contactsInGroup.map((contact) => (
-                  <div
+                  <ContactItem
                     key={contact.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '14px',
-                      padding: '14px',
-                      marginBottom: '8px',
-                      background: selectedContact === contact.id ? t.cardBg : 'transparent',
-                      borderRadius: '16px',
-                      border: `1px solid ${selectedContact === contact.id ? t.cardBorder : 'transparent'}`,
-                      cursor: 'pointer',
-                    }}
-                    onClick={() =>
-                      setSelectedContact(selectedContact === contact.id ? null : contact.id)
-                    }
-                  >
-                    <div
-                      style={{
-                        width: '50px',
-                        height: '50px',
-                        borderRadius: '50%',
-                        background: `linear-gradient(135deg, ${getAvatarColor(contact.name, t.avatarColors)}, ${getAvatarColor(contact.name, t.avatarColors)}88)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#fff',
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        boxShadow: `0 4px 15px ${getAvatarColor(contact.name, t.avatarColors)}40`,
-                        position: 'relative',
-                        opacity: contact.isBlocked ? 0.5 : 1,
-                      }}
-                    >
-                      {getInitials(contact.name)}
-                      {contact.isBlocked && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            borderRadius: '50%',
-                            background: 'rgba(0,0,0,0.5)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {Icons.ban('#fff')}
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ flex: 1, opacity: contact.isBlocked ? 0.5 : 1 }}>
-                      <div
-                        style={{
-                          color: t.text,
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        {contact.name}
-                      </div>
-                      <div style={{ color: t.textMuted, fontSize: '13px' }}>{contact.phone}</div>
-                    </div>
-
-                    {selectedContact === contact.id ? (
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            background: t.accent,
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: `0 4px 15px ${t.accentGlow}`,
-                          }}
-                        >
-                          {Icons.phone('#fff')}
-                        </button>
-                        <button
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                            border: `1px solid ${t.cardBorder}`,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {Icons.message(t.accent)}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setShowActionMenu(contact)
-                          }}
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            background: t.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                            border: `1px solid ${t.cardBorder}`,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {Icons.moreVertical(t.textMuted)}
-                        </button>
-                      </div>
-                    ) : (
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={t.textMuted}
-                        strokeWidth="2"
-                      >
-                        <path d="M9 18l6-6-6-6" />
-                      </svg>
-                    )}
-                  </div>
+                    contact={contact}
+                    theme={t}
+                    isSelected={selectedContact === contact.id}
+                    onSelect={handleSelectContact}
+                    onShowActionMenu={setShowActionMenu}
+                  />
                 ))}
               </div>
             ))}

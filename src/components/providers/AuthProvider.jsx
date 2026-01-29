@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { STORAGE_KEYS } from '@/lib/constants'
+import { loginRateLimiter } from '@/lib/rateLimiter'
 
 const AuthContext = createContext(null)
 
@@ -63,15 +64,15 @@ export function AuthProvider({ children }) {
 
         subscription = authSubscription
       } else {
-        // Demo mode: check localStorage
-        const storedUser = localStorage.getItem(STORAGE_KEYS.USER)
+        // Demo mode: check sessionStorage (more secure than localStorage)
+        const storedUser = sessionStorage.getItem(STORAGE_KEYS.USER)
         if (storedUser) {
           try {
             const parsedUser = JSON.parse(storedUser)
             setUser(parsedUser)
             setIsAuthenticated(true)
           } catch {
-            localStorage.removeItem(STORAGE_KEYS.USER)
+            sessionStorage.removeItem(STORAGE_KEYS.USER)
           }
         }
       }
@@ -87,8 +88,18 @@ export function AuthProvider({ children }) {
     }
   }, [transformUser])
 
-  // Login function
+  // Login function with rate limiting
   const login = async (credentials) => {
+    // Check rate limit before attempting login
+    const rateLimitKey = `login:${credentials.email}`
+    if (!loginRateLimiter.isAllowed(rateLimitKey)) {
+      const waitTime = Math.ceil(loginRateLimiter.getTimeUntilReset(rateLimitKey) / 1000)
+      return {
+        success: false,
+        error: `Too many login attempts. Please try again in ${waitTime} seconds.`,
+      }
+    }
+
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -100,6 +111,8 @@ export function AuthProvider({ children }) {
           return { success: false, error: error.message }
         }
 
+        // Reset rate limit on successful login
+        loginRateLimiter.reset(rateLimitKey)
         const appUser = transformUser(data.user)
         setUser(appUser)
         setIsAuthenticated(true)
@@ -108,7 +121,22 @@ export function AuthProvider({ children }) {
         return { success: false, error: 'Login failed' }
       }
     } else {
-      // Demo mode: accept any credentials
+      // Demo mode: require demo credentials for security
+      // Accept demo@messagehub.app / demo123 OR any email with password "demo123"
+      const isDemoCredentials =
+        credentials.password === 'demo123' &&
+        (credentials.email === 'demo@messagehub.app' || credentials.email.includes('@'))
+
+      if (!isDemoCredentials) {
+        return {
+          success: false,
+          error: 'Invalid credentials. Use demo@messagehub.app / demo123',
+        }
+      }
+
+      // Reset rate limit on successful login
+      loginRateLimiter.reset(rateLimitKey)
+
       const demoUser = {
         ...DEMO_USER,
         email: credentials.email,
@@ -116,7 +144,8 @@ export function AuthProvider({ children }) {
       }
       setUser(demoUser)
       setIsAuthenticated(true)
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser))
+      // Use sessionStorage instead of localStorage for demo mode (more secure)
+      sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser))
       return { success: true }
     }
   }
@@ -155,7 +184,7 @@ export function AuthProvider({ children }) {
         return { success: false, error: 'Registration failed' }
       }
     } else {
-      // Demo mode: simulate registration
+      // Demo mode: simulate registration with sessionStorage
       const demoUser = {
         ...DEMO_USER,
         name: userData.name,
@@ -163,7 +192,7 @@ export function AuthProvider({ children }) {
       }
       setUser(demoUser)
       setIsAuthenticated(true)
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser))
+      sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser))
       return { success: true }
     }
   }
@@ -174,11 +203,13 @@ export function AuthProvider({ children }) {
       await supabase.auth.signOut()
     }
 
-    // Clear local state
+    // Clear local state and storage
     setUser(null)
     setIsAuthenticated(false)
+    // Clear both storage types to ensure complete logout
     localStorage.removeItem(STORAGE_KEYS.USER)
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+    sessionStorage.removeItem(STORAGE_KEYS.USER)
   }
 
   // Update profile function
@@ -200,10 +231,10 @@ export function AuthProvider({ children }) {
         return { success: false, error: 'Profile update failed' }
       }
     } else {
-      // Demo mode: update local storage
+      // Demo mode: update session storage
       const updatedUser = { ...user, ...profileData }
       setUser(updatedUser)
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser))
+      sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser))
       return { success: true }
     }
   }
