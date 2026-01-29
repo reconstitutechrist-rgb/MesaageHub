@@ -6,6 +6,7 @@
  */
 
 import { useMemo } from 'react'
+import { shallow } from 'zustand/shallow'
 import { useStudioStore } from './index'
 import { computeCanvasDimensions } from './slices/canvasSlice'
 import {
@@ -171,86 +172,107 @@ export const useTextOverlayPosition = () => {
 
 // Layer actions
 export const useLayerActions = () =>
-  useStudioStore((s) => ({
-    addLayer: s.addLayer,
-    addTextLayer: s.addTextLayer,
-    removeLayer: s.removeLayer,
-    updateLayer: s.updateLayer,
-    updateSelectedLayer: s.updateSelectedLayer,
-    selectLayer: s.selectLayer,
-    clearSelection: s.clearSelection,
-    duplicateLayer: s.duplicateLayer,
-    clearLayers: s.clearLayers,
-    setAllLayers: s.setAllLayers,
-    toggleLayerVisibility: s.toggleLayerVisibility,
-    toggleLayerLock: s.toggleLayerLock,
-    moveLayerUp: s.moveLayerUp,
-    moveLayerDown: s.moveLayerDown,
-    undo: s.undo,
-    redo: s.redo,
-  }))
+  useStudioStore(
+    (s) => ({
+      addLayer: s.addLayer,
+      addTextLayer: s.addTextLayer,
+      removeLayer: s.removeLayer,
+      updateLayer: s.updateLayer,
+      updateSelectedLayer: s.updateSelectedLayer,
+      selectLayer: s.selectLayer,
+      clearSelection: s.clearSelection,
+      duplicateLayer: s.duplicateLayer,
+      clearLayers: s.clearLayers,
+      setAllLayers: s.setAllLayers,
+      toggleLayerVisibility: s.toggleLayerVisibility,
+      toggleLayerLock: s.toggleLayerLock,
+      moveLayerUp: s.moveLayerUp,
+      moveLayerDown: s.moveLayerDown,
+      undo: s.undo,
+      redo: s.redo,
+    }),
+    shallow
+  )
 
 // Canvas actions
 export const useCanvasActions = () =>
-  useStudioStore((s) => ({
-    setSelectedPlatform: s.setSelectedPlatform,
-    setBackground: s.setBackground,
-    setImageFile: s.setImageFile,
-    clearImage: s.clearImage,
-    setActiveTemplate: s.setActiveTemplate,
-    clearTemplate: s.clearTemplate,
-  }))
+  useStudioStore(
+    (s) => ({
+      setSelectedPlatform: s.setSelectedPlatform,
+      setBackground: s.setBackground,
+      setImageFile: s.setImageFile,
+      clearImage: s.clearImage,
+      setActiveTemplate: s.setActiveTemplate,
+      clearTemplate: s.clearTemplate,
+    }),
+    shallow
+  )
 
 // AI actions
 export const useAIActions = () =>
-  useStudioStore((s) => ({
-    setPrompt: s.setPrompt,
-    generate: s.generate,
-    analyzeImage: s.analyzeImage,
-    setBackgroundPrompt: s.setBackgroundPrompt,
-    generateBackground: s.generateBackground,
-    removeBackground: s.removeBackground,
-    suggestTypography: s.suggestTypography,
-    autoLevel: s.autoLevel,
-  }))
+  useStudioStore(
+    (s) => ({
+      setPrompt: s.setPrompt,
+      generate: s.generate,
+      analyzeImage: s.analyzeImage,
+      setBackgroundPrompt: s.setBackgroundPrompt,
+      generateBackground: s.generateBackground,
+      removeBackground: s.removeBackground,
+      suggestTypography: s.suggestTypography,
+      autoLevel: s.autoLevel,
+    }),
+    shallow
+  )
 
 // Video actions
 export const useVideoActions = () =>
-  useStudioStore((s) => ({
-    setVideoModel: s.setVideoModel,
-    setVideoPrompt: s.setVideoPrompt,
-    generateVideo: s.generateVideo,
-    addVideoOverlay: s.addVideoOverlay,
-    updateVideoOverlay: s.updateVideoOverlay,
-    removeVideoOverlay: s.removeVideoOverlay,
-    selectOverlay: s.selectOverlay,
-    clearVideoOverlays: s.clearVideoOverlays,
-    renderFinalVideo: s.renderFinalVideo,
-    setIsVideoPlaying: s.setIsVideoPlaying,
-    setVideoCurrentTime: s.setVideoCurrentTime,
-    setVideoDuration: s.setVideoDuration,
-    resetVideoState: s.resetVideoState,
-  }))
+  useStudioStore(
+    (s) => ({
+      setVideoModel: s.setVideoModel,
+      setVideoPrompt: s.setVideoPrompt,
+      generateVideo: s.generateVideo,
+      addVideoOverlay: s.addVideoOverlay,
+      updateVideoOverlay: s.updateVideoOverlay,
+      removeVideoOverlay: s.removeVideoOverlay,
+      selectOverlay: s.selectOverlay,
+      clearVideoOverlays: s.clearVideoOverlays,
+      renderFinalVideo: s.renderFinalVideo,
+      setIsVideoPlaying: s.setIsVideoPlaying,
+      setVideoCurrentTime: s.setVideoCurrentTime,
+      setVideoDuration: s.setVideoDuration,
+      resetVideoState: s.resetVideoState,
+    }),
+    shallow
+  )
 
 // UI actions
 export const useUIActions = () =>
-  useStudioStore((s) => ({
-    openModal: s.openModal,
-    closeModal: s.closeModal,
-    closeAllModals: s.closeAllModals,
-    setProjectName: s.setProjectName,
-    saveProject: s.saveProject,
-    loadProject: s.loadProject,
-  }))
+  useStudioStore(
+    (s) => ({
+      openModal: s.openModal,
+      closeModal: s.closeModal,
+      closeAllModals: s.closeAllModals,
+      setProjectName: s.setProjectName,
+      saveProject: s.saveProject,
+      loadProject: s.loadProject,
+    }),
+    shallow
+  )
 
 // Text overlay actions
 export const useTextOverlayActions = () =>
-  useStudioStore((s) => ({
-    setTextOverlay: s.setTextOverlay,
-  }))
+  useStudioStore(
+    (s) => ({
+      setTextOverlay: s.setTextOverlay,
+    }),
+    shallow
+  )
 
 // Global actions
 export const useGlobalActions = () =>
-  useStudioStore((s) => ({
-    resetAll: s.resetAll,
-  }))
+  useStudioStore(
+    (s) => ({
+      resetAll: s.resetAll,
+    }),
+    shallow
+  )
