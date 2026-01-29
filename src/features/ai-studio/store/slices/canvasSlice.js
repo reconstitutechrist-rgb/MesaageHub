@@ -4,21 +4,10 @@
 
 import { platformPresets } from '@/lib/platformTemplates'
 import { CANVAS_CONSTRAINTS } from '../../utils/studioConstants'
+import { scaleToFit, computeCanvasDimensions } from '../../utils/canvasLogic'
 
-/**
- * Scale dimensions to fit within max constraints while maintaining aspect ratio
- */
-function scaleToFit(width, height, maxWidth, maxHeight) {
-  const scaleX = maxWidth / width
-  const scaleY = maxHeight / height
-  const scale = Math.min(scaleX, scaleY, 1) // Don't scale up
-
-  return {
-    width: Math.round(width * scale),
-    height: Math.round(height * scale),
-    scale,
-  }
-}
+// Re-export for backwards compatibility
+export { computeCanvasDimensions }
 
 /**
  * Canvas slice for Zustand store
@@ -130,21 +119,3 @@ export const createCanvasSlice = (set, get) => ({
     })
   },
 })
-
-/**
- * Compute canvas dimensions from platform
- * This is a pure function used by selectors
- */
-export function computeCanvasDimensions(platform) {
-  const preset = platformPresets[platform] || platformPresets['instagram-post']
-  const { MAX_DISPLAY_WIDTH, MAX_DISPLAY_HEIGHT } = CANVAS_CONSTRAINTS
-  const scaled = scaleToFit(preset.width, preset.height, MAX_DISPLAY_WIDTH, MAX_DISPLAY_HEIGHT)
-
-  return {
-    currentPreset: preset,
-    exportWidth: preset.width,
-    exportHeight: preset.height,
-    canvasWidth: scaled.width,
-    canvasHeight: scaled.height,
-  }
-}

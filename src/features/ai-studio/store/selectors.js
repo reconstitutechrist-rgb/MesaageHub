@@ -1,14 +1,13 @@
 /**
  * AI Studio Store Selectors
  *
- * Granular selectors for optimal performance - components only
- * re-render when their specific slice of state changes.
+ * Granular selectors optimized for Zustand 5 using useShallow.
  */
 
 import { useMemo } from 'react'
-import { shallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 import { useStudioStore } from './index'
-import { computeCanvasDimensions } from './slices/canvasSlice'
+import { computeCanvasDimensions } from '../utils/canvasLogic'
 import {
   platformPresets,
   platformCategories,
@@ -73,14 +72,14 @@ export const useCurrentPreset = () => {
   return useMemo(() => platformPresets[platform] || platformPresets['instagram-post'], [platform])
 }
 
-// Static data exports (no state subscription needed)
+// Static data exports
 export const usePlatformPresets = () => platformPresets
 export const usePlatformCategories = () => platformCategories
 export const useMarketingTemplates = () => marketingTemplates
 export const useTemplateCategories = () => templateCategories
 
 // ============================================
-// AI SELECTORS - Granular for minimal re-renders
+// AI SELECTORS
 // ============================================
 
 export const usePrompt = () => useStudioStore((s) => s.prompt)
@@ -100,20 +99,14 @@ export const useLevelAdjustments = () => useStudioStore((s) => s.levelAdjustment
 
 // Combined AI loading state
 export const useIsAIBusy = () => {
-  const isGenerating = useStudioStore((s) => s.isGenerating)
-  const isAnalyzing = useStudioStore((s) => s.isAnalyzing)
-  const isGeneratingBackground = useStudioStore((s) => s.isGeneratingBackground)
-  const isRemovingBackground = useStudioStore((s) => s.isRemovingBackground)
-  const isSuggestingTypography = useStudioStore((s) => s.isSuggestingTypography)
-  const isAutoLeveling = useStudioStore((s) => s.isAutoLeveling)
-
-  return (
-    isGenerating ||
-    isAnalyzing ||
-    isGeneratingBackground ||
-    isRemovingBackground ||
-    isSuggestingTypography ||
-    isAutoLeveling
+  return useStudioStore(
+    (s) =>
+      s.isGenerating ||
+      s.isAnalyzing ||
+      s.isGeneratingBackground ||
+      s.isRemovingBackground ||
+      s.isSuggestingTypography ||
+      s.isAutoLeveling
   )
 }
 
@@ -167,13 +160,12 @@ export const useTextOverlayPosition = () => {
 }
 
 // ============================================
-// ACTION HOOKS (stable references for callbacks)
+// ACTION HOOKS (using useShallow for Zustand 5)
 // ============================================
 
-// Layer actions
 export const useLayerActions = () =>
   useStudioStore(
-    (s) => ({
+    useShallow((s) => ({
       addLayer: s.addLayer,
       addTextLayer: s.addTextLayer,
       removeLayer: s.removeLayer,
@@ -190,28 +182,24 @@ export const useLayerActions = () =>
       moveLayerDown: s.moveLayerDown,
       undo: s.undo,
       redo: s.redo,
-    }),
-    shallow
+    }))
   )
 
-// Canvas actions
 export const useCanvasActions = () =>
   useStudioStore(
-    (s) => ({
+    useShallow((s) => ({
       setSelectedPlatform: s.setSelectedPlatform,
       setBackground: s.setBackground,
       setImageFile: s.setImageFile,
       clearImage: s.clearImage,
       setActiveTemplate: s.setActiveTemplate,
       clearTemplate: s.clearTemplate,
-    }),
-    shallow
+    }))
   )
 
-// AI actions
 export const useAIActions = () =>
   useStudioStore(
-    (s) => ({
+    useShallow((s) => ({
       setPrompt: s.setPrompt,
       generate: s.generate,
       analyzeImage: s.analyzeImage,
@@ -220,14 +208,12 @@ export const useAIActions = () =>
       removeBackground: s.removeBackground,
       suggestTypography: s.suggestTypography,
       autoLevel: s.autoLevel,
-    }),
-    shallow
+    }))
   )
 
-// Video actions
 export const useVideoActions = () =>
   useStudioStore(
-    (s) => ({
+    useShallow((s) => ({
       setVideoModel: s.setVideoModel,
       setVideoPrompt: s.setVideoPrompt,
       generateVideo: s.generateVideo,
@@ -241,38 +227,31 @@ export const useVideoActions = () =>
       setVideoCurrentTime: s.setVideoCurrentTime,
       setVideoDuration: s.setVideoDuration,
       resetVideoState: s.resetVideoState,
-    }),
-    shallow
+    }))
   )
 
-// UI actions
 export const useUIActions = () =>
   useStudioStore(
-    (s) => ({
+    useShallow((s) => ({
       openModal: s.openModal,
       closeModal: s.closeModal,
       closeAllModals: s.closeAllModals,
       setProjectName: s.setProjectName,
       saveProject: s.saveProject,
       loadProject: s.loadProject,
-    }),
-    shallow
+    }))
   )
 
-// Text overlay actions
 export const useTextOverlayActions = () =>
   useStudioStore(
-    (s) => ({
+    useShallow((s) => ({
       setTextOverlay: s.setTextOverlay,
-    }),
-    shallow
+    }))
   )
 
-// Global actions
 export const useGlobalActions = () =>
   useStudioStore(
-    (s) => ({
+    useShallow((s) => ({
       resetAll: s.resetAll,
-    }),
-    shallow
+    }))
   )

@@ -11,6 +11,7 @@
  */
 
 import { aiService } from '@/services/AIService'
+import { computeCanvasDimensions } from '../../utils/canvasLogic'
 
 /**
  * Convert a File or Blob to base64 string
@@ -137,9 +138,7 @@ export const createAISlice = (set, get) => ({
 
     set({ isGeneratingBackground: true })
     try {
-      // Get dimensions from canvas slice
       const { selectedPlatform } = get()
-      const { computeCanvasDimensions } = await import('./canvasSlice')
       const { exportWidth, exportHeight } = computeCanvasDimensions(selectedPlatform)
 
       const result = await aiService.generateBackground(backgroundPrompt, {
@@ -204,7 +203,6 @@ export const createAISlice = (set, get) => ({
         imageBase64 = await fileToBase64(imageFile)
       }
 
-      const { computeCanvasDimensions } = await import('./canvasSlice')
       const { exportWidth, exportHeight, canvasWidth, canvasHeight } =
         computeCanvasDimensions(selectedPlatform)
 

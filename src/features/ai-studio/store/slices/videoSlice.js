@@ -9,7 +9,7 @@
  */
 
 import { aiService } from '@/services/AIService'
-import { computeCanvasDimensions } from './canvasSlice'
+import { computeCanvasDimensions } from '../../utils/canvasLogic'
 
 /**
  * Video slice for Zustand store
