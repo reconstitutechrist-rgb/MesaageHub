@@ -521,7 +521,7 @@ export function StudioSidebar() {
                 marginBottom: '8px',
               }}
             >
-              <span style={{ fontSize: '12px', fontWeight: '500', color: theme.textSecondary }}>
+              <span style={{ fontSize: '12px', fontWeight: '500', color: theme.textMuted }}>
                 Video Overlays
               </span>
               <button

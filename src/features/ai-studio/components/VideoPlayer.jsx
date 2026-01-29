@@ -87,13 +87,13 @@ export const VideoPlayer = forwardRef(function VideoPlayer(
           flexDirection: 'column',
           gap: '12px',
           padding: '40px',
-          background: theme.bgSecondary,
+          background: theme.cardBg,
           borderRadius: '12px',
-          color: theme.textSecondary,
+          color: theme.textMuted,
           ...style,
         }}
       >
-        {StudioIcons.video(theme.textSecondary, 48)}
+        {StudioIcons.video(theme.textMuted, 48)}
         <span style={{ fontSize: '14px' }}>Generate a video to preview</span>
       </div>
     )

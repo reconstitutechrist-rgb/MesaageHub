@@ -84,7 +84,7 @@ export function VideoExportModal({
               padding: '4px',
             }}
           >
-            {StudioIcons.x(theme.textSecondary, 20)}
+            {StudioIcons.x(theme.textMuted, 20)}
           </button>
         </div>
 
@@ -117,7 +117,7 @@ export function VideoExportModal({
               style={{
                 width: '100%',
                 height: '8px',
-                background: theme.bgSecondary,
+                background: theme.cardBg,
                 borderRadius: '4px',
                 overflow: 'hidden',
               }}
@@ -134,7 +134,7 @@ export function VideoExportModal({
             <div
               style={{
                 fontSize: '12px',
-                color: theme.textSecondary,
+                color: theme.textMuted,
                 marginTop: '8px',
                 textAlign: 'center',
               }}
@@ -180,8 +180,8 @@ export function VideoExportModal({
                   gap: '8px',
                   padding: '14px 20px',
                   borderRadius: '10px',
-                  border: `1px solid ${theme.border}`,
-                  background: theme.bgSecondary,
+                  border: `1px solid ${theme.cardBorder}`,
+                  background: theme.cardBg,
                   color: theme.text,
                   fontSize: '14px',
                   fontWeight: '500',
@@ -231,7 +231,7 @@ export function VideoExportModal({
                   gap: '8px',
                   padding: '14px 20px',
                   borderRadius: '10px',
-                  border: `1px solid ${theme.border}`,
+                  border: `1px solid ${theme.cardBorder}`,
                   background: 'transparent',
                   color: theme.text,
                   fontSize: '14px',
@@ -253,7 +253,7 @@ export function VideoExportModal({
                 borderRadius: '10px',
                 border: 'none',
                 background: 'transparent',
-                color: theme.textSecondary,
+                color: theme.textMuted,
                 fontSize: '14px',
                 cursor: 'pointer',
               }}
@@ -269,10 +269,10 @@ export function VideoExportModal({
             style={{
               textAlign: 'center',
               padding: '20px',
-              color: theme.textSecondary,
+              color: theme.textMuted,
             }}
           >
-            <div style={{ marginBottom: '12px' }}>{StudioIcons.video(theme.textSecondary, 48)}</div>
+            <div style={{ marginBottom: '12px' }}>{StudioIcons.video(theme.textMuted, 48)}</div>
             <p style={{ fontSize: '14px' }}>Generate a video first to export</p>
           </div>
         )}
