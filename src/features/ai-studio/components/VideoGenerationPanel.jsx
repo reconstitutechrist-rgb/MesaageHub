@@ -3,13 +3,13 @@
  * Includes model selector, prompt input, and generate button with progress
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, memo } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { VideoModelSelector } from './VideoModelSelector'
 import { StudioIcons } from '../utils/StudioIcons'
 import { triggerHaptic } from '../utils/haptics'
 
-export function VideoGenerationPanel({
+export const VideoGenerationPanel = memo(function VideoGenerationPanel({
   // Model selection
   videoModel,
   onModelChange,
@@ -190,6 +190,6 @@ export function VideoGenerationPanel({
       `}</style>
     </div>
   )
-}
+})
 
 export default VideoGenerationPanel

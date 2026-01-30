@@ -4,6 +4,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { mediaLibraryService } from '@/services/MediaLibraryService'
 import { ComposeModal } from '@/components/common/ComposeModal'
 import { useWindowSize } from '@/hooks/useWindowSize'
+import { triggerHaptic } from '@/lib/haptics'
 import { themes } from '@/constants/phoneThemes'
 
 // Lazy load AIStudio to avoid TDZ issues with minified bundles
@@ -638,6 +639,7 @@ export default function PhoneDashboardPage() {
         minHeight: '100vh',
         height: '100vh',
         background: t.bg,
+        transition: 'background-color 0.3s ease',
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
         position: 'relative',
@@ -733,7 +735,15 @@ export default function PhoneDashboardPage() {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', paddingBottom: '100px' }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '0 20px',
+          paddingBottom: '100px',
+          contain: 'layout style paint',
+        }}
+      >
         <div
           style={{
             display: 'grid',
@@ -783,7 +793,10 @@ export default function PhoneDashboardPage() {
         </div>
 
         <div
-          onClick={() => setShowAIStudio(true)}
+          onClick={() => {
+            triggerHaptic('light')
+            setShowAIStudio(true)
+          }}
           style={{
             padding: '20px',
             borderRadius: '20px',
@@ -1116,7 +1129,10 @@ export default function PhoneDashboardPage() {
           return (
             <button
               key={i}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                triggerHaptic('light')
+                navigate(item.path)
+              }}
               style={{
                 background: 'none',
                 border: 'none',

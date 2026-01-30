@@ -428,3 +428,54 @@ export const useProductActions = () =>
       resetProductState: s.resetProductState,
     }))
   )
+
+// ============================================
+// COMPOSITE SELECTORS (for sidebar performance)
+// ============================================
+
+// Batches all AI state into a single subscription
+export const useSidebarAIState = () =>
+  useStudioStore(
+    useShallow((s) => ({
+      prompt: s.prompt,
+      isGenerating: s.isGenerating,
+      isAnalyzing: s.isAnalyzing,
+      backgroundPrompt: s.backgroundPrompt,
+      isGeneratingBackground: s.isGeneratingBackground,
+      generatedBackground: s.generatedBackground,
+      isRemovingBackground: s.isRemovingBackground,
+      subjectImage: s.subjectImage,
+      isSuggestingTypography: s.isSuggestingTypography,
+      isAutoLeveling: s.isAutoLeveling,
+      selectedLightingPreset: s.selectedLightingPreset,
+      isApplyingRelighting: s.isApplyingRelighting,
+      lastGenerationError: s.lastGenerationError,
+    }))
+  )
+
+// Batches all video state into a single subscription
+export const useSidebarVideoState = () =>
+  useStudioStore(
+    useShallow((s) => ({
+      videoModel: s.videoModel,
+      videoPrompt: s.videoPrompt,
+      isGeneratingVideo: s.isGeneratingVideo,
+      videoGenerationProgress: s.videoGenerationProgress,
+      generatedVideoUrl: s.generatedVideoUrl,
+      videoError: s.videoError,
+      videoOverlays: s.videoOverlays,
+      isRenderingVideo: s.isRenderingVideo,
+    }))
+  )
+
+// Batches canvas + UI state used by sidebar
+export const useSidebarCanvasState = () =>
+  useStudioStore(
+    useShallow((s) => ({
+      imageFile: s.imageFile,
+      activeTemplate: s.activeTemplate,
+      background: s.background,
+      textOverlay: s.textOverlay,
+      recentDesigns: s.recentDesigns,
+    }))
+  )

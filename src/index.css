@@ -464,4 +464,9 @@ html {
       background-position: -200% 0;
     }
   }
+
+  /* CSS containment for scroll performance */
+  .phone-scroll-container {
+    contain: layout style paint;
+  }
 }

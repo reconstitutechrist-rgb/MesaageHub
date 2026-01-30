@@ -17,34 +17,12 @@ import { ObjectRemovalPanel } from './ObjectRemovalPanel'
 import { AnalyticsPanel } from './AnalyticsPanel'
 import { ProductTaggingPanel } from './ProductTaggingPanel'
 import {
-  // State selectors
-  useImageFile,
-  usePrompt,
-  useIsGenerating,
-  useIsAnalyzing,
-  useBackgroundPrompt,
-  useIsGeneratingBackground,
-  useGeneratedBackground,
-  useIsRemovingBackground,
-  useSubjectImage,
-  useIsSuggestingTypography,
-  useIsAutoLeveling,
-  useSelectedLightingPreset,
-  useIsApplyingRelighting,
-  useVideoModel,
-  useVideoPrompt,
-  useIsGeneratingVideo,
-  useVideoGenerationProgress,
-  useGeneratedVideoUrl,
-  useVideoError,
-  useVideoOverlays,
-  useIsRenderingVideo,
-  useActiveTemplate,
-  useBackground,
-  useTextOverlay,
+  // Composite state selectors (reduces subscription count from ~27 to ~3)
+  useSidebarAIState,
+  useSidebarVideoState,
+  useSidebarCanvasState,
+  // Static data
   useMarketingTemplates,
-  useRecentDesigns,
-  useLastGenerationError,
   // Action selectors
   useCanvasActions,
   useAIActions,
@@ -68,34 +46,35 @@ import {
 export function StudioSidebar() {
   const { theme } = usePhoneTheme()
 
-  // Get state from Zustand store
-  const imageFile = useImageFile()
-  const prompt = usePrompt()
-  const isGenerating = useIsGenerating()
-  const isAnalyzing = useIsAnalyzing()
-  const backgroundPrompt = useBackgroundPrompt()
-  const isGeneratingBackground = useIsGeneratingBackground()
-  const generatedBackground = useGeneratedBackground()
-  const isRemovingBackground = useIsRemovingBackground()
-  const subjectImage = useSubjectImage()
-  const isSuggestingTypography = useIsSuggestingTypography()
-  const isAutoLeveling = useIsAutoLeveling()
-  const selectedLightingPreset = useSelectedLightingPreset()
-  const isApplyingRelighting = useIsApplyingRelighting()
-  const videoModel = useVideoModel()
-  const videoPrompt = useVideoPrompt()
-  const isGeneratingVideo = useIsGeneratingVideo()
-  const videoGenerationProgress = useVideoGenerationProgress()
-  const generatedVideoUrl = useGeneratedVideoUrl()
-  const videoError = useVideoError()
-  const videoOverlays = useVideoOverlays()
-  const isRenderingVideo = useIsRenderingVideo()
-  const activeTemplate = useActiveTemplate()
-  const background = useBackground()
-  const textOverlay = useTextOverlay()
+  // Get state from Zustand store (composite selectors for fewer subscriptions)
+  const {
+    prompt,
+    isGenerating,
+    isAnalyzing,
+    backgroundPrompt,
+    isGeneratingBackground,
+    generatedBackground,
+    isRemovingBackground,
+    subjectImage,
+    isSuggestingTypography,
+    isAutoLeveling,
+    selectedLightingPreset,
+    isApplyingRelighting,
+    lastGenerationError,
+  } = useSidebarAIState()
+  const {
+    videoModel,
+    videoPrompt,
+    isGeneratingVideo,
+    videoGenerationProgress,
+    generatedVideoUrl,
+    videoError,
+    videoOverlays,
+    isRenderingVideo,
+  } = useSidebarVideoState()
+  const { imageFile, activeTemplate, background, textOverlay, recentDesigns } =
+    useSidebarCanvasState()
   const templates = useMarketingTemplates()
-  const recentDesigns = useRecentDesigns()
-  const lastGenerationError = useLastGenerationError()
 
   // Get actions from Zustand store
   const { setImageFile, setBackground, setActiveTemplate, clearTemplate } = useCanvasActions()

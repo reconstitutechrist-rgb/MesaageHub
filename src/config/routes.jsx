@@ -1,6 +1,9 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import { ROUTES } from '@/lib/constants'
+import { pageVariants, pageTransition } from '@/lib/animations'
+import { Skeleton } from '@/components/common/Skeleton'
 
 // Layouts
 import RootLayout from '@/components/layout/RootLayout'
@@ -31,41 +34,154 @@ const MediaLibraryPage = lazy(() =>
 // Auth guard component
 import { AuthGuard } from '@/features/auth/components/AuthGuard'
 
-// Loading Component
+// Animated page wrapper
+function AnimatedPage({ children }) {
+  return (
+    <motion.div
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={pageTransition}
+      style={{ height: '100%' }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+// Loading Component — skeleton layout instead of plain spinner
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
-    <div className="animate-pulse space-y-4 text-center">
-      <div className="h-12 w-12 rounded-full bg-primary/20 mx-auto mb-4 animate-spin border-t-2 border-primary"></div>
-      <p className="text-muted-foreground">Loading...</p>
+  <div className="flex flex-col min-h-screen bg-background text-foreground">
+    {/* Header skeleton */}
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+      <Skeleton className="h-8 w-8 rounded-full" />
+      <Skeleton className="h-4 w-32" />
+      <div className="ml-auto flex gap-2">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-8 w-8 rounded-full" />
+      </div>
+    </div>
+    {/* Content skeleton rows */}
+    <div className="flex-1 px-4 py-3 space-y-4">
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-3/5" />
+            <Skeleton className="h-3 w-4/5" />
+          </div>
+        </div>
+      ))}
+    </div>
+    {/* Bottom nav skeleton */}
+    <div className="flex items-center justify-around px-4 py-3 border-t border-border">
+      {Array.from({ length: 4 }, (_, i) => (
+        <Skeleton key={i} className="h-6 w-6 rounded" />
+      ))}
     </div>
   </div>
 )
 
 export function AppRoutes() {
+  const location = useLocation()
+
   return (
     <Suspense fallback={<PageLoader />}>
-      <Routes>
-        {/* Public routes */}
-        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-        <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          {/* Public routes */}
+          <Route
+            path={ROUTES.LOGIN}
+            element={
+              <AnimatedPage>
+                <LoginPage />
+              </AnimatedPage>
+            }
+          />
+          <Route
+            path={ROUTES.REGISTER}
+            element={
+              <AnimatedPage>
+                <RegisterPage />
+              </AnimatedPage>
+            }
+          />
 
-        {/* Protected routes - Phone pages have built-in frame */}
-        <Route element={<AuthGuard />}>
-          <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-          <Route path={ROUTES.DASHBOARD} element={<PhoneDashboardPage />} />
-          <Route path={ROUTES.CONVERSATIONS} element={<PhoneChatsPage />} />
-          <Route path={ROUTES.CHAT} element={<PhoneChatsPage />} />
-          <Route path={ROUTES.CONTACTS} element={<PhoneContactsPage />} />
-          <Route path={ROUTES.SETTINGS} element={<PhoneSettingsPage />} />
-          <Route path={ROUTES.MEDIA_LIBRARY} element={<MediaLibraryPage />} />
-          <Route element={<RootLayout />}>
-            <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+          {/* Protected routes - Phone pages have built-in frame */}
+          <Route element={<AuthGuard />}>
+            <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+            <Route
+              path={ROUTES.DASHBOARD}
+              element={
+                <AnimatedPage>
+                  <PhoneDashboardPage />
+                </AnimatedPage>
+              }
+            />
+            <Route
+              path={ROUTES.CONVERSATIONS}
+              element={
+                <AnimatedPage>
+                  <PhoneChatsPage />
+                </AnimatedPage>
+              }
+            />
+            <Route
+              path={ROUTES.CHAT}
+              element={
+                <AnimatedPage>
+                  <PhoneChatsPage />
+                </AnimatedPage>
+              }
+            />
+            <Route
+              path={ROUTES.CONTACTS}
+              element={
+                <AnimatedPage>
+                  <PhoneContactsPage />
+                </AnimatedPage>
+              }
+            />
+            <Route
+              path={ROUTES.SETTINGS}
+              element={
+                <AnimatedPage>
+                  <PhoneSettingsPage />
+                </AnimatedPage>
+              }
+            />
+            <Route
+              path={ROUTES.MEDIA_LIBRARY}
+              element={
+                <AnimatedPage>
+                  <MediaLibraryPage />
+                </AnimatedPage>
+              }
+            />
+            <Route element={<RootLayout />}>
+              <Route
+                path={ROUTES.PROFILE}
+                element={
+                  <AnimatedPage>
+                    <ProfilePage />
+                  </AnimatedPage>
+                }
+              />
+            </Route>
           </Route>
-        </Route>
 
-        {/* 404 */}
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+          {/* 404 */}
+          <Route
+            path="*"
+            element={
+              <AnimatedPage>
+                <NotFoundPage />
+              </AnimatedPage>
+            }
+          />
+        </Routes>
+      </AnimatePresence>
     </Suspense>
   )
 }

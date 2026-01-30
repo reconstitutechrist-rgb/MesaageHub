@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { StudioIcons } from '../utils/StudioIcons'
 import { BRAND_PRESETS, FONT_OPTIONS, OVERLAY_POSITIONS } from '../store/slices/brandSlice'
@@ -19,7 +19,7 @@ import {
  * - Contact overlay settings
  * - Preset brand palettes
  */
-export function BrandKitPanel() {
+export const BrandKitPanel = memo(function BrandKitPanel() {
   const { theme } = usePhoneTheme()
   const [isExpanded, setIsExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState('colors') // colors, fonts, overlay
@@ -502,6 +502,6 @@ export function BrandKitPanel() {
       )}
     </div>
   )
-}
+})
 
 export default BrandKitPanel

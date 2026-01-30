@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { StudioIcons } from '../utils/StudioIcons'
 import { BADGE_PRESETS, CTA_PRESETS } from '../utils/promotionalElements'
@@ -11,7 +11,9 @@ import { useLayerActions } from '../store/selectors'
  * Allows users to add badges, CTAs, countdown timers, prices,
  * stock indicators, and QR codes to their designs.
  */
-export function PromotionalElementsPanel({ userPhoneNumber = '' }) {
+export const PromotionalElementsPanel = memo(function PromotionalElementsPanel({
+  userPhoneNumber = '',
+}) {
   const { theme } = usePhoneTheme()
   const [activeTab, setActiveTab] = useState('badges')
   const [isExpanded, setIsExpanded] = useState(true)
@@ -489,6 +491,6 @@ export function PromotionalElementsPanel({ userPhoneNumber = '' }) {
       )}
     </div>
   )
-}
+})
 
 export default PromotionalElementsPanel

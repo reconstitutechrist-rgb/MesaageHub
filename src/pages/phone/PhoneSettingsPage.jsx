@@ -1,8 +1,18 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  modalSlideUp,
+  modalSlideTransition,
+  modalFade,
+  modalFadeTransition,
+  overlayVariants,
+  overlayTransition,
+} from '@/lib/animations'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useLocalStorage, useToggle } from '@/hooks'
 import { toast } from 'sonner'
+import { triggerHaptic } from '@/lib/haptics'
 import { automationService } from '@/services/AutomationService'
 import { themes } from '@/constants/phoneThemes'
 
@@ -458,215 +468,229 @@ function SettingsToggleRow({ icon, label, description, enabled, onChange, theme:
 
 // Theme Selection Modal
 function ThemeSelectionModal({ open, onClose, currentTheme, onSelect, theme: t }) {
-  if (!open) return null
-
   return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: t.bg,
-        zIndex: 50,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          padding: '60px 16px 16px',
-          borderBottom: `1px solid ${t.cardBorder}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <button
-          onClick={onClose}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          variants={modalSlideUp}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={modalSlideTransition}
           style={{
-            background: 'none',
-            border: 'none',
-            color: t.accent,
-            cursor: 'pointer',
-            fontSize: '16px',
+            position: 'absolute',
+            inset: 0,
+            background: t.bg,
+            zIndex: 50,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          Cancel
-        </button>
-        <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
-          Choose Layout
-        </h2>
-        <div style={{ width: '60px' }} />
-      </div>
-
-      {/* Theme Grid */}
-      <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
-        <p
-          style={{
-            color: t.textMuted,
-            fontSize: '14px',
-            marginBottom: '20px',
-            textAlign: 'center',
-          }}
-        >
-          Select your preferred theme. This will change the appearance across all screens.
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          {Object.entries(themes).map(([key, value]) => (
+          {/* Header */}
+          <div
+            style={{
+              padding: '60px 16px 16px',
+              borderBottom: `1px solid ${t.cardBorder}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
             <button
-              key={key}
-              onClick={() => {
-                onSelect(key)
-                onClose()
-              }}
+              onClick={onClose}
               style={{
-                padding: '0',
-                borderRadius: '20px',
-                border:
-                  currentTheme === key ? `3px solid ${value.accent}` : `2px solid ${t.cardBorder}`,
                 background: 'none',
+                border: 'none',
+                color: t.accent,
                 cursor: 'pointer',
-                overflow: 'hidden',
-                boxShadow: currentTheme === key ? `0 0 25px ${value.accentGlow}` : 'none',
-                transition: 'all 0.2s ease',
+                fontSize: '16px',
               }}
             >
-              {/* Mini Phone Preview */}
-              <div
-                style={{
-                  height: '140px',
-                  background: value.bg,
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: '12px',
-                }}
-              >
-                {/* Mini Status Bar */}
-                <div
+              Cancel
+            </button>
+            <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+              Choose Layout
+            </h2>
+            <div style={{ width: '60px' }} />
+          </div>
+
+          {/* Theme Grid */}
+          <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
+            <p
+              style={{
+                color: t.textMuted,
+                fontSize: '14px',
+                marginBottom: '20px',
+                textAlign: 'center',
+              }}
+            >
+              Select your preferred theme. This will change the appearance across all screens.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {Object.entries(themes).map(([key, value]) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    onSelect(key)
+                    onClose()
+                  }}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: '8px',
-                    color: value.text,
-                    marginBottom: '8px',
+                    padding: '0',
+                    borderRadius: '20px',
+                    border:
+                      currentTheme === key
+                        ? `3px solid ${value.accent}`
+                        : `2px solid ${t.cardBorder}`,
+                    background: 'none',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    boxShadow: currentTheme === key ? `0 0 25px ${value.accentGlow}` : 'none',
+                    transition: 'all 0.2s ease',
                   }}
                 >
-                  <span>9:41</span>
+                  {/* Mini Phone Preview */}
                   <div
                     style={{
-                      width: '40px',
-                      height: '12px',
-                      background: '#000',
-                      borderRadius: '6px',
+                      height: '140px',
+                      background: value.bg,
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      padding: '12px',
                     }}
-                  />
-                  <span>100%</span>
-                </div>
-
-                {/* Mini Content Preview */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div
-                    style={{
-                      height: '10px',
-                      width: '60%',
-                      background: value.text,
-                      borderRadius: '3px',
-                      opacity: 0.8,
-                    }}
-                  />
-                  <div
-                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', flex: 1 }}
                   >
-                    {[1, 2, 3, 4].map((i) => (
+                    {/* Mini Status Bar */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '8px',
+                        color: value.text,
+                        marginBottom: '8px',
+                      }}
+                    >
+                      <span>9:41</span>
                       <div
-                        key={i}
                         style={{
-                          background: value.cardBg,
+                          width: '40px',
+                          height: '12px',
+                          background: '#000',
                           borderRadius: '6px',
-                          border: `1px solid ${value.cardBorder}`,
                         }}
                       />
-                    ))}
-                  </div>
-                </div>
+                      <span>100%</span>
+                    </div>
 
-                {/* Mini Nav Bar */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-around',
-                    paddingTop: '8px',
-                    borderTop: `1px solid ${value.cardBorder}`,
-                  }}
-                >
-                  {[1, 2, 3, 4].map((i) => (
+                    {/* Mini Content Preview */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div
+                        style={{
+                          height: '10px',
+                          width: '60%',
+                          background: value.text,
+                          borderRadius: '3px',
+                          opacity: 0.8,
+                        }}
+                      />
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: '4px',
+                          flex: 1,
+                        }}
+                      >
+                        {[1, 2, 3, 4].map((i) => (
+                          <div
+                            key={i}
+                            style={{
+                              background: value.cardBg,
+                              borderRadius: '6px',
+                              border: `1px solid ${value.cardBorder}`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Mini Nav Bar */}
                     <div
-                      key={i}
                       style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        background: i === 1 ? value.accent : value.textMuted,
+                        display: 'flex',
+                        justifyContent: 'space-around',
+                        paddingTop: '8px',
+                        borderTop: `1px solid ${value.cardBorder}`,
                       }}
-                    />
-                  ))}
-                </div>
+                    >
+                      {[1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: i === 1 ? value.accent : value.textMuted,
+                          }}
+                        />
+                      ))}
+                    </div>
 
-                {/* Selected Check */}
-                {currentTheme === key && (
+                    {/* Selected Check */}
+                    {currentTheme === key && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          right: '8px',
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          background: value.accent,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: `0 2px 8px ${value.accentGlow}`,
+                        }}
+                      >
+                        {Icons.check('#fff')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Theme Info */}
                   <div
                     style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      background: value.accent,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: `0 2px 8px ${value.accentGlow}`,
+                      padding: '12px',
+                      background: value.isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.8)',
+                      textAlign: 'center',
                     }}
                   >
-                    {Icons.check('#fff')}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {value.isDark ? Icons.moon(value.accent) : Icons.sun(value.accent)}
+                      <span style={{ color: value.text, fontSize: '14px', fontWeight: '600' }}>
+                        {value.name}
+                      </span>
+                    </div>
+                    <span style={{ color: value.textMuted, fontSize: '11px' }}>
+                      {value.description}
+                    </span>
                   </div>
-                )}
-              </div>
-
-              {/* Theme Info */}
-              <div
-                style={{
-                  padding: '12px',
-                  background: value.isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.8)',
-                  textAlign: 'center',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    marginBottom: '4px',
-                  }}
-                >
-                  {value.isDark ? Icons.moon(value.accent) : Icons.sun(value.accent)}
-                  <span style={{ color: value.text, fontSize: '14px', fontWeight: '600' }}>
-                    {value.name}
-                  </span>
-                </div>
-                <span style={{ color: value.textMuted, fontSize: '11px' }}>
-                  {value.description}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -681,106 +705,125 @@ function ConfirmDialog({
   theme: t,
   isLoading = false,
 }) {
-  if (!open) return null
-
   return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'rgba(0,0,0,0.6)',
-        zIndex: 100,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-      }}
-    >
-      <div
-        style={{
-          background: t.isDark ? t.screenBg : '#fff',
-          borderRadius: '20px',
-          padding: '24px',
-          width: '100%',
-          maxWidth: '300px',
-          textAlign: 'center',
-          border: `1px solid ${t.cardBorder}`,
-        }}
-      >
-        <div style={{ marginBottom: '16px' }}>
-          {isLoading ? (
-            <div
-              style={{
-                width: '48px',
-                height: '48px',
-                border: `3px solid ${t.cardBorder}`,
-                borderTopColor: t.danger,
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto',
-              }}
-            />
-          ) : (
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={t.danger}
-              strokeWidth="1.5"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-          )}
-        </div>
-        <h3 style={{ color: t.text, fontSize: '18px', fontWeight: '600', margin: '0 0 8px' }}>
-          {title}
-        </h3>
-        <p style={{ color: t.textMuted, fontSize: '14px', margin: '0 0 24px', lineHeight: '1.5' }}>
-          {message}
-        </p>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={onClose}
-            disabled={isLoading}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          variants={overlayVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={overlayTransition}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <motion.div
+            variants={modalFade}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={modalFadeTransition}
             style={{
-              flex: 1,
-              padding: '12px',
-              borderRadius: '12px',
+              background: t.isDark ? t.screenBg : '#fff',
+              borderRadius: '20px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '300px',
+              textAlign: 'center',
               border: `1px solid ${t.cardBorder}`,
-              background: t.cardBg,
-              color: t.text,
-              fontSize: '15px',
-              fontWeight: '600',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.5 : 1,
             }}
           >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            style={{
-              flex: 1,
-              padding: '12px',
-              borderRadius: '12px',
-              border: 'none',
-              background: t.danger,
-              color: '#fff',
-              fontSize: '15px',
-              fontWeight: '600',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.7 : 1,
-            }}
-          >
-            {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
+            <div style={{ marginBottom: '16px' }}>
+              {isLoading ? (
+                <div
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    border: `3px solid ${t.cardBorder}`,
+                    borderTopColor: t.danger,
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    margin: '0 auto',
+                  }}
+                />
+              ) : (
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={t.danger}
+                  strokeWidth="1.5"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              )}
+            </div>
+            <h3 style={{ color: t.text, fontSize: '18px', fontWeight: '600', margin: '0 0 8px' }}>
+              {title}
+            </h3>
+            <p
+              style={{
+                color: t.textMuted,
+                fontSize: '14px',
+                margin: '0 0 24px',
+                lineHeight: '1.5',
+              }}
+            >
+              {message}
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={onClose}
+                disabled={isLoading}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: `1px solid ${t.cardBorder}`,
+                  background: t.cardBg,
+                  color: t.text,
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.5 : 1,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onConfirm}
+                disabled={isLoading}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: t.danger,
+                  color: '#fff',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.7 : 1,
+                }}
+              >
+                {confirmText}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -887,417 +930,446 @@ function AutomationsModal({ open, onClose, theme: t }) {
     setShowAddModal(true)
   }
 
-  if (!open) return null
-
-  // Add/Edit Modal
-  if (showAddModal) {
-    return (
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: t.bg,
-          zIndex: 60,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding: '60px 16px 16px',
-            borderBottom: `1px solid ${t.cardBorder}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <button
-            onClick={() => {
-              setShowAddModal(false)
-              setEditingRule(null)
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: t.accent,
-              cursor: 'pointer',
-              fontSize: '16px',
-            }}
-          >
-            Cancel
-          </button>
-          <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
-            {editingRule ? 'Edit Automation' : 'New Automation'}
-          </h2>
-          <button
-            onClick={handleSaveRule}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: t.accent,
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: '600',
-            }}
-          >
-            Save
-          </button>
-        </div>
-
-        {/* Form */}
-        <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
-          {/* Info Banner */}
-          <div
-            style={{
-              background: t.cardBg,
-              borderRadius: '12px',
-              padding: '16px',
-              marginBottom: '24px',
-              border: `1px solid ${t.cardBorder}`,
-              display: 'flex',
-              gap: '12px',
-              alignItems: 'flex-start',
-            }}
-          >
-            {Icons.gift(t.accent)}
-            <div>
-              <div
-                style={{ color: t.text, fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}
-              >
-                Birthday Month Automation
-              </div>
-              <div style={{ color: t.textMuted, fontSize: '12px', lineHeight: '1.4' }}>
-                Messages will be sent to contacts during their birthday month. Use {'{name}'} to
-                personalize.
-              </div>
-            </div>
-          </div>
-
-          {/* Rule Name */}
-          <div style={{ marginBottom: '20px' }}>
-            <label
-              style={{
-                display: 'block',
-                color: t.textMuted,
-                fontSize: '13px',
-                marginBottom: '8px',
-                fontWeight: '500',
-              }}
-            >
-              Automation Name *
-            </label>
-            <input
-              type="text"
-              value={ruleName}
-              onChange={(e) => setRuleName(e.target.value)}
-              placeholder="Birthday Voucher"
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                borderRadius: '12px',
-                border: `1px solid ${t.cardBorder}`,
-                background: t.searchBg,
-                color: t.text,
-                fontSize: '16px',
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          {/* Message Body */}
-          <div style={{ marginBottom: '20px' }}>
-            <label
-              style={{
-                display: 'block',
-                color: t.textMuted,
-                fontSize: '13px',
-                marginBottom: '8px',
-                fontWeight: '500',
-              }}
-            >
-              Message *
-            </label>
-            <textarea
-              value={messageBody}
-              onChange={(e) => setMessageBody(e.target.value)}
-              placeholder="Happy Birthday, {name}! Stop by the store this month..."
-              rows={4}
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                borderRadius: '12px',
-                border: `1px solid ${t.cardBorder}`,
-                background: t.searchBg,
-                color: t.text,
-                fontSize: '16px',
-                outline: 'none',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-              }}
-            />
-            <span
-              style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
-            >
-              Variables: {'{name}'}, {'{firstName}'}
-            </span>
-          </div>
-
-          {/* Send Time */}
-          <div style={{ marginBottom: '20px' }}>
-            <label
-              style={{
-                display: 'block',
-                color: t.textMuted,
-                fontSize: '13px',
-                marginBottom: '8px',
-                fontWeight: '500',
-              }}
-            >
-              Send Time
-            </label>
-            <input
-              type="time"
-              value={sendTime}
-              onChange={(e) => setSendTime(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                borderRadius: '12px',
-                border: `1px solid ${t.cardBorder}`,
-                background: t.searchBg,
-                color: t.text,
-                fontSize: '16px',
-                outline: 'none',
-              }}
-            />
-            <span
-              style={{ color: t.textMuted, fontSize: '11px', marginTop: '4px', display: 'block' }}
-            >
-              Messages will be queued to send at this time
-            </span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Main Automations List
   return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: t.bg,
-        zIndex: 55,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          padding: '60px 16px 16px',
-          borderBottom: `1px solid ${t.cardBorder}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: t.accent,
-            cursor: 'pointer',
-            fontSize: '16px',
-          }}
-        >
-          Back
-        </button>
-        <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
-          Automations
-        </h2>
-        <button
-          onClick={openNewModal}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: t.accent,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {Icons.plus(t.accent)}
-        </button>
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
-        {rules.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ marginBottom: '16px' }}>{Icons.gift(t.textMuted)}</div>
-            <p style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: '0 0 8px' }}>
-              No Automations Yet
-            </p>
-            <p
+    <AnimatePresence>
+      {open &&
+        (showAddModal ? (
+          <motion.div
+            key="automations-edit"
+            variants={modalSlideUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={modalSlideTransition}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: t.bg,
+              zIndex: 60,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Header */}
+            <div
               style={{
-                color: t.textMuted,
-                fontSize: '14px',
-                margin: '0 0 24px',
-                lineHeight: '1.5',
+                padding: '60px 16px 16px',
+                borderBottom: `1px solid ${t.cardBorder}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              Create a birthday automation to automatically send messages to contacts during their
-              birthday month.
-            </p>
-            <button
-              onClick={openNewModal}
-              style={{
-                padding: '14px 28px',
-                borderRadius: '12px',
-                border: 'none',
-                background: t.accent,
-                color: '#fff',
-                fontSize: '15px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                boxShadow: `0 4px 15px ${t.accentGlow}`,
-              }}
-            >
-              Create Automation
-            </button>
-          </div>
-        ) : (
-          <div>
-            {rules.map((rule) => (
-              <div
-                key={rule.id}
+              <button
+                onClick={() => {
+                  setShowAddModal(false)
+                  setEditingRule(null)
+                }}
                 style={{
-                  background: t.cardBg,
-                  borderRadius: '16px',
-                  border: `1px solid ${t.cardBorder}`,
-                  marginBottom: '12px',
-                  overflow: 'hidden',
+                  background: 'none',
+                  border: 'none',
+                  color: t.accent,
+                  cursor: 'pointer',
+                  fontSize: '16px',
                 }}
               >
-                <div
-                  style={{
-                    padding: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '14px',
-                  }}
-                >
+                Cancel
+              </button>
+              <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+                {editingRule ? 'Edit Automation' : 'New Automation'}
+              </h2>
+              <button
+                onClick={handleSaveRule}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: t.accent,
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                }}
+              >
+                Save
+              </button>
+            </div>
+
+            {/* Form */}
+            <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
+              {/* Info Banner */}
+              <div
+                style={{
+                  background: t.cardBg,
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '24px',
+                  border: `1px solid ${t.cardBorder}`,
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'flex-start',
+                }}
+              >
+                {Icons.gift(t.accent)}
+                <div>
                   <div
                     style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '12px',
-                      background: rule.is_active ? `${t.accent}22` : t.cardBg,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      color: t.text,
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      marginBottom: '4px',
                     }}
                   >
-                    {Icons.gift(rule.is_active ? t.accent : t.textMuted)}
+                    Birthday Month Automation
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        color: t.text,
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      {rule.name}
-                    </div>
-                    <div style={{ color: t.textMuted, fontSize: '13px' }}>
-                      Birthday Month • {rule.send_time || '09:00'}
-                    </div>
+                  <div style={{ color: t.textMuted, fontSize: '12px', lineHeight: '1.4' }}>
+                    Messages will be sent to contacts during their birthday month. Use {'{name}'} to
+                    personalize.
                   </div>
-                  <Toggle
-                    enabled={rule.is_active}
-                    onChange={(val) => handleToggleRule(rule.id, val)}
-                    theme={t}
-                  />
                 </div>
-                <div
+              </div>
+
+              {/* Rule Name */}
+              <div style={{ marginBottom: '20px' }}>
+                <label
                   style={{
-                    padding: '12px 16px',
-                    borderTop: `1px solid ${t.cardBorder}`,
-                    background: t.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
+                    display: 'block',
+                    color: t.textMuted,
+                    fontSize: '13px',
+                    marginBottom: '8px',
+                    fontWeight: '500',
                   }}
                 >
+                  Automation Name *
+                </label>
+                <input
+                  type="text"
+                  value={ruleName}
+                  onChange={(e) => setRuleName(e.target.value)}
+                  placeholder="Birthday Voucher"
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    borderRadius: '12px',
+                    border: `1px solid ${t.cardBorder}`,
+                    background: t.searchBg,
+                    color: t.text,
+                    fontSize: '16px',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              {/* Message Body */}
+              <div style={{ marginBottom: '20px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    color: t.textMuted,
+                    fontSize: '13px',
+                    marginBottom: '8px',
+                    fontWeight: '500',
+                  }}
+                >
+                  Message *
+                </label>
+                <textarea
+                  value={messageBody}
+                  onChange={(e) => setMessageBody(e.target.value)}
+                  placeholder="Happy Birthday, {name}! Stop by the store this month..."
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    borderRadius: '12px',
+                    border: `1px solid ${t.cardBorder}`,
+                    background: t.searchBg,
+                    color: t.text,
+                    fontSize: '16px',
+                    outline: 'none',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                  }}
+                />
+                <span
+                  style={{
+                    color: t.textMuted,
+                    fontSize: '11px',
+                    marginTop: '4px',
+                    display: 'block',
+                  }}
+                >
+                  Variables: {'{name}'}, {'{firstName}'}
+                </span>
+              </div>
+
+              {/* Send Time */}
+              <div style={{ marginBottom: '20px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    color: t.textMuted,
+                    fontSize: '13px',
+                    marginBottom: '8px',
+                    fontWeight: '500',
+                  }}
+                >
+                  Send Time
+                </label>
+                <input
+                  type="time"
+                  value={sendTime}
+                  onChange={(e) => setSendTime(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    borderRadius: '12px',
+                    border: `1px solid ${t.cardBorder}`,
+                    background: t.searchBg,
+                    color: t.text,
+                    fontSize: '16px',
+                    outline: 'none',
+                  }}
+                />
+                <span
+                  style={{
+                    color: t.textMuted,
+                    fontSize: '11px',
+                    marginTop: '4px',
+                    display: 'block',
+                  }}
+                >
+                  Messages will be queued to send at this time
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="automations-list"
+            variants={modalSlideUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={modalSlideTransition}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: t.bg,
+              zIndex: 55,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '60px 16px 16px',
+                borderBottom: `1px solid ${t.cardBorder}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <button
+                onClick={onClose}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: t.accent,
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                }}
+              >
+                Back
+              </button>
+              <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+                Automations
+              </h2>
+              <button
+                onClick={openNewModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: t.accent,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {Icons.plus(t.accent)}
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+              {rules.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <div style={{ marginBottom: '16px' }}>{Icons.gift(t.textMuted)}</div>
+                  <p
+                    style={{
+                      color: t.text,
+                      fontSize: '17px',
+                      fontWeight: '600',
+                      margin: '0 0 8px',
+                    }}
+                  >
+                    No Automations Yet
+                  </p>
                   <p
                     style={{
                       color: t.textMuted,
-                      fontSize: '13px',
-                      margin: 0,
-                      lineHeight: '1.4',
-                      whiteSpace: 'pre-wrap',
+                      fontSize: '14px',
+                      margin: '0 0 24px',
+                      lineHeight: '1.5',
                     }}
                   >
-                    {rule.message_body}
+                    Create a birthday automation to automatically send messages to contacts during
+                    their birthday month.
                   </p>
-                </div>
-                <div
-                  style={{
-                    padding: '8px 16px',
-                    borderTop: `1px solid ${t.cardBorder}`,
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: '8px',
-                  }}
-                >
                   <button
-                    onClick={() => openEditModal(rule)}
+                    onClick={openNewModal}
                     style={{
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      border: `1px solid ${t.cardBorder}`,
-                      background: 'transparent',
-                      color: t.accent,
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteRule(rule.id)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '8px',
+                      padding: '14px 28px',
+                      borderRadius: '12px',
                       border: 'none',
-                      background: `${t.danger}22`,
-                      color: t.danger,
-                      fontSize: '13px',
-                      fontWeight: '500',
+                      background: t.accent,
+                      color: '#fff',
+                      fontSize: '15px',
+                      fontWeight: '600',
                       cursor: 'pointer',
+                      boxShadow: `0 4px 15px ${t.accentGlow}`,
                     }}
                   >
-                    Delete
+                    Create Automation
                   </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+              ) : (
+                <div>
+                  {rules.map((rule) => (
+                    <div
+                      key={rule.id}
+                      style={{
+                        background: t.cardBg,
+                        borderRadius: '16px',
+                        border: `1px solid ${t.cardBorder}`,
+                        marginBottom: '12px',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '14px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '44px',
+                            height: '44px',
+                            borderRadius: '12px',
+                            background: rule.is_active ? `${t.accent}22` : t.cardBg,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {Icons.gift(rule.is_active ? t.accent : t.textMuted)}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              color: t.text,
+                              fontSize: '16px',
+                              fontWeight: '600',
+                              marginBottom: '4px',
+                            }}
+                          >
+                            {rule.name}
+                          </div>
+                          <div style={{ color: t.textMuted, fontSize: '13px' }}>
+                            Birthday Month • {rule.send_time || '09:00'}
+                          </div>
+                        </div>
+                        <Toggle
+                          enabled={rule.is_active}
+                          onChange={(val) => handleToggleRule(rule.id, val)}
+                          theme={t}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          padding: '12px 16px',
+                          borderTop: `1px solid ${t.cardBorder}`,
+                          background: t.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
+                        }}
+                      >
+                        <p
+                          style={{
+                            color: t.textMuted,
+                            fontSize: '13px',
+                            margin: 0,
+                            lineHeight: '1.4',
+                            whiteSpace: 'pre-wrap',
+                          }}
+                        >
+                          {rule.message_body}
+                        </p>
+                      </div>
+                      <div
+                        style={{
+                          padding: '8px 16px',
+                          borderTop: `1px solid ${t.cardBorder}`,
+                          display: 'flex',
+                          justifyContent: 'flex-end',
+                          gap: '8px',
+                        }}
+                      >
+                        <button
+                          onClick={() => openEditModal(rule)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            border: `1px solid ${t.cardBorder}`,
+                            background: 'transparent',
+                            color: t.accent,
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRule(rule.id)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: `${t.danger}22`,
+                            color: t.danger,
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        ))}
+    </AnimatePresence>
   )
 }
 
 // Subscription Modal Component
 function SubscriptionModal({ open, onClose, theme: t }) {
-  if (!open) return null
-
   // Mock subscription data
   const currentTier = 'free'
   const usage = {
@@ -1315,169 +1387,178 @@ function SubscriptionModal({ open, onClose, theme: t }) {
   const usagePercent = (used, limit) => Math.min(Math.round((used / limit) * 100), 100)
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: t.bg,
-        zIndex: 50,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          padding: '60px 16px 16px',
-          borderBottom: `1px solid ${t.cardBorder}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <button
-          onClick={onClose}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          variants={modalSlideUp}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={modalSlideTransition}
           style={{
-            background: 'none',
-            border: 'none',
-            color: t.accent,
-            cursor: 'pointer',
-            fontSize: '16px',
+            position: 'absolute',
+            inset: 0,
+            background: t.bg,
+            zIndex: 50,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          Close
-        </button>
-        <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
-          Subscription
-        </h2>
-        <div style={{ width: '50px' }} />
-      </div>
-
-      <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
-        {/* Current Plan */}
-        <div
-          style={{
-            padding: '20px',
-            borderRadius: '16px',
-            background: t.cardBg,
-            border: `1px solid ${t.cardBorder}`,
-            marginBottom: '24px',
-            textAlign: 'center',
-          }}
-        >
+          {/* Header */}
           <div
             style={{
-              display: 'inline-block',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              background: `${tiers[currentTier].color}22`,
-              color: tiers[currentTier].color,
-              fontSize: '14px',
-              fontWeight: '600',
-              marginBottom: '8px',
+              padding: '60px 16px 16px',
+              borderBottom: `1px solid ${t.cardBorder}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
-            {tiers[currentTier].name}
-          </div>
-          <p style={{ color: t.text, fontSize: '24px', fontWeight: '700', margin: '8px 0' }}>
-            {tiers[currentTier].price}
-          </p>
-          <p style={{ color: t.textMuted, fontSize: '13px', margin: 0 }}>
-            Current billing period ends Feb 28, 2026
-          </p>
-        </div>
-
-        {/* Usage Section */}
-        <h3 style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: '0 0 16px' }}>
-          Usage This Month
-        </h3>
-
-        {Object.entries(usage).map(([key, { used, limit }]) => {
-          const percent = usagePercent(used, limit)
-          const isWarning = percent >= 80
-          return (
-            <div
-              key={key}
+            <button
+              onClick={onClose}
               style={{
-                padding: '16px',
-                borderRadius: '12px',
+                background: 'none',
+                border: 'none',
+                color: t.accent,
+                cursor: 'pointer',
+                fontSize: '16px',
+              }}
+            >
+              Close
+            </button>
+            <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+              Subscription
+            </h2>
+            <div style={{ width: '50px' }} />
+          </div>
+
+          <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
+            {/* Current Plan */}
+            <div
+              style={{
+                padding: '20px',
+                borderRadius: '16px',
                 background: t.cardBg,
                 border: `1px solid ${t.cardBorder}`,
-                marginBottom: '12px',
+                marginBottom: '24px',
+                textAlign: 'center',
               }}
             >
               <div
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
+                  display: 'inline-block',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  background: `${tiers[currentTier].color}22`,
+                  color: tiers[currentTier].color,
+                  fontSize: '14px',
+                  fontWeight: '600',
                   marginBottom: '8px',
                 }}
               >
-                <span style={{ color: t.text, fontSize: '14px', fontWeight: '500' }}>
-                  {key === 'aiGenerations'
-                    ? 'AI Generations'
-                    : key === 'videoRenders'
-                      ? 'Video Renders'
-                      : 'Contacts'}
-                </span>
-                <span
+                {tiers[currentTier].name}
+              </div>
+              <p style={{ color: t.text, fontSize: '24px', fontWeight: '700', margin: '8px 0' }}>
+                {tiers[currentTier].price}
+              </p>
+              <p style={{ color: t.textMuted, fontSize: '13px', margin: 0 }}>
+                Current billing period ends Feb 28, 2026
+              </p>
+            </div>
+
+            {/* Usage Section */}
+            <h3 style={{ color: t.text, fontSize: '16px', fontWeight: '600', margin: '0 0 16px' }}>
+              Usage This Month
+            </h3>
+
+            {Object.entries(usage).map(([key, { used, limit }]) => {
+              const percent = usagePercent(used, limit)
+              const isWarning = percent >= 80
+              return (
+                <div
+                  key={key}
                   style={{
-                    color: isWarning ? '#f59e0b' : t.textMuted,
-                    fontSize: '14px',
-                    fontWeight: '500',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    background: t.cardBg,
+                    border: `1px solid ${t.cardBorder}`,
+                    marginBottom: '12px',
                   }}
                 >
-                  {used} / {limit}
-                </span>
-              </div>
-              <div
-                style={{
-                  height: '8px',
-                  borderRadius: '4px',
-                  background: `${t.accent}22`,
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    height: '100%',
-                    width: `${percent}%`,
-                    borderRadius: '4px',
-                    background: isWarning ? 'linear-gradient(90deg, #f59e0b, #ef4444)' : t.accent,
-                    transition: 'width 0.3s ease',
-                  }}
-                />
-              </div>
-            </div>
-          )
-        })}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <span style={{ color: t.text, fontSize: '14px', fontWeight: '500' }}>
+                      {key === 'aiGenerations'
+                        ? 'AI Generations'
+                        : key === 'videoRenders'
+                          ? 'Video Renders'
+                          : 'Contacts'}
+                    </span>
+                    <span
+                      style={{
+                        color: isWarning ? '#f59e0b' : t.textMuted,
+                        fontSize: '14px',
+                        fontWeight: '500',
+                      }}
+                    >
+                      {used} / {limit}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: '8px',
+                      borderRadius: '4px',
+                      background: `${t.accent}22`,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${percent}%`,
+                        borderRadius: '4px',
+                        background: isWarning
+                          ? 'linear-gradient(90deg, #f59e0b, #ef4444)'
+                          : t.accent,
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
 
-        {/* Upgrade Button */}
-        <button
-          style={{
-            width: '100%',
-            padding: '16px',
-            borderRadius: '12px',
-            border: 'none',
-            background: `linear-gradient(135deg, ${t.accent}, ${t.accent}dd)`,
-            color: '#fff',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            marginTop: '16px',
-          }}
-        >
-          Upgrade to Pro
-        </button>
-      </div>
-    </div>
+            {/* Upgrade Button */}
+            <button
+              style={{
+                width: '100%',
+                padding: '16px',
+                borderRadius: '12px',
+                border: 'none',
+                background: `linear-gradient(135deg, ${t.accent}, ${t.accent}dd)`,
+                color: '#fff',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                marginTop: '16px',
+              }}
+            >
+              Upgrade to Pro
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
 // Sync Status Modal Component
 function SyncModal({ open, onClose, theme: t }) {
-  if (!open) return null
-
   const syncStatus = {
     lastSync: new Date(Date.now() - 120000).toISOString(), // 2 min ago
     pendingChanges: 0,
@@ -1495,148 +1576,157 @@ function SyncModal({ open, onClose, theme: t }) {
   }
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: t.bg,
-        zIndex: 50,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          padding: '60px 16px 16px',
-          borderBottom: `1px solid ${t.cardBorder}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <button
-          onClick={onClose}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          variants={modalSlideUp}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={modalSlideTransition}
           style={{
-            background: 'none',
-            border: 'none',
-            color: t.accent,
-            cursor: 'pointer',
-            fontSize: '16px',
+            position: 'absolute',
+            inset: 0,
+            background: t.bg,
+            zIndex: 50,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          Close
-        </button>
-        <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
-          Sync Status
-        </h2>
-        <div style={{ width: '50px' }} />
-      </div>
-
-      <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
-        {/* Status Card */}
-        <div
-          style={{
-            padding: '24px',
-            borderRadius: '16px',
-            background: t.cardBg,
-            border: `1px solid ${t.cardBorder}`,
-            marginBottom: '24px',
-            textAlign: 'center',
-          }}
-        >
+          {/* Header */}
           <div
             style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              background: `${t.success}22`,
+              padding: '60px 16px 16px',
+              borderBottom: `1px solid ${t.cardBorder}`,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px',
+              justifyContent: 'space-between',
             }}
           >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={t.success}
-              strokeWidth="2"
+            <button
+              onClick={onClose}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: t.accent,
+                cursor: 'pointer',
+                fontSize: '16px',
+              }}
             >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+              Close
+            </button>
+            <h2 style={{ color: t.text, fontSize: '17px', fontWeight: '600', margin: 0 }}>
+              Sync Status
+            </h2>
+            <div style={{ width: '50px' }} />
           </div>
-          <p style={{ color: t.text, fontSize: '18px', fontWeight: '600', margin: '0 0 8px' }}>
-            All Synced
-          </p>
-          <p style={{ color: t.textMuted, fontSize: '14px', margin: 0 }}>
-            Last synced: {formatLastSync(syncStatus.lastSync)}
-          </p>
-        </div>
 
-        {/* Status Details */}
-        <div
-          style={{
-            padding: '16px',
-            borderRadius: '12px',
-            background: t.cardBg,
-            border: `1px solid ${t.cardBorder}`,
-            marginBottom: '12px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span style={{ color: t.text, fontSize: '14px' }}>Connection</span>
-          <span
-            style={{
-              color: syncStatus.isOnline ? t.success : t.danger,
-              fontSize: '14px',
-              fontWeight: '500',
-            }}
-          >
-            {syncStatus.isOnline ? 'Online' : 'Offline'}
-          </span>
-        </div>
+          <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto' }}>
+            {/* Status Card */}
+            <div
+              style={{
+                padding: '24px',
+                borderRadius: '16px',
+                background: t.cardBg,
+                border: `1px solid ${t.cardBorder}`,
+                marginBottom: '24px',
+                textAlign: 'center',
+              }}
+            >
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  background: `${t.success}22`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}
+              >
+                <svg
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={t.success}
+                  strokeWidth="2"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <p style={{ color: t.text, fontSize: '18px', fontWeight: '600', margin: '0 0 8px' }}>
+                All Synced
+              </p>
+              <p style={{ color: t.textMuted, fontSize: '14px', margin: 0 }}>
+                Last synced: {formatLastSync(syncStatus.lastSync)}
+              </p>
+            </div>
 
-        <div
-          style={{
-            padding: '16px',
-            borderRadius: '12px',
-            background: t.cardBg,
-            border: `1px solid ${t.cardBorder}`,
-            marginBottom: '24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span style={{ color: t.text, fontSize: '14px' }}>Pending Changes</span>
-          <span style={{ color: t.textMuted, fontSize: '14px', fontWeight: '500' }}>
-            {syncStatus.pendingChanges}
-          </span>
-        </div>
+            {/* Status Details */}
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '12px',
+                background: t.cardBg,
+                border: `1px solid ${t.cardBorder}`,
+                marginBottom: '12px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ color: t.text, fontSize: '14px' }}>Connection</span>
+              <span
+                style={{
+                  color: syncStatus.isOnline ? t.success : t.danger,
+                  fontSize: '14px',
+                  fontWeight: '500',
+                }}
+              >
+                {syncStatus.isOnline ? 'Online' : 'Offline'}
+              </span>
+            </div>
 
-        {/* Sync Now Button */}
-        <button
-          style={{
-            width: '100%',
-            padding: '16px',
-            borderRadius: '12px',
-            border: `1px solid ${t.cardBorder}`,
-            background: t.cardBg,
-            color: t.text,
-            fontSize: '16px',
-            fontWeight: '500',
-            cursor: 'pointer',
-          }}
-        >
-          Sync Now
-        </button>
-      </div>
-    </div>
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '12px',
+                background: t.cardBg,
+                border: `1px solid ${t.cardBorder}`,
+                marginBottom: '24px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ color: t.text, fontSize: '14px' }}>Pending Changes</span>
+              <span style={{ color: t.textMuted, fontSize: '14px', fontWeight: '500' }}>
+                {syncStatus.pendingChanges}
+              </span>
+            </div>
+
+            {/* Sync Now Button */}
+            <button
+              style={{
+                width: '100%',
+                padding: '16px',
+                borderRadius: '12px',
+                border: `1px solid ${t.cardBorder}`,
+                background: t.cardBg,
+                color: t.text,
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: 'pointer',
+              }}
+            >
+              Sync Now
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -1688,6 +1778,7 @@ export default function PhoneSettingsPage() {
         }
         return updated
       })
+      triggerHaptic('light')
       toast.success('Setting saved')
     },
     [setSettings]
@@ -1715,6 +1806,7 @@ export default function PhoneSettingsPage() {
       // Dispatch event for PhoneLayout to react
       window.dispatchEvent(new CustomEvent('layout-theme-changed'))
 
+      triggerHaptic('medium')
       toast.success('Theme updated')
     },
     [setSettings]
@@ -1801,6 +1893,7 @@ export default function PhoneSettingsPage() {
         minHeight: '100vh',
         height: '100vh',
         background: t.bg,
+        transition: 'background-color 0.3s ease',
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
         position: 'relative',
@@ -1870,7 +1963,14 @@ export default function PhoneSettingsPage() {
           </div>
 
           {/* Settings Sections */}
-          <div style={{ height: 'calc(100% - 185px)', overflowY: 'auto', padding: '0 20px' }}>
+          <div
+            style={{
+              height: 'calc(100% - 185px)',
+              overflowY: 'auto',
+              padding: '0 20px',
+              contain: 'layout style paint',
+            }}
+          >
             {/* Appearance Section */}
             <div
               style={{

@@ -60,8 +60,8 @@ export function SearchInput({
       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
         {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         {showClear && localValue && !isLoading && (
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleClear}>
-            <X className="h-3 w-3" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClear}>
+            <X className="h-4 w-4" />
           </Button>
         )}
       </div>

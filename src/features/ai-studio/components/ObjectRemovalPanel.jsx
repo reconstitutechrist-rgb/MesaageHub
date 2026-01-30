@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { StudioIcons } from '../utils/StudioIcons'
 import { BRUSH_SIZES } from '../utils/studioConstants'
@@ -22,7 +22,7 @@ function extractBase64(input) {
  * Allows users to paint over unwanted objects (price tags, security sensors,
  * background clutter) and use AI inpainting to remove them.
  */
-export function ObjectRemovalPanel({
+export const ObjectRemovalPanel = memo(function ObjectRemovalPanel({
   imageBase64: rawImageBase64,
   onImageUpdate,
   isExpanded = false,
@@ -391,6 +391,6 @@ export function ObjectRemovalPanel({
       )}
     </div>
   )
-}
+})
 
 export default ObjectRemovalPanel

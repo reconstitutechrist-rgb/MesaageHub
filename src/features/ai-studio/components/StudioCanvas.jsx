@@ -66,21 +66,34 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   const fallbackBg = isDark ? FALLBACK_COLORS.dark : FALLBACK_COLORS.light
   const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
 
-  // Load image when file changes
+  // Stable ref to render — assigned after render is defined below.
+  // Used by the image load effect so it doesn't re-run on every render dep change.
+  const renderRef = useRef(null)
+
+  // Load image when file changes (calls render on success via ref)
   useEffect(() => {
     if (!imageFile) {
       imageRef.current = null
       return
     }
 
+    let cancelled = false
     loadImageFromFile(imageFile)
       .then((img) => {
-        imageRef.current = img
+        if (!cancelled) {
+          imageRef.current = img
+          renderRef.current?.()
+        }
       })
       .catch((err) => {
-        console.error('Failed to load image:', err)
-        imageRef.current = null
+        if (!cancelled) {
+          console.error('Failed to load image:', err)
+          imageRef.current = null
+        }
       })
+    return () => {
+      cancelled = true
+    }
   }, [imageFile])
 
   // Cache layer bounds for fast hit testing (avoids repeated measureText calls)
@@ -241,30 +254,14 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
     theme.accent,
   ])
 
-  // Re-render when dependencies change
+  // Keep renderRef in sync so the image load effect always calls the latest render
+  renderRef.current = render
+
+  // Re-render using requestAnimationFrame when dependencies change
   useEffect(() => {
-    render()
-  }, [render, imageFile, canvasWidth, canvasHeight])
-
-  // Re-render when image loads
-  useEffect(() => {
-    if (!imageFile) return
-
-    const checkImage = () => {
-      if (imageRef.current) {
-        render()
-      }
-    }
-
-    // Poll for image load (since it's async)
-    const interval = setInterval(checkImage, 100)
-    const timeout = setTimeout(() => clearInterval(interval), 3000)
-
-    return () => {
-      clearInterval(interval)
-      clearTimeout(timeout)
-    }
-  }, [imageFile, render])
+    const frameId = requestAnimationFrame(() => render())
+    return () => cancelAnimationFrame(frameId)
+  }, [render, canvasWidth, canvasHeight])
 
   // Get canvas coordinates from event
   // Note: getBoundingClientRect() already accounts for CSS transforms (zoom/pan)

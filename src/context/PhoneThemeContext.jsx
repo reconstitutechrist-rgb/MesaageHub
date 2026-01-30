@@ -20,6 +20,10 @@ function injectThemeCSS(themeKey) {
   const theme = themes[themeKey] || themes[DEFAULT_THEME]
   const root = document.documentElement
 
+  // Smooth transition when switching themes
+  root.style.setProperty('transition', 'background-color 0.3s ease, color 0.3s ease')
+  setTimeout(() => root.style.removeProperty('transition'), 350)
+
   root.style.setProperty('--phone-bg', theme.bg)
   root.style.setProperty('--phone-card-bg', theme.cardBg)
   root.style.setProperty('--phone-card-border', theme.cardBorder)

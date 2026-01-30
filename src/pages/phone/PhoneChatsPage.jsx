@@ -6,6 +6,8 @@ import { VirtualList } from '@/components/common/VirtualList'
 import { useToggle, useWindowSize } from '@/hooks'
 import { useScheduledMessages, useCancelScheduledMessage } from '@/hooks/queries'
 import { toast } from 'sonner'
+import { triggerHaptic } from '@/lib/haptics'
+import { ChatListSkeleton } from '@/components/common/ChatListSkeleton'
 import { themes } from '@/constants/phoneThemes'
 
 // SVG Icons
@@ -256,7 +258,10 @@ const getAvatarColor = (name, colors) => colors[name.charCodeAt(0) % colors.leng
 const ConversationItem = memo(function ConversationItem({ conversation, theme: t, onSelect }) {
   return (
     <div
-      onClick={() => onSelect(conversation.id)}
+      onClick={() => {
+        triggerHaptic('light')
+        onSelect(conversation.id)
+      }}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -1263,6 +1268,7 @@ export default function PhoneChatsPage() {
     )
     setInputValue('')
     setChatAttachments([])
+    triggerHaptic('medium')
   }
 
   const handleComposeSend = ({
@@ -1298,6 +1304,7 @@ export default function PhoneChatsPage() {
   }
 
   const handleOpenCompose = (mode) => {
+    triggerHaptic('light')
     setComposeMode(mode)
     openComposeModal()
   }
@@ -1308,6 +1315,7 @@ export default function PhoneChatsPage() {
         minHeight: '100vh',
         height: '100vh',
         background: t.bg,
+        transition: 'background-color 0.3s ease',
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
         position: 'relative',
@@ -1531,22 +1539,13 @@ export default function PhoneChatsPage() {
               overflowY: 'auto',
               padding: '0 12px',
               display: activeTab === 'scheduled' ? 'block' : 'none',
+              contain: 'layout style paint',
             }}
           >
             {activeTab === 'scheduled' && (
               <>
                 {loadingScheduled ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      padding: '40px 20px',
-                      color: t.textMuted,
-                    }}
-                  >
-                    Loading scheduled messages...
-                  </div>
+                  <ChatListSkeleton rows={4} />
                 ) : scheduledMessages.length === 0 ? (
                   <div
                     style={{
@@ -1954,6 +1953,7 @@ export default function PhoneChatsPage() {
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
+              contain: 'layout style paint',
             }}
           >
             {selectedConversation.messages.map((message) => (
