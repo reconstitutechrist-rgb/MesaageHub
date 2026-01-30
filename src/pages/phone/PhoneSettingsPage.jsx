@@ -1948,7 +1948,19 @@ export default function PhoneSettingsPage() {
       {!showThemeModal && (
         <>
           {/* Header */}
-          <div style={{ padding: '8px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
+          <div
+            style={{
+              padding: '8px 20px 16px',
+              paddingTop: 'env(safe-area-inset-top, 16px)',
+              background: t.headerBg,
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              boxShadow: t.shadowHeader,
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+            }}
+          >
             <h1
               style={{
                 color: t.text,
@@ -1979,6 +1991,7 @@ export default function PhoneSettingsPage() {
                 borderRadius: '16px',
                 border: `1px solid ${t.cardBorder}`,
                 overflow: 'hidden',
+                boxShadow: t.shadowSm,
               }}
             >
               <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
@@ -2011,6 +2024,7 @@ export default function PhoneSettingsPage() {
                 borderRadius: '16px',
                 border: `1px solid ${t.cardBorder}`,
                 overflow: 'hidden',
+                boxShadow: t.shadowSm,
               }}
             >
               <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
@@ -2086,6 +2100,7 @@ export default function PhoneSettingsPage() {
                 borderRadius: '16px',
                 border: `1px solid ${t.cardBorder}`,
                 overflow: 'hidden',
+                boxShadow: t.shadowSm,
               }}
             >
               <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
@@ -2137,6 +2152,7 @@ export default function PhoneSettingsPage() {
                 borderRadius: '16px',
                 border: `1px solid ${t.cardBorder}`,
                 overflow: 'hidden',
+                boxShadow: t.shadowSm,
               }}
             >
               <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
@@ -2195,6 +2211,7 @@ export default function PhoneSettingsPage() {
                 borderRadius: '16px',
                 border: `1px solid ${t.cardBorder}`,
                 overflow: 'hidden',
+                boxShadow: t.shadowSm,
               }}
             >
               <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
@@ -2233,6 +2250,7 @@ export default function PhoneSettingsPage() {
                 borderRadius: '16px',
                 border: `1px solid ${t.danger}44`,
                 overflow: 'hidden',
+                boxShadow: t.shadowSm,
               }}
             >
               <div style={{ padding: '12px 16px 8px', borderBottom: `1px solid ${t.cardBorder}` }}>
@@ -2282,6 +2300,7 @@ export default function PhoneSettingsPage() {
               alignItems: 'flex-start',
               paddingTop: '12px',
               paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+              boxShadow: t.shadowNav,
             }}
           >
             {navItems.map((item, i) => {

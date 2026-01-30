@@ -732,7 +732,19 @@ export default function PhoneDashboardPage() {
         }}
       />
 
-      <div style={{ padding: '16px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
+      <div
+        style={{
+          padding: '16px 20px 16px',
+          paddingTop: 'env(safe-area-inset-top, 16px)',
+          background: t.headerBg,
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: t.shadowHeader,
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p style={{ color: t.textMuted, fontSize: '14px', margin: '0 0 4px' }}>Welcome back,</p>
@@ -785,6 +797,7 @@ export default function PhoneDashboardPage() {
                 borderRadius: '16px',
                 background: t.cardBg,
                 border: `1px solid ${t.cardBorder}`,
+                boxShadow: t.shadowSm,
               }}
             >
               <div style={{ marginBottom: '12px' }}>
@@ -831,6 +844,7 @@ export default function PhoneDashboardPage() {
             cursor: 'pointer',
             position: 'relative',
             overflow: 'hidden',
+            boxShadow: t.shadowMd,
           }}
         >
           <div
@@ -943,6 +957,7 @@ export default function PhoneDashboardPage() {
                 background: t.cardBg,
                 border: `1px solid ${t.cardBorder}`,
                 textAlign: 'center',
+                boxShadow: t.shadowSm,
               }}
             >
               <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
@@ -1043,6 +1058,7 @@ export default function PhoneDashboardPage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
+                boxShadow: t.shadowSm,
               }}
             >
               <div
@@ -1110,6 +1126,7 @@ export default function PhoneDashboardPage() {
                   flexDirection: 'column',
                   alignItems: 'center',
                   gap: '8px',
+                  boxShadow: t.shadowSm,
                 }}
               >
                 <div
@@ -1200,6 +1217,7 @@ export default function PhoneDashboardPage() {
           alignItems: 'flex-start',
           paddingTop: '12px',
           paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+          boxShadow: t.shadowNav,
         }}
       >
         {navItems.map((item, i) => {

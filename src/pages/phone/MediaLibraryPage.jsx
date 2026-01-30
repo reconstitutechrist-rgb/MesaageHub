@@ -214,9 +214,17 @@ export default function MediaLibraryPage() {
       <div
         style={{
           padding: '8px 16px 16px',
+          paddingTop: 'env(safe-area-inset-top, 8px)',
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
+          background: t.headerBg,
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: t.shadowHeader,
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
         }}
       >
         <button
@@ -526,6 +534,7 @@ export default function MediaLibraryPage() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              boxShadow: t.shadowMd,
             }}
           >
             <span style={{ color: t.text, fontSize: '14px' }}>{selectedItems.length} selected</span>
@@ -566,6 +575,7 @@ export default function MediaLibraryPage() {
           alignItems: 'flex-start',
           paddingTop: '12px',
           paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+          boxShadow: t.shadowNav,
         }}
       >
         {navItems.map((item) => (

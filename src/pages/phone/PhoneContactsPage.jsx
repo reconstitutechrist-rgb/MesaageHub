@@ -137,6 +137,7 @@ const ContactItem = memo(function ContactItem({
         borderRadius: '16px',
         border: `1px solid ${isSelected ? t.cardBorder : 'transparent'}`,
         cursor: 'pointer',
+        boxShadow: isSelected ? t.shadowSm : 'none',
       }}
       onClick={() => onSelect(contact.id)}
     >
@@ -1514,7 +1515,19 @@ export default function PhoneContactsPage() {
       {/* Header */}
       {!showAddModal && (
         <>
-          <div style={{ padding: '8px 20px 16px', paddingTop: 'env(safe-area-inset-top, 16px)' }}>
+          <div
+            style={{
+              padding: '8px 20px 16px',
+              paddingTop: 'env(safe-area-inset-top, 16px)',
+              background: t.headerBg,
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              boxShadow: t.shadowHeader,
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+            }}
+          >
             <h1
               style={{
                 color: t.text,
@@ -1719,6 +1732,7 @@ export default function PhoneContactsPage() {
               alignItems: 'flex-start',
               paddingTop: '12px',
               paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+              boxShadow: t.shadowNav,
             }}
           >
             {navItems.map((item, i) => {

@@ -26,6 +26,13 @@ export const themes = {
     danger: '#ef4444',
     success: '#22c55e',
     preview: { bg: '#0a1628', accent: '#06b6d4' },
+    // Elevation shadows
+    shadowSm: '0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)',
+    shadowMd: '0 4px 16px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3)',
+    shadowLg: '0 8px 32px rgba(0,0,0,0.5)',
+    shadowNav: '0 -4px 20px rgba(0,0,0,0.4)',
+    shadowHeader: '0 4px 20px rgba(0,0,0,0.3)',
+    headerBg: 'rgba(10, 22, 40, 0.85)',
   },
   purpleDark: {
     name: 'Purple Glow',
@@ -53,6 +60,13 @@ export const themes = {
     danger: '#ef4444',
     success: '#22c55e',
     preview: { bg: '#1a0a28', accent: '#a855f7' },
+    // Elevation shadows
+    shadowSm: '0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)',
+    shadowMd: '0 4px 16px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3)',
+    shadowLg: '0 8px 32px rgba(0,0,0,0.5)',
+    shadowNav: '0 -4px 20px rgba(0,0,0,0.4)',
+    shadowHeader: '0 4px 20px rgba(0,0,0,0.3)',
+    headerBg: 'rgba(26, 10, 40, 0.85)',
   },
   cyanLight: {
     name: 'Soft Cyan',
@@ -80,6 +94,13 @@ export const themes = {
     danger: '#dc2626',
     success: '#16a34a',
     preview: { bg: '#f0fdfa', accent: '#0891b2' },
+    // Elevation shadows
+    shadowSm: '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+    shadowMd: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05)',
+    shadowLg: '0 8px 32px rgba(0,0,0,0.12)',
+    shadowNav: '0 -4px 20px rgba(0,0,0,0.06)',
+    shadowHeader: '0 4px 20px rgba(0,0,0,0.06)',
+    headerBg: 'rgba(240, 253, 250, 0.85)',
   },
   purpleLight: {
     name: 'Soft Purple',
@@ -107,5 +128,12 @@ export const themes = {
     danger: '#dc2626',
     success: '#16a34a',
     preview: { bg: '#faf5ff', accent: '#9333ea' },
+    // Elevation shadows
+    shadowSm: '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+    shadowMd: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05)',
+    shadowLg: '0 8px 32px rgba(0,0,0,0.12)',
+    shadowNav: '0 -4px 20px rgba(0,0,0,0.06)',
+    shadowHeader: '0 4px 20px rgba(0,0,0,0.06)',
+    headerBg: 'rgba(250, 245, 255, 0.85)',
   },
 }
