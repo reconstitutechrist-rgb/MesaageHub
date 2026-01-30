@@ -11,9 +11,9 @@ import { analyticsService } from '@/services/AnalyticsService'
  * - AI model comparison
  * - Top performing campaigns
  */
-export function AnalyticsPanel() {
+export function AnalyticsPanel({ defaultExpanded = false }) {
   const { theme } = usePhoneTheme()
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const [summary, setSummary] = useState(null)
   const [modelPerformance, setModelPerformance] = useState(null)
   const [topCampaigns, setTopCampaigns] = useState(null)

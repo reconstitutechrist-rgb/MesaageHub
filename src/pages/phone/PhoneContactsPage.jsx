@@ -4,6 +4,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { useLocalStorage, useDebounce } from '@/hooks'
 import { toast } from 'sonner'
 import { initialContacts } from '@/data/mockData'
+import { triggerHaptic } from '@/lib/haptics'
 import { themes } from '@/constants/phoneThemes'
 
 // SVG Icons
@@ -1706,11 +1707,10 @@ export default function PhoneContactsPage() {
           {/* Bottom Navigation */}
           <div
             style={{
-              position: 'absolute',
+              position: 'fixed',
               bottom: 0,
               left: 0,
               right: 0,
-              height: '85px',
               background: t.navBg,
               backdropFilter: 'blur(20px)',
               borderTop: `1px solid ${t.cardBorder}`,
@@ -1718,6 +1718,7 @@ export default function PhoneContactsPage() {
               justifyContent: 'space-around',
               alignItems: 'flex-start',
               paddingTop: '12px',
+              paddingBottom: 'env(safe-area-inset-bottom, 20px)',
             }}
           >
             {navItems.map((item, i) => {
@@ -1725,7 +1726,10 @@ export default function PhoneContactsPage() {
               return (
                 <button
                   key={i}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => {
+                    triggerHaptic('light')
+                    navigate(item.path)
+                  }}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -1788,7 +1792,7 @@ export default function PhoneContactsPage() {
           <button
             onClick={() => setShowAddModal(true)}
             style={{
-              position: 'absolute',
+              position: 'fixed',
               bottom: '100px',
               right: '20px',
               width: '56px',

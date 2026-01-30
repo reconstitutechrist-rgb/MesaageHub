@@ -5,6 +5,9 @@ import { mediaLibraryService } from '@/services/MediaLibraryService'
 import { ComposeModal } from '@/components/common/ComposeModal'
 import { useWindowSize } from '@/hooks/useWindowSize'
 import { triggerHaptic } from '@/lib/haptics'
+import { AnimatePresence, motion } from 'framer-motion'
+import { modalSlideUp, modalSlideTransition } from '@/lib/animations'
+import { AnalyticsPanel } from '@/features/ai-studio/components/AnalyticsPanel'
 import { themes } from '@/constants/phoneThemes'
 
 // Lazy load AIStudio to avoid TDZ issues with minified bundles
@@ -507,6 +510,7 @@ export default function PhoneDashboardPage() {
   const [projectToOpen, setProjectToOpen] = useState(null)
   const [mediaLibrary, setMediaLibrary] = useState([])
   const [showComposeModal, setShowComposeModal] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
   const [composeAttachment, setComposeAttachment] = useState(null)
   const t = themes[theme]
 
@@ -624,9 +628,30 @@ export default function PhoneDashboardPage() {
     { label: 'Unread', value: userData.stats.unread, icon: Icons.mail, color: '#ef4444' },
   ]
   const quickActions = [
-    { icon: Icons.plus, label: 'New Campaign' },
-    { icon: Icons.upload, label: 'Import' },
-    { icon: Icons.barChart, label: 'Analytics' },
+    {
+      icon: Icons.plus,
+      label: 'New Campaign',
+      action: () => {
+        triggerHaptic('light')
+        setShowComposeModal(true)
+      },
+    },
+    {
+      icon: Icons.upload,
+      label: 'Import',
+      action: () => {
+        triggerHaptic('light')
+        navigate('/media-library')
+      },
+    },
+    {
+      icon: Icons.barChart,
+      label: 'Analytics',
+      action: () => {
+        triggerHaptic('light')
+        setShowAnalytics(true)
+      },
+    },
   ]
   const getCampaignIcon = (s) =>
     s === 'active' ? Icons.rocket : s === 'completed' ? Icons.check : Icons.fileText
@@ -1073,6 +1098,7 @@ export default function PhoneDashboardPage() {
             {quickActions.map((action, i) => (
               <button
                 key={i}
+                onClick={action.action}
                 style={{
                   flex: 1,
                   padding: '16px 12px',
@@ -1107,6 +1133,58 @@ export default function PhoneDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Analytics Modal */}
+      <AnimatePresence>
+        {showAnalytics && (
+          <motion.div
+            variants={modalSlideUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={modalSlideTransition}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: t.bg,
+              zIndex: 50,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: `1px solid ${t.cardBorder}`,
+              }}
+            >
+              <h2 style={{ color: t.text, fontSize: '18px', fontWeight: '600', margin: 0 }}>
+                Analytics
+              </h2>
+              <button
+                onClick={() => setShowAnalytics(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: t.accent,
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                }}
+              >
+                Done
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+              <AnalyticsPanel defaultExpanded />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div
         style={{
