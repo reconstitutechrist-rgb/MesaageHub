@@ -242,6 +242,7 @@ export function AIStudio({
         background: theme.bg,
         display: 'flex',
         flexDirection: 'column',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
       {/* Export Error Toast */}
@@ -268,6 +269,7 @@ export function AIStudio({
 
       {/* Header */}
       <StudioHeader
+        isMobile={isMobile}
         currentPreset={currentPreset}
         exportWidth={exportWidth}
         exportHeight={exportHeight}
@@ -296,7 +298,7 @@ export function AIStudio({
             alignItems: 'center',
             justifyContent: 'center',
             background: theme.bg,
-            padding: '20px',
+            padding: isMobile ? '8px' : '20px',
             overflow: 'hidden',
           }}
         >
@@ -325,6 +327,7 @@ export function AIStudio({
         onSendAsCampaign={handleSendAsCampaign}
         onMultiPlatformExport={handleMultiPlatformExport}
         onContinueEditing={() => closeModal('export')}
+        isMobile={isMobile}
       />
 
       <MultiPlatformExportModal
@@ -343,6 +346,7 @@ export function AIStudio({
           setActiveTemplate(template)
           closeModal('templates')
         }}
+        isMobile={isMobile}
       />
 
       <PlatformPickerModal
@@ -354,6 +358,7 @@ export function AIStudio({
           setSelectedPlatform(id)
           closeModal('platforms')
         }}
+        isMobile={isMobile}
       />
 
       <VideoExportModal

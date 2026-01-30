@@ -1,9 +1,12 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { StudioIcons } from '../utils/StudioIcons'
 import { TEXT_COLORS } from '../utils/studioConstants'
 import { VideoGenerationPanel } from './VideoGenerationPanel'
 import { VideoOverlayEditor } from './VideoOverlayEditor'
+import { PromotionalElementsPanel } from './PromotionalElementsPanel'
+import { BrandKitPanel } from './BrandKitPanel'
+import { ProductTaggingPanel } from './ProductTaggingPanel'
 import {
   // State selectors
   useImageFile,
@@ -47,17 +50,21 @@ import {
  *
  * Uses Zustand store for all state and actions.
  *
- * Bottom panel with tabs for:
- * - Upload: File input for images
- * - AI: Copy generation, background generation, subject processing
- * - Templates: Category filter and template grid
- * - Text: Input, color picker, font size slider, AI typography
- * - Size: Platform presets grid
+ * Bottom panel with scrollable tabs for:
+ * - Upload, AI, Text, Promo, Brand, Tags, Video, Templates, Size
+ * - Expandable content panel with drag handle
  */
 export function StudioMobileControls() {
   const { theme } = usePhoneTheme()
   const [activeTab, setActiveTab] = useState('upload')
   const [templateCategory, setTemplateCategory] = useState('all')
+  const [panelHeight, setPanelHeight] = useState(180)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const dragStartRef = useRef(null)
+  const dragStartHeightRef = useRef(180)
+
+  const MIN_HEIGHT = 120
+  const MAX_HEIGHT = Math.min(400, typeof window !== 'undefined' ? window.innerHeight * 0.45 : 400)
 
   // Get state from Zustand store
   const imageFile = useImageFile()
@@ -139,12 +146,69 @@ export function StudioMobileControls() {
     [templatesList, templateCategory]
   )
 
+  // Panel drag handlers
+  const handleDragMove = useCallback(
+    (e) => {
+      if (dragStartRef.current === null) return
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY
+      const delta = dragStartRef.current - clientY
+      const newHeight = Math.max(
+        MIN_HEIGHT,
+        Math.min(MAX_HEIGHT, dragStartHeightRef.current + delta)
+      )
+      setPanelHeight(newHeight)
+      setIsExpanded(newHeight > 200)
+    },
+    [MAX_HEIGHT]
+  )
+
+  const handleDragEnd = useCallback(() => {
+    dragStartRef.current = null
+    document.removeEventListener('mousemove', handleDragMove)
+    document.removeEventListener('mouseup', handleDragEnd)
+  }, [handleDragMove])
+
+  // Cleanup document listeners on unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleDragMove)
+      document.removeEventListener('mouseup', handleDragEnd)
+    }
+  }, [handleDragMove, handleDragEnd])
+
+  const handleDragStart = useCallback(
+    (e) => {
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY
+      dragStartRef.current = clientY
+      dragStartHeightRef.current = panelHeight
+      // Attach to document for mouse so drag tracks beyond the handle
+      if (!e.touches) {
+        document.addEventListener('mousemove', handleDragMove)
+        document.addEventListener('mouseup', handleDragEnd)
+      }
+    },
+    [panelHeight, handleDragMove, handleDragEnd]
+  )
+
+  const toggleExpand = useCallback(() => {
+    if (isExpanded) {
+      setPanelHeight(MIN_HEIGHT)
+      setIsExpanded(false)
+    } else {
+      setPanelHeight(MAX_HEIGHT)
+      setIsExpanded(true)
+    }
+  }, [isExpanded, MAX_HEIGHT])
+
   const tabs = [
     { id: 'upload', icon: StudioIcons.upload, label: 'Upload' },
     { id: 'ai', icon: StudioIcons.sparkles, label: 'AI' },
+    { id: 'text', icon: StudioIcons.type, label: 'Text' },
+    { id: 'promo', icon: StudioIcons.badge, label: 'Promo' },
+    { id: 'brand', icon: StudioIcons.palette, label: 'Brand' },
+    { id: 'tags', icon: StudioIcons.tag, label: 'Tags' },
     { id: 'video', icon: StudioIcons.video, label: 'Video' },
     { id: 'templates', icon: StudioIcons.layers, label: 'Templates' },
-    { id: 'text', icon: StudioIcons.type, label: 'Text' },
     { id: 'size', icon: StudioIcons.grid, label: 'Size' },
   ]
 
@@ -157,13 +221,57 @@ export function StudioMobileControls() {
         flexDirection: 'column',
       }}
     >
+      {/* Drag Handle */}
+      <div
+        onTouchStart={handleDragStart}
+        onTouchMove={handleDragMove}
+        onTouchEnd={handleDragEnd}
+        onMouseDown={handleDragStart}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '6px 0',
+          cursor: 'ns-resize',
+          touchAction: 'none',
+          position: 'relative',
+        }}
+      >
+        <div
+          style={{
+            width: '40px',
+            height: '4px',
+            borderRadius: '2px',
+            background: theme.cardBorder,
+          }}
+        />
+        <button
+          onClick={toggleExpand}
+          style={{
+            position: 'absolute',
+            right: '12px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          {isExpanded
+            ? StudioIcons.chevronDown(theme.textMuted, 16)
+            : StudioIcons.chevronUp(theme.textMuted, 16)}
+        </button>
+      </div>
+
       {/* Control Panel Content */}
       <div
         style={{
-          height: '180px',
+          height: `${panelHeight}px`,
           overflowY: 'auto',
-          padding: '16px',
+          padding: '0 16px 12px',
           borderBottom: `1px solid ${theme.cardBorder}`,
+          transition: dragStartRef.current !== null ? 'none' : 'height 0.2s ease',
         }}
       >
         {/* Upload Tab */}
@@ -300,7 +408,6 @@ export function StudioMobileControls() {
         {/* AI Magic Tab */}
         {activeTab === 'ai' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* Copy Generation */}
             <input
               type="text"
               placeholder="Describe your marketing content..."
@@ -344,7 +451,6 @@ export function StudioMobileControls() {
               )}
             </button>
 
-            {/* Analyze Image Button */}
             {imageFile && (
               <button
                 onClick={analyzeImage}
@@ -364,7 +470,6 @@ export function StudioMobileControls() {
               </button>
             )}
 
-            {/* Background Generation (Phase 2) */}
             <div style={{ borderTop: `1px solid ${theme.cardBorder}`, paddingTop: '12px' }}>
               <span
                 style={{
@@ -431,7 +536,6 @@ export function StudioMobileControls() {
               )}
             </div>
 
-            {/* Subject Processing (Phase 2) */}
             {imageFile && (
               <div
                 style={{
@@ -480,99 +584,6 @@ export function StudioMobileControls() {
                     {isAutoLeveling ? 'Leveling...' : 'Auto-Level'}
                   </button>
                 )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Video Tab (Phase 3) */}
-        {activeTab === 'video' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <VideoGenerationPanel
-              videoModel={videoModel}
-              onModelChange={setVideoModel}
-              videoPrompt={videoPrompt}
-              onPromptChange={setVideoPrompt}
-              onGenerate={generateVideo}
-              isGenerating={isGeneratingVideo}
-              progress={videoGenerationProgress}
-              generatedVideoUrl={generatedVideoUrl}
-              videoError={videoError}
-            />
-
-            {/* Video Overlays - only show after video is generated */}
-            {generatedVideoUrl && (
-              <div style={{ borderTop: `1px solid ${theme.cardBorder}`, paddingTop: '12px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '8px',
-                  }}
-                >
-                  <span style={{ fontSize: '11px', fontWeight: '500', color: theme.textMuted }}>
-                    Overlays
-                  </span>
-                  <button
-                    onClick={() => addVideoOverlay()}
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      background: theme.accent,
-                      color: '#fff',
-                      fontSize: '11px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    + Add Text
-                  </button>
-                </div>
-
-                {/* Compact overlay list for mobile */}
-                {videoOverlays?.slice(0, 2).map((overlay) => (
-                  <VideoOverlayEditor key={overlay.id} overlay={overlay} />
-                ))}
-
-                {videoOverlays?.length > 2 && (
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      color: theme.textMuted,
-                      textAlign: 'center',
-                      marginTop: '8px',
-                    }}
-                  >
-                    +{videoOverlays.length - 2} more overlays
-                  </div>
-                )}
-
-                {/* Export button */}
-                <button
-                  onClick={() => openModal('videoExport')}
-                  disabled={isRenderingVideo}
-                  style={{
-                    width: '100%',
-                    marginTop: '12px',
-                    padding: '12px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    background: isRenderingVideo
-                      ? theme.cardBg
-                      : `linear-gradient(135deg, ${theme.gradientStart}, ${theme.gradientEnd})`,
-                    color: isRenderingVideo ? theme.textMuted : '#fff',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    cursor: isRenderingVideo ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  {StudioIcons.download('#fff', 16)} Export Video
-                </button>
               </div>
             )}
           </div>
@@ -628,7 +639,6 @@ export function StudioMobileControls() {
                 style={{ flex: 1, accentColor: theme.accent }}
               />
             </div>
-            {/* AI Typography Placement (Phase 2) */}
             {textOverlay?.text && (
               <button
                 onClick={suggestTypography}
@@ -658,11 +668,117 @@ export function StudioMobileControls() {
           </div>
         )}
 
+        {/* Promo Tab */}
+        {activeTab === 'promo' && (
+          <div>
+            <PromotionalElementsPanel />
+          </div>
+        )}
+
+        {/* Brand Tab */}
+        {activeTab === 'brand' && (
+          <div>
+            <BrandKitPanel />
+          </div>
+        )}
+
+        {/* Tags Tab */}
+        {activeTab === 'tags' && (
+          <div>
+            <ProductTaggingPanel />
+          </div>
+        )}
+
+        {/* Video Tab */}
+        {activeTab === 'video' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <VideoGenerationPanel
+              videoModel={videoModel}
+              onModelChange={setVideoModel}
+              videoPrompt={videoPrompt}
+              onPromptChange={setVideoPrompt}
+              onGenerate={generateVideo}
+              isGenerating={isGeneratingVideo}
+              progress={videoGenerationProgress}
+              generatedVideoUrl={generatedVideoUrl}
+              videoError={videoError}
+            />
+
+            {generatedVideoUrl && (
+              <div style={{ borderTop: `1px solid ${theme.cardBorder}`, paddingTop: '12px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '8px',
+                  }}
+                >
+                  <span style={{ fontSize: '11px', fontWeight: '500', color: theme.textMuted }}>
+                    Overlays
+                  </span>
+                  <button
+                    onClick={() => addVideoOverlay()}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: theme.accent,
+                      color: '#fff',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    + Add Text
+                  </button>
+                </div>
+
+                {videoOverlays?.map((overlay) => (
+                  <VideoOverlayEditor key={overlay.id} overlay={overlay} />
+                ))}
+
+                <button
+                  onClick={() => openModal('videoExport')}
+                  disabled={isRenderingVideo}
+                  style={{
+                    width: '100%',
+                    marginTop: '12px',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: isRenderingVideo
+                      ? theme.cardBg
+                      : `linear-gradient(135deg, ${theme.gradientStart}, ${theme.gradientEnd})`,
+                    color: isRenderingVideo ? theme.textMuted : '#fff',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: isRenderingVideo ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  {StudioIcons.download('#fff', 16)} Export Video
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Templates Tab */}
         {activeTab === 'templates' && (
           <div>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', overflowX: 'auto' }}>
-              {templateCategories.slice(0, 4).map((cat) => (
+            <div
+              style={{
+                display: 'flex',
+                gap: '6px',
+                marginBottom: '12px',
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            >
+              {templateCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setTemplateCategory(cat.id)}
@@ -676,6 +792,7 @@ export function StudioMobileControls() {
                     fontWeight: '500',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
                   {cat.label}
@@ -683,7 +800,7 @@ export function StudioMobileControls() {
               ))}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-              {filteredTemplates.slice(0, 6).map((template) => (
+              {filteredTemplates.map((template) => (
                 <button
                   key={template.id}
                   onClick={() => setActiveTemplate(template)}
@@ -766,7 +883,6 @@ export function StudioMobileControls() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               {Object.entries(platformPresets)
                 .filter(([id]) => id !== 'custom')
-                .slice(0, 6)
                 .map(([id, preset]) => (
                   <button
                     key={id}
@@ -805,13 +921,16 @@ export function StudioMobileControls() {
         )}
       </div>
 
-      {/* Tab Bar */}
+      {/* Tab Bar - horizontally scrollable */}
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-around',
           padding: '8px 0',
           paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
         }}
       >
         {tabs.map((tab) => (
@@ -823,18 +942,19 @@ export function StudioMobileControls() {
               flexDirection: 'column',
               alignItems: 'center',
               gap: '4px',
-              padding: '8px 12px',
+              padding: '6px 8px',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
               opacity: activeTab === tab.id ? 1 : 0.5,
-              minWidth: '64px',
+              minWidth: '56px',
+              flexShrink: 0,
             }}
           >
             <div
               style={{
-                width: '32px',
-                height: '32px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '8px',
                 background: activeTab === tab.id ? `${theme.accent}22` : 'transparent',
                 display: 'flex',
@@ -842,11 +962,11 @@ export function StudioMobileControls() {
                 justifyContent: 'center',
               }}
             >
-              {tab.icon(activeTab === tab.id ? theme.accent : theme.textMuted, 20)}
+              {tab.icon(activeTab === tab.id ? theme.accent : theme.textMuted, 18)}
             </div>
             <span
               style={{
-                fontSize: '10px',
+                fontSize: '9px',
                 fontWeight: activeTab === tab.id ? '600' : '400',
                 color: activeTab === tab.id ? theme.accent : theme.textMuted,
               }}

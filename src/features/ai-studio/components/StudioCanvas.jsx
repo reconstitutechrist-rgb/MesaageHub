@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { triggerHaptic } from '../utils/haptics'
 import {
@@ -54,6 +54,13 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   const dragTargetRef = useRef(null) // 'primary' or layer id
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const cachedBoundsRef = useRef(new Map()) // Cache layer bounds for hit testing
+
+  // Zoom & pan state for pinch-to-zoom
+  const [zoomLevel, setZoomLevel] = useState(1)
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+  const pinchRef = useRef({ active: false, initialDistance: 0, initialZoom: 1 })
+  const lastTapRef = useRef(0)
+  const isPanningRef = useRef(false)
 
   const { theme, isDark } = usePhoneTheme()
   const fallbackBg = isDark ? FALLBACK_COLORS.dark : FALLBACK_COLORS.light
@@ -260,6 +267,8 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   }, [imageFile, render])
 
   // Get canvas coordinates from event
+  // Note: getBoundingClientRect() already accounts for CSS transforms (zoom/pan)
+  // on ancestor elements, so no manual zoom/pan correction is needed.
   const getCanvasCoords = useCallback((e) => {
     const canvas = canvasRef.current
     if (!canvas) return { x: 0, y: 0 }
@@ -323,6 +332,30 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   // Mouse/touch handlers
   const handlePointerDown = useCallback(
     (e) => {
+      // --- Pinch-to-zoom: detect two-finger touch ---
+      if (e.touches && e.touches.length === 2) {
+        const t1 = e.touches[0]
+        const t2 = e.touches[1]
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
+        pinchRef.current = { active: true, initialDistance: dist, initialZoom: zoomLevel }
+        isDraggingRef.current = false
+        return
+      }
+
+      // --- Double-tap to reset zoom (only when zoomed) ---
+      if (e.touches && e.touches.length === 1) {
+        const now = Date.now()
+        if (now - lastTapRef.current < 300 && zoomLevel !== 1) {
+          // Double-tap detected while zoomed - reset
+          setZoomLevel(1)
+          setPanOffset({ x: 0, y: 0 })
+          lastTapRef.current = 0
+          triggerHaptic('medium')
+          return
+        }
+        lastTapRef.current = now
+      }
+
       const coords = getCanvasCoords(e)
 
       // Check primary text first
@@ -354,14 +387,57 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
         return
       }
 
+      // Pan when zoomed and tapping empty space
+      if (zoomLevel > 1) {
+        isPanningRef.current = true
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY
+        // Store offset in screen space (panOffset is in local space, so multiply by zoom)
+        dragOffsetRef.current = {
+          x: clientX - panOffset.x * zoomLevel,
+          y: clientY - panOffset.y * zoomLevel,
+        }
+        return
+      }
+
       // Click on empty space - clear selection
       selectLayer(null)
     },
-    [getCanvasCoords, isNearPrimaryText, getLayerAtPoint, primaryTextOverlay, selectLayer]
+    [
+      getCanvasCoords,
+      isNearPrimaryText,
+      getLayerAtPoint,
+      primaryTextOverlay,
+      selectLayer,
+      zoomLevel,
+      panOffset,
+    ]
   )
 
   const handlePointerMove = useCallback(
     (e) => {
+      // --- Pinch zoom move ---
+      if (pinchRef.current.active && e.touches && e.touches.length === 2) {
+        const t1 = e.touches[0]
+        const t2 = e.touches[1]
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
+        const ratio = dist / pinchRef.current.initialDistance
+        setZoomLevel(Math.max(0.5, Math.min(3, pinchRef.current.initialZoom * ratio)))
+        return
+      }
+
+      // --- Pan when zoomed ---
+      if (isPanningRef.current) {
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY
+        // Convert screen delta back to local space by dividing by zoom
+        setPanOffset({
+          x: (clientX - dragOffsetRef.current.x) / zoomLevel,
+          y: (clientY - dragOffsetRef.current.y) / zoomLevel,
+        })
+        return
+      }
+
       if (!isDraggingRef.current) return
 
       const coords = getCanvasCoords(e)
@@ -388,10 +464,14 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
         )
       }
     },
-    [getCanvasCoords, setTextOverlay, updateLayer]
+    [getCanvasCoords, setTextOverlay, updateLayer, zoomLevel]
   )
 
   const handlePointerUp = useCallback(() => {
+    // Reset pinch state
+    pinchRef.current.active = false
+    isPanningRef.current = false
+
     if (isDraggingRef.current) {
       // Haptic feedback when drag ends
       triggerHaptic('medium')
@@ -626,25 +706,75 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
     ]
   )
 
+  const resetZoom = useCallback(() => {
+    setZoomLevel(1)
+    setPanOffset({ x: 0, y: 0 })
+  }, [])
+
   return (
-    <canvas
-      ref={canvasRef}
-      width={canvasWidth}
-      height={canvasHeight}
+    <div
       style={{
-        cursor: isDraggingRef.current ? 'grabbing' : 'grab',
-        touchAction: 'none',
-        ...style,
+        position: 'relative',
+        overflow: 'hidden',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
-      className={className}
-      onMouseDown={handlePointerDown}
-      onMouseMove={handlePointerMove}
-      onMouseUp={handlePointerUp}
-      onMouseLeave={handlePointerUp}
-      onTouchStart={handlePointerDown}
-      onTouchMove={handlePointerMove}
-      onTouchEnd={handlePointerUp}
-    />
+    >
+      <div
+        style={{
+          transform: `scale(${zoomLevel}) translate(${panOffset.x}px, ${panOffset.y}px)`,
+          transformOrigin: 'center center',
+          transition: zoomLevel === 1 ? 'transform 0.2s ease' : 'none',
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          width={canvasWidth}
+          height={canvasHeight}
+          style={{
+            cursor: isDraggingRef.current ? 'grabbing' : 'grab',
+            touchAction: 'none',
+            ...style,
+          }}
+          className={className}
+          onMouseDown={handlePointerDown}
+          onMouseMove={handlePointerMove}
+          onMouseUp={handlePointerUp}
+          onMouseLeave={handlePointerUp}
+          onTouchStart={handlePointerDown}
+          onTouchMove={handlePointerMove}
+          onTouchEnd={handlePointerUp}
+        />
+      </div>
+
+      {/* Zoom indicator pill */}
+      {zoomLevel !== 1 && (
+        <button
+          onClick={resetZoom}
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            padding: '4px 10px',
+            borderRadius: '12px',
+            background: 'rgba(0,0,0,0.6)',
+            color: '#fff',
+            fontSize: '11px',
+            fontWeight: '600',
+            border: 'none',
+            cursor: 'pointer',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            zIndex: 10,
+          }}
+        >
+          {Math.round(zoomLevel * 100)}%
+        </button>
+      )}
+    </div>
   )
 })
 

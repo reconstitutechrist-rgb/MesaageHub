@@ -763,6 +763,14 @@ export const StudioIcons = {
     </svg>
   ),
 
+  moreVertical: (color = '#fff', size = 24) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+      <circle cx="12" cy="5" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="12" cy="19" r="2" />
+    </svg>
+  ),
+
   abTesting: (color = '#fff', size = 24) => (
     <svg
       width={size}
