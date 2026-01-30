@@ -1,5 +1,6 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
+import { triggerHaptic } from './utils/haptics'
 import { StudioHeader } from './components/StudioHeader'
 import { StudioCanvas } from './components/StudioCanvas'
 import { StudioSidebar } from './components/StudioSidebar'
@@ -10,6 +11,8 @@ import {
   TemplateBrowserModal,
   PlatformPickerModal,
   VideoExportModal,
+  MultiPlatformExportModal,
+  VariantGeneratorModal,
 } from './components/modals'
 import {
   // State selectors
@@ -60,6 +63,7 @@ export function AIStudio({
   const canvasRef = useRef(null)
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveNameInput, setSaveNameInput] = useState('')
+  const [exportError, setExportError] = useState(null)
 
   // Get only what AIStudio needs from store (not drilling down)
   const currentPreset = useCurrentPreset()
@@ -95,6 +99,13 @@ export function AIStudio({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Auto-clear export error after 3 seconds
+  useEffect(() => {
+    if (!exportError) return
+    const timer = setTimeout(() => setExportError(null), 3000)
+    return () => clearTimeout(timer)
+  }, [exportError])
+
   // Export handler
   const handleExport = useCallback(async () => {
     if (!canvasRef.current) return
@@ -123,9 +134,12 @@ export function AIStudio({
         link.click()
         closeModal('export')
         onExport?.(dataUrl)
+        triggerHaptic('success')
       }
     } catch (error) {
       console.error('Download failed:', error)
+      triggerHaptic('error')
+      setExportError('Download failed. Please try again.')
     }
   }, [closeModal, onExport])
 
@@ -138,11 +152,38 @@ export function AIStudio({
       if (dataUrl) {
         closeModal('export')
         onSendAsCampaign?.(dataUrl)
+        triggerHaptic('success')
       }
     } catch (error) {
       console.error('Send as campaign failed:', error)
+      triggerHaptic('error')
+      setExportError('Export failed. Please try again.')
     }
   }, [closeModal, onSendAsCampaign])
+
+  // Multi-platform export handler
+  const handleMultiPlatformExport = useCallback(() => {
+    closeModal('export')
+    openModal('multiPlatformExport')
+  }, [closeModal, openModal])
+
+  // Handle individual platform export from multi-platform modal
+  const handlePlatformExport = useCallback(async (exportConfig) => {
+    if (!canvasRef.current) return
+
+    try {
+      const dataUrl = await canvasRef.current.exportAsDataUrl('image/png', 1.0)
+      if (dataUrl) {
+        // Download the exported image with platform-specific filename
+        const link = document.createElement('a')
+        link.download = `${exportConfig.filename}.png`
+        link.href = dataUrl
+        link.click()
+      }
+    } catch (error) {
+      console.error('Platform export failed:', error)
+    }
+  }, [])
 
   // Save project handler
   const handleSaveClick = useCallback(() => {
@@ -173,7 +214,14 @@ export function AIStudio({
       }
       // Escape: Close modals or studio
       if (e.key === 'Escape') {
-        if (modals.export || modals.templates || modals.platforms || modals.videoExport) {
+        if (
+          modals.export ||
+          modals.templates ||
+          modals.platforms ||
+          modals.videoExport ||
+          modals.multiPlatformExport ||
+          modals.variants
+        ) {
           closeAllModals()
         } else {
           onClose?.()
@@ -196,6 +244,28 @@ export function AIStudio({
         flexDirection: 'column',
       }}
     >
+      {/* Export Error Toast */}
+      {exportError && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '72px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 2100,
+            padding: '10px 20px',
+            borderRadius: '10px',
+            background: '#ef4444',
+            color: '#fff',
+            fontSize: '13px',
+            fontWeight: '500',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          }}
+        >
+          {exportError}
+        </div>
+      )}
+
       {/* Header */}
       <StudioHeader
         currentPreset={currentPreset}
@@ -209,6 +279,8 @@ export function AIStudio({
         onSave={handleSaveClick}
         onExport={handleExport}
         onClose={onClose}
+        onVariants={() => openModal('variants')}
+        onSendAsCampaign={onSendAsCampaign ? handleSendAsCampaign : undefined}
       />
 
       {/* Main content area */}
@@ -251,7 +323,14 @@ export function AIStudio({
         onClose={() => closeModal('export')}
         onDownload={handleDownload}
         onSendAsCampaign={handleSendAsCampaign}
+        onMultiPlatformExport={handleMultiPlatformExport}
         onContinueEditing={() => closeModal('export')}
+      />
+
+      <MultiPlatformExportModal
+        isOpen={modals.multiPlatformExport}
+        onClose={() => closeModal('multiPlatformExport')}
+        onExport={handlePlatformExport}
       />
 
       <TemplateBrowserModal
@@ -292,6 +371,12 @@ export function AIStudio({
           onSendAsCampaign?.(videoUrl)
         }}
         hasOverlays={videoOverlays?.length > 0}
+      />
+
+      <VariantGeneratorModal
+        isOpen={modals.variants}
+        onClose={() => closeModal('variants')}
+        onApplyVariant={() => closeModal('variants')}
       />
 
       {/* Save Project Dialog */}

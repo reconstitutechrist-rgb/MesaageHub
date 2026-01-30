@@ -14,7 +14,7 @@ import { aiService } from '@/services/AIService'
 import { computeCanvasDimensions } from '../../utils/canvasLogic'
 
 /**
- * Convert a File or Blob to base64 string
+ * Convert a File or Blob to base64 string (returns full data URL)
  */
 async function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -23,6 +23,18 @@ async function fileToBase64(file) {
     reader.onerror = reject
     reader.readAsDataURL(file)
   })
+}
+
+/**
+ * Extract raw base64 from a data URL or return as-is if already raw base64
+ */
+function extractBase64(input) {
+  if (!input) return null
+  if (typeof input === 'string' && input.startsWith('data:')) {
+    const parts = input.split(',')
+    return parts.length > 1 ? parts[1] : null
+  }
+  return input
 }
 
 /**
@@ -55,18 +67,28 @@ export const createAISlice = (set, get) => ({
   isAutoLeveling: false,
   levelAdjustments: null,
 
+  // Re-lighting (Phase 3)
+  selectedLightingPreset: null,
+  isApplyingRelighting: false,
+
+  // Generation error tracking (for haptic feedback)
+  lastGenerationError: null,
+
   // Set prompt
   setPrompt: (prompt) => set({ prompt }),
 
   // Set background prompt
   setBackgroundPrompt: (backgroundPrompt) => set({ backgroundPrompt }),
 
+  // Set subject image (for object removal updates)
+  setSubjectImage: (subjectImage) => set({ subjectImage }),
+
   // Generate marketing copy
   generate: async () => {
     const { prompt, isGenerating, imageFile, selectedPlatform, textOverlay } = get()
     if (!prompt.trim() || isGenerating) return
 
-    set({ isGenerating: true })
+    set({ isGenerating: true, lastGenerationError: null })
     try {
       // Get image as base64 if available
       let imageBase64 = null
@@ -88,6 +110,7 @@ export const createAISlice = (set, get) => ({
       })
     } catch (error) {
       console.error('Generation failed:', error)
+      set({ lastGenerationError: 'generation' })
       // Fallback to uppercase prompt
       set({
         textOverlay: {
@@ -136,7 +159,7 @@ export const createAISlice = (set, get) => ({
     const { backgroundPrompt, isGeneratingBackground } = get()
     if (!backgroundPrompt.trim() || isGeneratingBackground) return
 
-    set({ isGeneratingBackground: true })
+    set({ isGeneratingBackground: true, lastGenerationError: null })
     try {
       const { selectedPlatform } = get()
       const { exportWidth, exportHeight } = computeCanvasDimensions(selectedPlatform)
@@ -158,6 +181,7 @@ export const createAISlice = (set, get) => ({
       return result
     } catch (error) {
       console.error('Background generation failed:', error)
+      set({ lastGenerationError: 'background' })
       return null
     } finally {
       set({ isGeneratingBackground: false })
@@ -249,9 +273,13 @@ export const createAISlice = (set, get) => ({
     }
     if (!subjectSource || !generatedBackground) return null
 
+    // Ensure raw base64 for API calls
+    const subjectBase64 = extractBase64(subjectSource)
+    const backgroundBase64 = extractBase64(generatedBackground)
+
     set({ isAutoLeveling: true })
     try {
-      const result = await aiService.autoLevel(subjectSource, generatedBackground)
+      const result = await aiService.autoLevel(subjectBase64, backgroundBase64)
       set({ levelAdjustments: result })
       return result
     } catch (error) {
@@ -259,6 +287,47 @@ export const createAISlice = (set, get) => ({
       return null
     } finally {
       set({ isAutoLeveling: false })
+    }
+  },
+
+  // Set selected lighting preset (Phase 3)
+  setSelectedLightingPreset: (preset) => set({ selectedLightingPreset: preset }),
+
+  // Apply re-lighting to subject (Phase 3)
+  applyRelighting: async (lightingSettings) => {
+    const { isApplyingRelighting, subjectImage, imageFile, generatedBackground } = get()
+    if (isApplyingRelighting) return null
+
+    // Need subject image
+    let subjectSource = subjectImage
+    if (!subjectSource && imageFile) {
+      subjectSource = await fileToBase64(imageFile)
+    }
+    if (!subjectSource) return null
+
+    // Ensure raw base64 for API calls
+    const subjectBase64 = extractBase64(subjectSource)
+    const backgroundBase64 = extractBase64(generatedBackground)
+
+    set({ isApplyingRelighting: true })
+    try {
+      const result = await aiService.applyRelighting(
+        subjectBase64,
+        lightingSettings,
+        backgroundBase64
+      )
+
+      // If successful, update the subject image with the relit version
+      if (result.imageBase64 && !result.fallback) {
+        set({ subjectImage: result.imageBase64 })
+      }
+
+      return result
+    } catch (error) {
+      console.error('Re-lighting failed:', error)
+      return null
+    } finally {
+      set({ isApplyingRelighting: false })
     }
   },
 
@@ -279,6 +348,9 @@ export const createAISlice = (set, get) => ({
       typographySuggestion: null,
       isAutoLeveling: false,
       levelAdjustments: null,
+      selectedLightingPreset: null,
+      isApplyingRelighting: false,
+      lastGenerationError: null,
     })
   },
 })

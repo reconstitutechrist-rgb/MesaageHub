@@ -22,6 +22,8 @@ export function StudioHeader({
   onSave,
   onExport,
   onClose,
+  onVariants,
+  onSendAsCampaign,
 }) {
   const { theme } = usePhoneTheme()
 
@@ -121,6 +123,52 @@ export function StudioHeader({
         >
           {StudioIcons.redo(theme.textMuted, 20)}
         </button>
+
+        {/* Variants button */}
+        <button
+          onClick={onVariants}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '10px 16px',
+            borderRadius: '10px',
+            border: `1px solid ${theme.cardBorder}`,
+            background: theme.cardBg,
+            color: theme.text,
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+          }}
+          title="Generate A/B Variants"
+        >
+          {StudioIcons.copy(theme.accent, 18)}
+          Variants
+        </button>
+
+        {/* Send as SMS button - direct campaign pipeline */}
+        {onSendAsCampaign && (
+          <button
+            onClick={onSendAsCampaign}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '10px 16px',
+              borderRadius: '10px',
+              border: `1px solid ${theme.cardBorder}`,
+              background: theme.cardBg,
+              color: theme.text,
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+            }}
+            title="Send as SMS Campaign"
+          >
+            {StudioIcons.megaphone(theme.accent, 18)}
+            Send SMS
+          </button>
+        )}
 
         {/* Save button */}
         <button

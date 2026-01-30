@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { StudioIcons } from '../utils/StudioIcons'
 import { TEXT_COLORS } from '../utils/studioConstants'
@@ -33,6 +33,7 @@ import {
   useVideoError,
   useVideoOverlays,
   useIsRenderingVideo,
+  useRecentDesigns,
   // Action selectors
   useCanvasActions,
   useAIActions,
@@ -86,6 +87,7 @@ export function StudioMobileControls() {
   const videoError = useVideoError()
   const videoOverlays = useVideoOverlays()
   const isRenderingVideo = useIsRenderingVideo()
+  const recentDesigns = useRecentDesigns()
 
   // Get actions from Zustand store
   const { setImageFile, setSelectedPlatform, setActiveTemplate, clearTemplate } = useCanvasActions()
@@ -100,8 +102,25 @@ export function StudioMobileControls() {
     suggestTypography,
   } = useAIActions()
   const { setVideoModel, setVideoPrompt, generateVideo, addVideoOverlay } = useVideoActions()
-  const { openModal } = useUIActions()
+  const { openModal, loadProject, loadRecentDesigns } = useUIActions()
   const { setTextOverlay } = useTextOverlayActions()
+
+  // Load recent designs on mount
+  useEffect(() => {
+    loadRecentDesigns()
+  }, [loadRecentDesigns])
+
+  // Helpers
+  const formatRelativeDate = (dateStr) => {
+    if (!dateStr) return ''
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 60) return `${mins}m`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs}h`
+    const days = Math.floor(hrs / 24)
+    return `${days}d`
+  }
 
   // Derived state
   const activeTemplateId = activeTemplate?.id
@@ -149,47 +168,133 @@ export function StudioMobileControls() {
       >
         {/* Upload Tab */}
         {activeTab === 'upload' && (
-          <label
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '24px',
-              borderRadius: '16px',
-              border: `2px dashed ${theme.cardBorder}`,
-              background: theme.cardBg,
-              cursor: 'pointer',
-            }}
-          >
-            <input
-              type="file"
-              accept="image/*,video/*"
-              onChange={(e) => e.target.files?.[0] && setImageFile(e.target.files[0])}
-              style={{ display: 'none' }}
-            />
-            <div
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Recent Designs */}
+            {recentDesigns.length > 0 && (
+              <div>
+                <span
+                  style={{
+                    color: theme.textMuted,
+                    fontSize: '11px',
+                    fontWeight: '500',
+                    marginBottom: '6px',
+                    display: 'block',
+                  }}
+                >
+                  Recent Designs
+                </span>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '6px',
+                    overflowX: 'auto',
+                    paddingBottom: '4px',
+                  }}
+                >
+                  {recentDesigns.map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => loadProject(project)}
+                      title={project.name}
+                      style={{
+                        flexShrink: 0,
+                        width: '68px',
+                        padding: '6px',
+                        borderRadius: '8px',
+                        border: `1px solid ${theme.cardBorder}`,
+                        background: theme.cardBg,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '36px',
+                          borderRadius: '4px',
+                          background: project.background?.value
+                            ? project.background.type === 'gradient'
+                              ? `linear-gradient(135deg, ${project.background.value[0]}, ${project.background.value[1]})`
+                              : project.background.value
+                            : theme.cardBorder,
+                        }}
+                      />
+                      <span
+                        style={{
+                          color: theme.text,
+                          fontSize: '9px',
+                          fontWeight: '500',
+                          width: '100%',
+                          textAlign: 'center',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {project.name}
+                      </span>
+                      {project.updated_at && (
+                        <span
+                          style={{
+                            color: theme.textMuted,
+                            fontSize: '8px',
+                            width: '100%',
+                            textAlign: 'center',
+                          }}
+                        >
+                          {formatRelativeDate(project.updated_at)}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <label
               style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                background: `linear-gradient(135deg, ${theme.gradientStart}33, ${theme.gradientEnd}33)`,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: '12px',
+                padding: '24px',
+                borderRadius: '16px',
+                border: `2px dashed ${theme.cardBorder}`,
+                background: theme.cardBg,
+                cursor: 'pointer',
               }}
             >
-              {StudioIcons.upload(theme.accent)}
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ color: theme.text, fontSize: '14px', fontWeight: '600', margin: 0 }}>
-                {imageFile ? imageFile.name : 'Tap to upload image'}
-              </p>
-              <p style={{ color: theme.textMuted, fontSize: '12px', margin: '4px 0 0' }}>
-                PNG, JPG up to 10MB
-              </p>
-            </div>
-          </label>
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => e.target.files?.[0] && setImageFile(e.target.files[0])}
+                style={{ display: 'none' }}
+              />
+              <div
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${theme.gradientStart}33, ${theme.gradientEnd}33)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {StudioIcons.upload(theme.accent)}
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ color: theme.text, fontSize: '14px', fontWeight: '600', margin: 0 }}>
+                  {imageFile ? imageFile.name : 'Tap to upload image'}
+                </p>
+                <p style={{ color: theme.textMuted, fontSize: '12px', margin: '4px 0 0' }}>
+                  PNG, JPG up to 10MB
+                </p>
+              </div>
+            </label>
+          </div>
         )}
 
         {/* AI Magic Tab */}

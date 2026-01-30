@@ -5,6 +5,18 @@
  */
 
 import { HISTORY_LIMIT } from '../../utils/studioConstants'
+import {
+  PromotionalElementType,
+  DEFAULT_BADGE,
+  DEFAULT_CTA,
+  DEFAULT_PRICE,
+  DEFAULT_COUNTDOWN,
+  DEFAULT_STOCK,
+  DEFAULT_QR_CODE,
+  DEFAULT_PRODUCT_TAG,
+  BADGE_PRESETS,
+  CTA_PRESETS,
+} from '../../utils/promotionalElements'
 
 /**
  * Layer types supported by the canvas editor
@@ -13,7 +25,18 @@ export const LayerType = {
   TEXT: 'text',
   IMAGE: 'image',
   BACKGROUND: 'background',
+  // Promotional element types
+  BADGE: 'badge',
+  COUNTDOWN: 'countdown',
+  PRICE: 'price',
+  CTA: 'cta',
+  QR_CODE: 'qrcode',
+  STOCK_INDICATOR: 'stock',
+  PRODUCT_TAG: 'product-tag',
 }
+
+// Re-export promotional element type for convenience
+export { PromotionalElementType }
 
 /**
  * Create a new text layer with default values
@@ -94,6 +117,196 @@ export function createBackgroundLayer(overrides = {}) {
   }
 }
 
+// ============================================
+// PROMOTIONAL ELEMENT LAYER FACTORIES
+// ============================================
+
+/**
+ * Create a badge layer (e.g., "50% OFF", "NEW", "HOT")
+ */
+export function createBadgeLayer(overrides = {}) {
+  const { data: dataOverrides, ...restOverrides } = overrides
+  const preset = dataOverrides?.presetId
+    ? BADGE_PRESETS.find((p) => p.id === dataOverrides.presetId) || BADGE_PRESETS[0]
+    : BADGE_PRESETS[0]
+
+  return {
+    id: `badge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type: LayerType.BADGE,
+    name: preset.label || 'Badge',
+    visible: true,
+    locked: false,
+    zIndex: 150,
+    ...restOverrides,
+    data: {
+      ...DEFAULT_BADGE,
+      ...preset,
+      presetId: preset.id,
+      ...dataOverrides,
+    },
+  }
+}
+
+/**
+ * Create a CTA button layer (e.g., "Shop Now", "Buy Today")
+ */
+export function createCTALayer(overrides = {}) {
+  const { data: dataOverrides, ...restOverrides } = overrides
+  const preset = dataOverrides?.presetId
+    ? CTA_PRESETS.find((p) => p.id === dataOverrides.presetId) || CTA_PRESETS[0]
+    : CTA_PRESETS[0]
+
+  return {
+    id: `cta-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type: LayerType.CTA,
+    name: preset.label || 'CTA Button',
+    visible: true,
+    locked: false,
+    zIndex: 140,
+    ...restOverrides,
+    data: {
+      ...DEFAULT_CTA,
+      ...preset,
+      presetId: preset.id,
+      ...dataOverrides,
+    },
+  }
+}
+
+/**
+ * Create a price display layer (was/now pricing)
+ */
+export function createPriceLayer(overrides = {}) {
+  const { data: dataOverrides, ...restOverrides } = overrides
+  return {
+    id: `price-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type: LayerType.PRICE,
+    name: 'Price Display',
+    visible: true,
+    locked: false,
+    zIndex: 130,
+    ...restOverrides,
+    data: {
+      ...DEFAULT_PRICE,
+      ...dataOverrides,
+    },
+  }
+}
+
+/**
+ * Create a countdown timer layer
+ */
+export function createCountdownLayer(overrides = {}) {
+  const { data: dataOverrides, ...restOverrides } = overrides
+  return {
+    id: `countdown-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type: LayerType.COUNTDOWN,
+    name: 'Countdown Timer',
+    visible: true,
+    locked: false,
+    zIndex: 145,
+    ...restOverrides,
+    data: {
+      ...DEFAULT_COUNTDOWN,
+      // Default to 24 hours from now if no endDate provided
+      endDate: dataOverrides?.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      ...dataOverrides,
+    },
+  }
+}
+
+/**
+ * Create a stock indicator layer (e.g., "Only 5 left!")
+ */
+export function createStockIndicatorLayer(overrides = {}) {
+  const { data: dataOverrides, ...restOverrides } = overrides
+  return {
+    id: `stock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type: LayerType.STOCK_INDICATOR,
+    name: 'Stock Indicator',
+    visible: true,
+    locked: false,
+    zIndex: 135,
+    ...restOverrides,
+    data: {
+      ...DEFAULT_STOCK,
+      ...dataOverrides,
+    },
+  }
+}
+
+/**
+ * Create a QR code layer
+ */
+export function createQRCodeLayer(overrides = {}) {
+  const { data: dataOverrides, ...restOverrides } = overrides
+  return {
+    id: `qrcode-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type: LayerType.QR_CODE,
+    name: 'QR Code',
+    visible: true,
+    locked: false,
+    zIndex: 125,
+    ...restOverrides,
+    data: {
+      ...DEFAULT_QR_CODE,
+      ...dataOverrides,
+    },
+  }
+}
+
+/**
+ * Create a product tag layer (shoppable hotspot)
+ */
+export function createProductTagLayer(overrides = {}) {
+  const { data: dataOverrides, ...restOverrides } = overrides
+  return {
+    id: `product-tag-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type: LayerType.PRODUCT_TAG,
+    name: dataOverrides?.productName || 'Product Tag',
+    visible: true,
+    locked: false,
+    zIndex: 155,
+    ...restOverrides,
+    data: {
+      ...DEFAULT_PRODUCT_TAG,
+      ...dataOverrides,
+    },
+  }
+}
+
+/**
+ * Create a promotional element layer by type
+ */
+export function createPromotionalLayer(elementType, overrides = {}) {
+  switch (elementType) {
+    case PromotionalElementType.BADGE:
+    case LayerType.BADGE:
+      return createBadgeLayer(overrides)
+    case PromotionalElementType.CTA:
+    case LayerType.CTA:
+      return createCTALayer(overrides)
+    case PromotionalElementType.PRICE:
+    case LayerType.PRICE:
+      return createPriceLayer(overrides)
+    case PromotionalElementType.COUNTDOWN:
+    case LayerType.COUNTDOWN:
+      return createCountdownLayer(overrides)
+    case PromotionalElementType.STOCK_INDICATOR:
+    case LayerType.STOCK_INDICATOR:
+      return createStockIndicatorLayer(overrides)
+    case PromotionalElementType.QR_CODE:
+    case LayerType.QR_CODE:
+      return createQRCodeLayer(overrides)
+    case PromotionalElementType.PRODUCT_TAG:
+    case LayerType.PRODUCT_TAG:
+      return createProductTagLayer(overrides)
+    default:
+      console.warn(`Unknown promotional element type: ${elementType}`)
+      return null
+  }
+}
+
 /**
  * Convert a legacy textOverlay object to a layer format
  */
@@ -171,6 +384,98 @@ export const createLayerSlice = (set, get) => ({
       data: { text, ...options },
     })
     get().addLayer(layer)
+    return layer
+  },
+
+  // Add a badge layer (e.g., "50% OFF", "NEW")
+  addBadgeLayer: (presetId = 'sale-50', options = {}) => {
+    const layer = createBadgeLayer({
+      zIndex: Math.max(100, ...get().layers.map((l) => l.zIndex)) + 1,
+      data: { presetId, ...options },
+    })
+    get().addLayer(layer)
+    return layer
+  },
+
+  // Add a CTA button layer
+  addCTALayer: (presetId = 'shop-now', options = {}) => {
+    const layer = createCTALayer({
+      zIndex: Math.max(100, ...get().layers.map((l) => l.zIndex)) + 1,
+      data: { presetId, ...options },
+    })
+    get().addLayer(layer)
+    return layer
+  },
+
+  // Add a price display layer
+  addPriceLayer: (originalPrice = 99.99, salePrice = 49.99, options = {}) => {
+    const layer = createPriceLayer({
+      zIndex: Math.max(100, ...get().layers.map((l) => l.zIndex)) + 1,
+      data: { originalPrice, salePrice, ...options },
+    })
+    get().addLayer(layer)
+    return layer
+  },
+
+  // Add a countdown timer layer
+  addCountdownLayer: (endDate = null, options = {}) => {
+    const layer = createCountdownLayer({
+      zIndex: Math.max(100, ...get().layers.map((l) => l.zIndex)) + 1,
+      data: {
+        endDate: endDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        ...options,
+      },
+    })
+    get().addLayer(layer)
+    return layer
+  },
+
+  // Add a stock indicator layer
+  addStockIndicatorLayer: (count = 5, options = {}) => {
+    const layer = createStockIndicatorLayer({
+      zIndex: Math.max(100, ...get().layers.map((l) => l.zIndex)) + 1,
+      data: { count, ...options },
+    })
+    get().addLayer(layer)
+    return layer
+  },
+
+  // Add a QR code layer
+  addQRCodeLayer: (data = '', options = {}) => {
+    const layer = createQRCodeLayer({
+      zIndex: Math.max(100, ...get().layers.map((l) => l.zIndex)) + 1,
+      data: { data, ...options },
+    })
+    get().addLayer(layer)
+    return layer
+  },
+
+  // Add a product tag layer (shoppable hotspot)
+  addProductTagLayer: (product = {}, options = {}) => {
+    const layer = createProductTagLayer({
+      zIndex: Math.max(100, ...get().layers.map((l) => l.zIndex)) + 1,
+      data: {
+        productId: product.id || null,
+        productName: product.name || '',
+        productPrice: product.price || null,
+        productUrl: product.productUrl || '',
+        productSku: product.sku || '',
+        ...options,
+      },
+    })
+    get().addLayer(layer)
+    return layer
+  },
+
+  // Add any promotional layer by type
+  addPromotionalLayer: (elementType, options = {}) => {
+    const layer = createPromotionalLayer(elementType, {
+      zIndex: Math.max(100, ...get().layers.map((l) => l.zIndex)) + 1,
+      data: options,
+    })
+    if (layer) {
+      get().addLayer(layer)
+    }
     return layer
   },
 
@@ -286,10 +591,21 @@ export const createLayerSlice = (set, get) => ({
       data: { ...layer.data },
     }
 
-    // Offset position slightly for visibility
-    if (newLayer.type === LayerType.TEXT) {
-      newLayer.data.x = Math.min(100, newLayer.data.x + 5)
-      newLayer.data.y = Math.min(100, newLayer.data.y + 5)
+    // Offset position slightly for visibility based on layer type
+    const positionableTypes = [
+      LayerType.TEXT,
+      LayerType.BADGE,
+      LayerType.CTA,
+      LayerType.PRICE,
+      LayerType.COUNTDOWN,
+      LayerType.STOCK_INDICATOR,
+      LayerType.QR_CODE,
+      LayerType.PRODUCT_TAG,
+    ]
+
+    if (positionableTypes.includes(newLayer.type)) {
+      newLayer.data.x = Math.min(100, (newLayer.data.x || 50) + 5)
+      newLayer.data.y = Math.min(100, (newLayer.data.y || 50) + 5)
     }
 
     addLayer(newLayer)

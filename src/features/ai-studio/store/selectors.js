@@ -47,6 +47,30 @@ export const useImageLayers = () => {
   return useMemo(() => layers.filter((l) => l.type === 'image'), [layers])
 }
 
+// Promotional element layers only
+export const usePromotionalLayers = () => {
+  const layers = useStudioStore((s) => s.layers)
+  return useMemo(
+    () =>
+      layers.filter((l) =>
+        ['badge', 'countdown', 'price', 'cta', 'qrcode', 'stock'].includes(l.type)
+      ),
+    [layers]
+  )
+}
+
+// Badge layers only
+export const useBadgeLayers = () => {
+  const layers = useStudioStore((s) => s.layers)
+  return useMemo(() => layers.filter((l) => l.type === 'badge'), [layers])
+}
+
+// CTA layers only
+export const useCTALayers = () => {
+  const layers = useStudioStore((s) => s.layers)
+  return useMemo(() => layers.filter((l) => l.type === 'cta'), [layers])
+}
+
 // Undo/Redo availability
 export const useCanUndo = () => useStudioStore((s) => s._historyIndex > 0)
 export const useCanRedo = () => useStudioStore((s) => s._historyIndex < s._history.length - 1)
@@ -96,6 +120,9 @@ export const useIsSuggestingTypography = () => useStudioStore((s) => s.isSuggest
 export const useTypographySuggestion = () => useStudioStore((s) => s.typographySuggestion)
 export const useIsAutoLeveling = () => useStudioStore((s) => s.isAutoLeveling)
 export const useLevelAdjustments = () => useStudioStore((s) => s.levelAdjustments)
+export const useSelectedLightingPreset = () => useStudioStore((s) => s.selectedLightingPreset)
+export const useIsApplyingRelighting = () => useStudioStore((s) => s.isApplyingRelighting)
+export const useLastGenerationError = () => useStudioStore((s) => s.lastGenerationError)
 
 // Combined AI loading state
 export const useIsAIBusy = () => {
@@ -147,6 +174,8 @@ export const useProjectName = () => useStudioStore((s) => s.projectName)
 export const useCurrentProjectId = () => useStudioStore((s) => s.currentProjectId)
 export const useIsSaving = () => useStudioStore((s) => s.isSaving)
 export const useSaveError = () => useStudioStore((s) => s.saveError)
+export const useRecentDesigns = () => useStudioStore((s) => s.recentDesigns)
+export const useIsLoadingRecentDesigns = () => useStudioStore((s) => s.isLoadingRecentDesigns)
 
 // ============================================
 // TEXT OVERLAY SELECTORS
@@ -182,6 +211,15 @@ export const useLayerActions = () =>
       moveLayerDown: s.moveLayerDown,
       undo: s.undo,
       redo: s.redo,
+      // Promotional element layer actions
+      addBadgeLayer: s.addBadgeLayer,
+      addCTALayer: s.addCTALayer,
+      addPriceLayer: s.addPriceLayer,
+      addCountdownLayer: s.addCountdownLayer,
+      addStockIndicatorLayer: s.addStockIndicatorLayer,
+      addQRCodeLayer: s.addQRCodeLayer,
+      addPromotionalLayer: s.addPromotionalLayer,
+      addProductTagLayer: s.addProductTagLayer,
     }))
   )
 
@@ -204,10 +242,13 @@ export const useAIActions = () =>
       generate: s.generate,
       analyzeImage: s.analyzeImage,
       setBackgroundPrompt: s.setBackgroundPrompt,
+      setSubjectImage: s.setSubjectImage,
       generateBackground: s.generateBackground,
       removeBackground: s.removeBackground,
       suggestTypography: s.suggestTypography,
       autoLevel: s.autoLevel,
+      setSelectedLightingPreset: s.setSelectedLightingPreset,
+      applyRelighting: s.applyRelighting,
     }))
   )
 
@@ -239,6 +280,7 @@ export const useUIActions = () =>
       setProjectName: s.setProjectName,
       saveProject: s.saveProject,
       loadProject: s.loadProject,
+      loadRecentDesigns: s.loadRecentDesigns,
     }))
   )
 
@@ -253,5 +295,136 @@ export const useGlobalActions = () =>
   useStudioStore(
     useShallow((s) => ({
       resetAll: s.resetAll,
+    }))
+  )
+
+// ============================================
+// BRAND SELECTORS
+// ============================================
+
+export const useActiveBrandKit = () => useStudioStore((s) => s.activeBrandKit)
+export const useSavedBrandKits = () => useStudioStore((s) => s.savedBrandKits)
+export const useIsBrandKitLoading = () => useStudioStore((s) => s.isBrandKitLoading)
+export const useBrandKitError = () => useStudioStore((s) => s.brandKitError)
+
+// Brand colors
+export const useBrandColors = () => useStudioStore((s) => s.activeBrandKit.colors)
+export const useBrandPrimaryColor = () => useStudioStore((s) => s.activeBrandKit.colors.primary)
+export const useBrandSecondaryColor = () => useStudioStore((s) => s.activeBrandKit.colors.secondary)
+export const useBrandAccentColor = () => useStudioStore((s) => s.activeBrandKit.colors.accent)
+export const useBrandTextColor = () => useStudioStore((s) => s.activeBrandKit.colors.text)
+export const useBrandBackgroundColor = () =>
+  useStudioStore((s) => s.activeBrandKit.colors.background)
+
+// Brand fonts
+export const useBrandFonts = () => useStudioStore((s) => s.activeBrandKit.fonts)
+export const useBrandHeadingFont = () => useStudioStore((s) => s.activeBrandKit.fonts.heading)
+export const useBrandBodyFont = () => useStudioStore((s) => s.activeBrandKit.fonts.body)
+
+// Brand logo
+export const useBrandLogo = () => useStudioStore((s) => s.activeBrandKit.logo)
+
+// Contact overlay
+export const useContactOverlay = () => useStudioStore((s) => s.activeBrandKit.contactOverlay)
+export const useContactOverlayEnabled = () =>
+  useStudioStore((s) => s.activeBrandKit.contactOverlay?.enabled ?? false)
+
+// Brand color array for palette display
+export const useBrandColorPalette = () => {
+  const colors = useStudioStore((s) => s.activeBrandKit.colors)
+  return useMemo(
+    () => [colors.primary, colors.secondary, colors.accent, colors.text, colors.background],
+    [colors.primary, colors.secondary, colors.accent, colors.text, colors.background]
+  )
+}
+
+// Brand actions
+export const useBrandActions = () =>
+  useStudioStore(
+    useShallow((s) => ({
+      setActiveBrandKit: s.setActiveBrandKit,
+      updateBrandColors: s.updateBrandColors,
+      updateBrandFonts: s.updateBrandFonts,
+      setBrandLogo: s.setBrandLogo,
+      updateContactOverlay: s.updateContactOverlay,
+      applyBrandPreset: s.applyBrandPreset,
+      setSavedBrandKits: s.setSavedBrandKits,
+      addSavedBrandKit: s.addSavedBrandKit,
+      removeSavedBrandKit: s.removeSavedBrandKit,
+      updateSavedBrandKit: s.updateSavedBrandKit,
+      setBrandKitLoading: s.setBrandKitLoading,
+      setBrandKitError: s.setBrandKitError,
+      getBrandColor: s.getBrandColor,
+      getBrandFont: s.getBrandFont,
+      isOnBrandColor: s.isOnBrandColor,
+      resetBrandState: s.resetBrandState,
+    }))
+  )
+
+// ============================================
+// VARIANT SELECTORS (Phase 3)
+// ============================================
+
+export const useVariants = () => useStudioStore((s) => s.variants)
+export const useSelectedVariantId = () => useStudioStore((s) => s.selectedVariantId)
+export const useIsGeneratingVariants = () => useStudioStore((s) => s.isGeneratingVariants)
+export const useVariantError = () => useStudioStore((s) => s.variantError)
+export const useVariantTypes = () => useStudioStore((s) => s.variantTypes)
+export const useVariantCount = () => useStudioStore((s) => s.variantCount)
+
+// Selected variant object
+export const useSelectedVariant = () => {
+  const variants = useStudioStore((s) => s.variants)
+  const selectedId = useStudioStore((s) => s.selectedVariantId)
+  return useMemo(() => variants.find((v) => v.id === selectedId) || null, [variants, selectedId])
+}
+
+// Variant actions
+export const useVariantActions = () =>
+  useStudioStore(
+    useShallow((s) => ({
+      setVariantTypes: s.setVariantTypes,
+      setVariantCount: s.setVariantCount,
+      selectVariant: s.selectVariant,
+      clearVariantSelection: s.clearVariantSelection,
+      generateVariants: s.generateVariants,
+      generateHeadlineVariants: s.generateHeadlineVariants,
+      generateColorVariants: s.generateColorVariants,
+      applyVariant: s.applyVariant,
+      clearVariants: s.clearVariants,
+      getSelectedVariant: s.getSelectedVariant,
+      getVariantsForExport: s.getVariantsForExport,
+      resetVariantState: s.resetVariantState,
+    }))
+  )
+
+// ============================================
+// PRODUCT SELECTORS (Phase 5)
+// ============================================
+
+export const useProductCatalog = () => useStudioStore((s) => s.productCatalog)
+export const useIsLoadingCatalog = () => useStudioStore((s) => s.isLoadingCatalog)
+export const useCatalogError = () => useStudioStore((s) => s.catalogError)
+
+// Product tag layers on canvas
+export const useProductTagLayers = () => {
+  const layers = useStudioStore((s) => s.layers)
+  return useMemo(() => layers.filter((l) => l.type === 'product-tag'), [layers])
+}
+
+// Product actions
+export const useProductActions = () =>
+  useStudioStore(
+    useShallow((s) => ({
+      setProductCatalog: s.setProductCatalog,
+      addProduct: s.addProduct,
+      updateProduct: s.updateProduct,
+      removeProduct: s.removeProduct,
+      loadProductCatalog: s.loadProductCatalog,
+      saveProduct: s.saveProduct,
+      deleteProduct: s.deleteProduct,
+      setCatalogLoading: s.setCatalogLoading,
+      setCatalogError: s.setCatalogError,
+      resetProductState: s.resetProductState,
     }))
   )

@@ -15,6 +15,9 @@ import { createAISlice } from './slices/aiSlice'
 import { createVideoSlice } from './slices/videoSlice'
 import { createUISlice } from './slices/uiSlice'
 import { createTextOverlaySlice } from './slices/textOverlaySlice'
+import { createBrandSlice } from './slices/brandSlice'
+import { createVariantSlice } from './slices/variantSlice'
+import { createProductSlice } from './slices/productSlice'
 
 // Re-export layer utilities
 export {
@@ -28,6 +31,14 @@ export {
 
 // Re-export dimension calculator
 export { computeCanvasDimensions } from './slices/canvasSlice'
+
+// Re-export brand utilities
+export {
+  DEFAULT_BRAND_KIT,
+  BRAND_PRESETS,
+  FONT_OPTIONS,
+  OVERLAY_POSITIONS,
+} from './slices/brandSlice'
 
 /**
  * Main studio store
@@ -46,6 +57,9 @@ export const useStudioStore = create(
       ...createVideoSlice(...args),
       ...createUISlice(...args),
       ...createTextOverlaySlice(...args),
+      ...createBrandSlice(...args),
+      ...createVariantSlice(...args),
+      ...createProductSlice(...args),
 
       // Global reset - resets all state
       resetAll: () => {
@@ -56,6 +70,9 @@ export const useStudioStore = create(
         state.resetVideoState()
         state.resetUIState()
         state.resetTextOverlay()
+        state.resetBrandState()
+        state.resetVariantState()
+        state.resetProductState()
       },
     }
   })

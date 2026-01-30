@@ -7,6 +7,15 @@
 import { platformPresets } from '@/lib/platformTemplates'
 import { CANVAS_CONSTRAINTS } from './studioConstants'
 
+// Re-export safe zone utilities for convenience
+export {
+  PLATFORM_SAFE_ZONES,
+  getSafeZone,
+  getSafeZoneBounds,
+  isInSafeZone,
+  adjustToSafeZone,
+} from './crossPlatformAdapter'
+
 /**
  * Scale dimensions to fit within max constraints while maintaining aspect ratio
  */

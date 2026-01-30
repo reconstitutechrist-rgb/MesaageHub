@@ -3,9 +3,11 @@
  * Includes model selector, prompt input, and generate button with progress
  */
 
+import { useEffect, useRef } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { VideoModelSelector } from './VideoModelSelector'
 import { StudioIcons } from '../utils/StudioIcons'
+import { triggerHaptic } from '../utils/haptics'
 
 export function VideoGenerationPanel({
   // Model selection
@@ -23,6 +25,20 @@ export function VideoGenerationPanel({
   videoError,
 }) {
   const { theme } = usePhoneTheme()
+
+  // Haptic feedback on video generation completion
+  const wasGeneratingRef = useRef(false)
+
+  useEffect(() => {
+    if (wasGeneratingRef.current && !isGenerating) {
+      if (videoError) {
+        triggerHaptic('error')
+      } else if (generatedVideoUrl) {
+        triggerHaptic('success')
+      }
+    }
+    wasGeneratingRef.current = isGenerating
+  }, [isGenerating, videoError, generatedVideoUrl])
 
   const canGenerate = videoPrompt?.trim() && !isGenerating
 

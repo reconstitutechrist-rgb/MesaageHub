@@ -1,9 +1,21 @@
+import { useEffect, useRef } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
-import { gradientPresets } from '@/lib/platformTemplates'
+import { gradientPresets, platformPresets } from '@/lib/platformTemplates'
 import { StudioIcons } from '../utils/StudioIcons'
-import { SOLID_COLORS, TEXT_COLORS } from '../utils/studioConstants'
+import { triggerHaptic } from '../utils/haptics'
+import {
+  SOLID_COLORS,
+  TEXT_COLORS,
+  RETAIL_SCENARIOS,
+  LIGHTING_PRESETS,
+} from '../utils/studioConstants'
 import { VideoGenerationPanel } from './VideoGenerationPanel'
 import { VideoOverlayEditor } from './VideoOverlayEditor'
+import { BrandKitPanel } from './BrandKitPanel'
+import { PromotionalElementsPanel } from './PromotionalElementsPanel'
+import { ObjectRemovalPanel } from './ObjectRemovalPanel'
+import { AnalyticsPanel } from './AnalyticsPanel'
+import { ProductTaggingPanel } from './ProductTaggingPanel'
 import {
   // State selectors
   useImageFile,
@@ -17,6 +29,8 @@ import {
   useSubjectImage,
   useIsSuggestingTypography,
   useIsAutoLeveling,
+  useSelectedLightingPreset,
+  useIsApplyingRelighting,
   useVideoModel,
   useVideoPrompt,
   useIsGeneratingVideo,
@@ -29,6 +43,8 @@ import {
   useBackground,
   useTextOverlay,
   useMarketingTemplates,
+  useRecentDesigns,
+  useLastGenerationError,
   // Action selectors
   useCanvasActions,
   useAIActions,
@@ -64,6 +80,8 @@ export function StudioSidebar() {
   const subjectImage = useSubjectImage()
   const isSuggestingTypography = useIsSuggestingTypography()
   const isAutoLeveling = useIsAutoLeveling()
+  const selectedLightingPreset = useSelectedLightingPreset()
+  const isApplyingRelighting = useIsApplyingRelighting()
   const videoModel = useVideoModel()
   const videoPrompt = useVideoPrompt()
   const isGeneratingVideo = useIsGeneratingVideo()
@@ -76,6 +94,8 @@ export function StudioSidebar() {
   const background = useBackground()
   const textOverlay = useTextOverlay()
   const templates = useMarketingTemplates()
+  const recentDesigns = useRecentDesigns()
+  const lastGenerationError = useLastGenerationError()
 
   // Get actions from Zustand store
   const { setImageFile, setBackground, setActiveTemplate, clearTemplate } = useCanvasActions()
@@ -84,14 +104,52 @@ export function StudioSidebar() {
     generate,
     analyzeImage,
     setBackgroundPrompt,
+    setSubjectImage,
     generateBackground,
     removeBackground,
     suggestTypography,
     autoLevel,
+    setSelectedLightingPreset,
+    applyRelighting,
   } = useAIActions()
   const { setVideoModel, setVideoPrompt, generateVideo, addVideoOverlay } = useVideoActions()
-  const { openModal } = useUIActions()
+  const { openModal, loadProject, loadRecentDesigns } = useUIActions()
   const { setTextOverlay } = useTextOverlayActions()
+
+  // Haptic feedback on AI generation completion
+  const wasGeneratingRef = useRef(false)
+  const wasGeneratingBgRef = useRef(false)
+
+  useEffect(() => {
+    if (wasGeneratingRef.current && !isGenerating) {
+      triggerHaptic(lastGenerationError === 'generation' ? 'error' : 'success')
+    }
+    wasGeneratingRef.current = isGenerating
+  }, [isGenerating, lastGenerationError])
+
+  useEffect(() => {
+    if (wasGeneratingBgRef.current && !isGeneratingBackground) {
+      triggerHaptic(lastGenerationError === 'background' ? 'error' : 'success')
+    }
+    wasGeneratingBgRef.current = isGeneratingBackground
+  }, [isGeneratingBackground, lastGenerationError])
+
+  // Load recent designs on mount
+  useEffect(() => {
+    loadRecentDesigns()
+  }, [loadRecentDesigns])
+
+  // Helpers
+  const formatRelativeDate = (dateStr) => {
+    if (!dateStr) return ''
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 60) return `${mins}m ago`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs}h ago`
+    const days = Math.floor(hrs / 24)
+    return `${days}d ago`
+  }
 
   // Derived state
   const activeTemplateId = activeTemplate?.id
@@ -168,6 +226,122 @@ export function StudioSidebar() {
           </div>
         </label>
       </div>
+
+      {/* Recent Designs Section */}
+      {recentDesigns.length > 0 && (
+        <div>
+          <h3
+            style={{
+              color: theme.text,
+              fontSize: '14px',
+              fontWeight: '600',
+              marginBottom: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            {StudioIcons.clock(theme.accent, 18)} Recent Designs
+          </h3>
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              overflowX: 'auto',
+              paddingBottom: '4px',
+            }}
+          >
+            {recentDesigns.map((project) => (
+              <button
+                key={project.id}
+                onClick={() => loadProject(project)}
+                title={project.name}
+                style={{
+                  flexShrink: 0,
+                  width: '80px',
+                  padding: '8px',
+                  borderRadius: '10px',
+                  border: `1px solid ${theme.cardBorder}`,
+                  background: theme.cardBg,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    borderRadius: '6px',
+                    background: project.background?.value
+                      ? project.background.type === 'gradient'
+                        ? `linear-gradient(135deg, ${project.background.value[0]}, ${project.background.value[1]})`
+                        : project.background.value
+                      : theme.cardBorder,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {project.text_overlay?.text && (
+                    <span
+                      style={{
+                        color: project.text_overlay.color || '#fff',
+                        fontSize: '8px',
+                        fontWeight: '700',
+                        textAlign: 'center',
+                        overflow: 'hidden',
+                        padding: '2px',
+                      }}
+                    >
+                      {project.text_overlay.text.slice(0, 12)}
+                    </span>
+                  )}
+                </div>
+                <span
+                  style={{
+                    color: theme.text,
+                    fontSize: '10px',
+                    fontWeight: '500',
+                    width: '100%',
+                    textAlign: 'center',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {project.name}
+                </span>
+                <span
+                  style={{
+                    color: theme.textMuted,
+                    fontSize: '8px',
+                    width: '100%',
+                    textAlign: 'center',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {platformPresets[project.platform_preset]?.label || ''}
+                  {project.updated_at ? ` · ${formatRelativeDate(project.updated_at)}` : ''}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Brand Kit Section */}
+      <BrandKitPanel />
+
+      {/* Promotional Elements Section */}
+      <PromotionalElementsPanel />
+
+      {/* Product Tagging Section */}
+      <ProductTaggingPanel />
 
       {/* AI Magic Section */}
       <div>
@@ -298,6 +472,41 @@ export function StudioSidebar() {
           {StudioIcons.layers(theme.accent, 18)} AI Background
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Retail Scenarios Quick Select */}
+          <div>
+            <span
+              style={{
+                color: theme.textMuted,
+                fontSize: '11px',
+                marginBottom: '6px',
+                display: 'block',
+              }}
+            >
+              Retail Scenes
+            </span>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {RETAIL_SCENARIOS.slice(0, 6).map((scenario) => (
+                <button
+                  key={scenario.id}
+                  onClick={() => setBackgroundPrompt(scenario.prompt)}
+                  title={scenario.prompt}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: `1px solid ${theme.cardBorder}`,
+                    background:
+                      backgroundPrompt === scenario.prompt ? `${theme.accent}15` : theme.cardBg,
+                    color: backgroundPrompt === scenario.prompt ? theme.accent : theme.textMuted,
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {scenario.name}
+                </button>
+              ))}
+            </div>
+          </div>
           <input
             type="text"
             placeholder="Describe background... (marble desk, beach sunset)"
@@ -478,7 +687,105 @@ export function StudioSidebar() {
                 Background removed
               </div>
             )}
+
+            {/* Lighting Presets (Phase 3) - show when subject exists */}
+            {(subjectImage || imageFile) && (
+              <div style={{ marginTop: '12px' }}>
+                <span
+                  style={{
+                    color: theme.textMuted,
+                    fontSize: '11px',
+                    marginBottom: '8px',
+                    display: 'block',
+                  }}
+                >
+                  Re-Lighting Presets
+                </span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {LIGHTING_PRESETS.map((preset) => {
+                    const isSelected = selectedLightingPreset?.id === preset.id
+                    return (
+                      <button
+                        key={preset.id}
+                        onClick={() => {
+                          setSelectedLightingPreset(preset)
+                          applyRelighting(preset.settings)
+                        }}
+                        disabled={isApplyingRelighting}
+                        title={preset.description}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: isSelected
+                            ? `2px solid ${theme.accent}`
+                            : `1px solid ${theme.cardBorder}`,
+                          background: isSelected ? `${theme.accent}15` : theme.cardBg,
+                          color: isSelected ? theme.accent : theme.textMuted,
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          cursor: isApplyingRelighting ? 'wait' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          opacity: isApplyingRelighting ? 0.6 : 1,
+                        }}
+                      >
+                        {preset.icon === 'sun' &&
+                          StudioIcons.sun(isSelected ? theme.accent : theme.textMuted, 14)}
+                        {preset.icon === 'aperture' &&
+                          StudioIcons.aperture(isSelected ? theme.accent : theme.textMuted, 14)}
+                        {preset.icon === 'sunset' &&
+                          StudioIcons.sunset(isSelected ? theme.accent : theme.textMuted, 14)}
+                        {preset.icon === 'zap' &&
+                          StudioIcons.zap(isSelected ? theme.accent : theme.textMuted, 14)}
+                        {preset.icon === 'contrast' &&
+                          StudioIcons.contrast(isSelected ? theme.accent : theme.textMuted, 14)}
+                        {preset.icon === 'moon' &&
+                          StudioIcons.moon(isSelected ? theme.accent : theme.textMuted, 14)}
+                        {preset.name}
+                      </button>
+                    )
+                  })}
+                </div>
+                {isApplyingRelighting && (
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      background: theme.cardBg,
+                      color: theme.textMuted,
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '14px',
+                        height: '14px',
+                        border: `2px solid ${theme.textMuted}`,
+                        borderTopColor: 'transparent',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                      }}
+                    />
+                    Applying lighting...
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Object Removal Panel (Phase 3) */}
+          {subjectImage && (
+            <ObjectRemovalPanel
+              imageBase64={subjectImage}
+              onImageUpdate={(newBase64) => setSubjectImage(newBase64)}
+            />
+          )}
         </div>
       )}
 
@@ -907,6 +1214,9 @@ export function StudioSidebar() {
           )}
         </div>
       </div>
+
+      {/* Performance Analytics */}
+      <AnalyticsPanel />
 
       {/* Keyframe for spinner */}
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>

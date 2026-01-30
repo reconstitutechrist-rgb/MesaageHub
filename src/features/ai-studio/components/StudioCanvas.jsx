@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
+import { triggerHaptic } from '../utils/haptics'
 import {
   drawBackground,
   drawText,
@@ -12,6 +13,7 @@ import {
   createExportCanvas,
   canvasToDataUrl,
   canvasToBlob,
+  drawPromotionalLayer,
 } from '@/lib/canvasUtils'
 import { FALLBACK_COLORS } from '../utils/studioConstants'
 import { LayerType } from '../store'
@@ -156,39 +158,69 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
       })
     }
 
-    // 6. Draw additional layers
+    // 6. Draw additional layers (text and promotional elements)
+    const promotionalTypes = [
+      'badge',
+      'cta',
+      'price',
+      'countdown',
+      'stock',
+      'qrcode',
+      'product-tag',
+    ]
+
     layers.forEach((layer) => {
-      if (layer.type !== LayerType.TEXT || !layer.visible || !layer.data?.text) return
+      if (!layer.visible) return
 
-      const x = (layer.data.x / 100) * w
-      const y = (layer.data.y / 100) * h
+      // Draw text layers
+      if (layer.type === LayerType.TEXT && layer.data?.text) {
+        const x = (layer.data.x / 100) * w
+        const y = (layer.data.y / 100) * h
 
-      drawText(ctx, {
-        text: layer.data.text,
-        x,
-        y,
-        color: layer.data.color,
-        fontSize: layer.data.fontSize,
-        fontWeight: layer.data.fontWeight || 'bold',
-        textAlign: 'center',
-        shadow: {
-          color: 'rgba(0,0,0,0.5)',
-          blur: 8,
-          offsetX: 2,
-          offsetY: 2,
-        },
-      })
-
-      // Draw selection indicator
-      if (layer.id === selectedLayerId) {
-        const bounds = getTextBounds(ctx, {
+        drawText(ctx, {
           text: layer.data.text,
           x,
           y,
+          color: layer.data.color,
           fontSize: layer.data.fontSize,
           fontWeight: layer.data.fontWeight || 'bold',
+          textAlign: 'center',
+          shadow: {
+            color: 'rgba(0,0,0,0.5)',
+            blur: 8,
+            offsetX: 2,
+            offsetY: 2,
+          },
         })
-        drawSelectionIndicator(ctx, bounds, theme.accent)
+
+        // Draw selection indicator for text
+        if (layer.id === selectedLayerId) {
+          const bounds = getTextBounds(ctx, {
+            text: layer.data.text,
+            x,
+            y,
+            fontSize: layer.data.fontSize,
+            fontWeight: layer.data.fontWeight || 'bold',
+          })
+          drawSelectionIndicator(ctx, bounds, theme.accent)
+        }
+      }
+
+      // Draw promotional elements
+      if (promotionalTypes.includes(layer.type)) {
+        drawPromotionalLayer(ctx, layer, w, h)
+
+        // Draw selection indicator for promotional elements
+        if (layer.id === selectedLayerId) {
+          const x = (layer.data.x / 100) * w
+          const y = (layer.data.y / 100) * h
+          const size = layer.data.width || layer.data.size || 100
+          drawSelectionIndicator(
+            ctx,
+            { x: x - size / 2, y: y - size / 2, width: size, height: size },
+            theme.accent
+          )
+        }
       }
     })
   }, [
@@ -301,6 +333,7 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
           x: coords.x - primaryTextOverlay.x,
           y: coords.y - primaryTextOverlay.y,
         }
+        triggerHaptic('light')
         return
       }
 
@@ -317,6 +350,7 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
           y: coords.y - layerY,
         }
         selectLayer(layer.id)
+        triggerHaptic('light')
         return
       }
 
@@ -358,12 +392,17 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   )
 
   const handlePointerUp = useCallback(() => {
-    if (isDraggingRef.current && dragTargetRef.current && dragTargetRef.current !== 'primary') {
-      // Push final position to history after drag ends
-      const layer = layers.find((l) => l.id === dragTargetRef.current)
-      if (layer) {
-        // Force a history push by updating with skipHistory=false
-        updateLayer(dragTargetRef.current, { data: layer.data }, false)
+    if (isDraggingRef.current) {
+      // Haptic feedback when drag ends
+      triggerHaptic('medium')
+
+      if (dragTargetRef.current && dragTargetRef.current !== 'primary') {
+        // Push final position to history after drag ends
+        const layer = layers.find((l) => l.id === dragTargetRef.current)
+        if (layer) {
+          // Force a history push by updating with skipHistory=false
+          updateLayer(dragTargetRef.current, { data: layer.data }, false)
+        }
       }
     }
 
@@ -425,27 +464,55 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
             }
 
             // Draw layers (scaled)
+            const promotionalTypes = [
+              'badge',
+              'cta',
+              'price',
+              'countdown',
+              'stock',
+              'qrcode',
+              'product-tag',
+            ]
+
             layers.forEach((layer) => {
-              if (layer.type !== LayerType.TEXT || !layer.visible || !layer.data?.text) return
+              if (!layer.visible) return
 
-              const x = (layer.data.x / 100) * w
-              const y = (layer.data.y / 100) * h
+              // Draw text layers
+              if (layer.type === LayerType.TEXT && layer.data?.text) {
+                const x = (layer.data.x / 100) * w
+                const y = (layer.data.y / 100) * h
 
-              drawText(ctx, {
-                text: layer.data.text,
-                x,
-                y,
-                color: layer.data.color,
-                fontSize: layer.data.fontSize * scaleX,
-                fontWeight: layer.data.fontWeight || 'bold',
-                textAlign: 'center',
-                shadow: {
-                  color: 'rgba(0,0,0,0.5)',
-                  blur: 8 * scaleX,
-                  offsetX: 2 * scaleX,
-                  offsetY: 2 * scaleY,
-                },
-              })
+                drawText(ctx, {
+                  text: layer.data.text,
+                  x,
+                  y,
+                  color: layer.data.color,
+                  fontSize: layer.data.fontSize * scaleX,
+                  fontWeight: layer.data.fontWeight || 'bold',
+                  textAlign: 'center',
+                  shadow: {
+                    color: 'rgba(0,0,0,0.5)',
+                    blur: 8 * scaleX,
+                    offsetX: 2 * scaleX,
+                    offsetY: 2 * scaleY,
+                  },
+                })
+              }
+
+              // Draw promotional elements (scaled)
+              if (promotionalTypes.includes(layer.type)) {
+                // Scale layer data for export
+                const scaledLayer = {
+                  ...layer,
+                  data: {
+                    ...layer.data,
+                    fontSize: (layer.data.fontSize || 24) * scaleX,
+                    width: (layer.data.width || 100) * scaleX,
+                    size: (layer.data.size || 120) * scaleX,
+                  },
+                }
+                drawPromotionalLayer(ctx, scaledLayer, w, h)
+              }
             })
           }
         )
@@ -492,27 +559,54 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
               })
             }
 
+            const promotionalTypes = [
+              'badge',
+              'cta',
+              'price',
+              'countdown',
+              'stock',
+              'qrcode',
+              'product-tag',
+            ]
+
             layers.forEach((layer) => {
-              if (layer.type !== LayerType.TEXT || !layer.visible || !layer.data?.text) return
+              if (!layer.visible) return
 
-              const x = (layer.data.x / 100) * w
-              const y = (layer.data.y / 100) * h
+              // Draw text layers
+              if (layer.type === LayerType.TEXT && layer.data?.text) {
+                const x = (layer.data.x / 100) * w
+                const y = (layer.data.y / 100) * h
 
-              drawText(ctx, {
-                text: layer.data.text,
-                x,
-                y,
-                color: layer.data.color,
-                fontSize: layer.data.fontSize * scaleX,
-                fontWeight: layer.data.fontWeight || 'bold',
-                textAlign: 'center',
-                shadow: {
-                  color: 'rgba(0,0,0,0.5)',
-                  blur: 8 * scaleX,
-                  offsetX: 2 * scaleX,
-                  offsetY: 2 * scaleY,
-                },
-              })
+                drawText(ctx, {
+                  text: layer.data.text,
+                  x,
+                  y,
+                  color: layer.data.color,
+                  fontSize: layer.data.fontSize * scaleX,
+                  fontWeight: layer.data.fontWeight || 'bold',
+                  textAlign: 'center',
+                  shadow: {
+                    color: 'rgba(0,0,0,0.5)',
+                    blur: 8 * scaleX,
+                    offsetX: 2 * scaleX,
+                    offsetY: 2 * scaleY,
+                  },
+                })
+              }
+
+              // Draw promotional elements (scaled)
+              if (promotionalTypes.includes(layer.type)) {
+                const scaledLayer = {
+                  ...layer,
+                  data: {
+                    ...layer.data,
+                    fontSize: (layer.data.fontSize || 24) * scaleX,
+                    width: (layer.data.width || 100) * scaleX,
+                    size: (layer.data.size || 120) * scaleX,
+                  },
+                }
+                drawPromotionalLayer(ctx, scaledLayer, w, h)
+              }
             })
           }
         )

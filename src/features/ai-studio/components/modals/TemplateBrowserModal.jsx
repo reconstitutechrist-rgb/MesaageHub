@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
+import { analyticsService } from '@/services/AnalyticsService'
 
 /**
  * TemplateBrowserModal - Full template library browser
@@ -17,6 +18,33 @@ export function TemplateBrowserModal({
 }) {
   const { theme } = usePhoneTheme()
   const [category, setCategory] = useState('all')
+  const [performanceData, setPerformanceData] = useState(null)
+
+  // Load performance data when modal opens
+  useEffect(() => {
+    if (!isOpen || performanceData) return
+
+    const fetchPerformance = async () => {
+      try {
+        const result = await analyticsService.getAIModelPerformance()
+        if (result.success && result.data) {
+          // Build a map of category → best engagement rate
+          const categoryMetrics = {}
+          for (const model of result.data) {
+            const key = model.asset_type || 'image'
+            if (!categoryMetrics[key] || model.avg_engagement_rate > categoryMetrics[key]) {
+              categoryMetrics[key] = model.avg_engagement_rate
+            }
+          }
+          setPerformanceData(categoryMetrics)
+        }
+      } catch {
+        // Non-critical - badges are optional
+      }
+    }
+
+    fetchPerformance()
+  }, [isOpen, performanceData])
 
   const filteredTemplates = useMemo(() => {
     if (category === 'all') return templates
@@ -167,16 +195,38 @@ export function TemplateBrowserModal({
 
               {/* Template Info */}
               <div>
-                <span
+                <div
                   style={{
-                    color: theme.text,
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    display: 'block',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  {template.name}
-                </span>
+                  <span
+                    style={{
+                      color: theme.text,
+                      fontSize: '13px',
+                      fontWeight: '600',
+                    }}
+                  >
+                    {template.name}
+                  </span>
+                  {performanceData?.image && (
+                    <span
+                      style={{
+                        padding: '2px 6px',
+                        borderRadius: '8px',
+                        background: '#22c55e15',
+                        color: '#22c55e',
+                        fontSize: '9px',
+                        fontWeight: '600',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {(performanceData.image * 100).toFixed(1)}% CTR
+                    </span>
+                  )}
+                </div>
                 <span
                   style={{
                     color: theme.textMuted,

@@ -1,19 +1,25 @@
 import { usePhoneTheme } from '@/context/PhoneThemeContext'
 import { StudioIcons } from '../../utils/StudioIcons'
+import { useContactOverlay, useContactOverlayEnabled, useBrandActions } from '../../store/selectors'
 
 /**
  * ExportOptionsModal - Shows after successful export to media library
  *
  * Offers options to download, send as campaign, or continue editing.
+ * Includes contact overlay toggle for branding.
  */
 export function ExportOptionsModal({
   isOpen,
   onClose,
   onDownload,
   onSendAsCampaign,
+  onMultiPlatformExport,
   isMobile = false,
 }) {
   const { theme } = usePhoneTheme()
+  const contactOverlay = useContactOverlay()
+  const contactOverlayEnabled = useContactOverlayEnabled()
+  const { updateContactOverlay } = useBrandActions()
 
   if (!isOpen) return null
 
@@ -77,6 +83,57 @@ export function ExportOptionsModal({
           </p>
         </div>
 
+        {/* Contact Overlay Option */}
+        <div
+          style={{
+            padding: '12px',
+            borderRadius: '12px',
+            background: theme.cardBg,
+            marginBottom: '16px',
+          }}
+        >
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {StudioIcons.megaphone(theme.accent, 18)}
+              <div>
+                <span
+                  style={{
+                    color: theme.text,
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    display: 'block',
+                  }}
+                >
+                  Add contact info
+                </span>
+                {contactOverlay?.phoneNumber && (
+                  <span style={{ color: theme.textMuted, fontSize: '11px' }}>
+                    {contactOverlay.text} {contactOverlay.phoneNumber}
+                  </span>
+                )}
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={contactOverlayEnabled}
+              onChange={(e) => updateContactOverlay({ enabled: e.target.checked })}
+              style={{
+                width: '18px',
+                height: '18px',
+                accentColor: theme.accent,
+                cursor: 'pointer',
+              }}
+            />
+          </label>
+        </div>
+
         {/* Action Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Download Button */}
@@ -101,28 +158,54 @@ export function ExportOptionsModal({
             {StudioIcons.download(theme.accent, 20)} Download Image
           </button>
 
+          {/* Multi-Platform Export Button */}
+          {onMultiPlatformExport && (
+            <button
+              onClick={onMultiPlatformExport}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                padding: '16px',
+                borderRadius: '12px',
+                border: `1px solid ${theme.cardBorder}`,
+                background: theme.cardBg,
+                color: theme.text,
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                minHeight: '48px',
+              }}
+            >
+              {StudioIcons.multiPlatform(theme.accent, 20)} Export to Multiple Platforms
+            </button>
+          )}
+
           {/* Send as Campaign Button */}
-          <button
-            onClick={onSendAsCampaign}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '10px',
-              padding: '16px',
-              borderRadius: '12px',
-              border: 'none',
-              background: `linear-gradient(135deg, ${theme.gradientStart}, ${theme.gradientEnd})`,
-              color: '#fff',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              boxShadow: `0 4px 20px ${theme.accentGlow}`,
-              minHeight: '48px',
-            }}
-          >
-            {StudioIcons.megaphone('#fff', 20)} Send as Campaign
-          </button>
+          {onSendAsCampaign && (
+            <button
+              onClick={onSendAsCampaign}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                padding: '16px',
+                borderRadius: '12px',
+                border: 'none',
+                background: `linear-gradient(135deg, ${theme.gradientStart}, ${theme.gradientEnd})`,
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                boxShadow: `0 4px 20px ${theme.accentGlow}`,
+                minHeight: '48px',
+              }}
+            >
+              {StudioIcons.megaphone('#fff', 20)} Send as Campaign
+            </button>
+          )}
 
           {/* Continue Editing Button */}
           <button

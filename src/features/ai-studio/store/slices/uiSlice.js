@@ -19,6 +19,8 @@ export const createUISlice = (set, get) => ({
     templates: false,
     platforms: false,
     videoExport: false,
+    multiPlatformExport: false,
+    variants: false,
     save: false,
   },
 
@@ -27,6 +29,10 @@ export const createUISlice = (set, get) => ({
   projectName: '',
   isSaving: false,
   saveError: null,
+
+  // Recent designs
+  recentDesigns: [],
+  isLoadingRecentDesigns: false,
 
   // Open a modal
   openModal: (name) => {
@@ -50,6 +56,8 @@ export const createUISlice = (set, get) => ({
         templates: false,
         platforms: false,
         videoExport: false,
+        multiPlatformExport: false,
+        variants: false,
         save: false,
       },
     })
@@ -57,6 +65,24 @@ export const createUISlice = (set, get) => ({
 
   // Set project name
   setProjectName: (name) => set({ projectName: name }),
+
+  // Load recent designs
+  loadRecentDesigns: async (userId = 'demo-user') => {
+    const { isLoadingRecentDesigns } = get()
+    if (isLoadingRecentDesigns) return
+
+    set({ isLoadingRecentDesigns: true })
+    try {
+      const result = await designProjectService.listProjects(userId, { limit: 10 })
+      if (result.success) {
+        set({ recentDesigns: result.data || [] })
+      }
+    } catch (error) {
+      console.error('Failed to load recent designs:', error)
+    } finally {
+      set({ isLoadingRecentDesigns: false })
+    }
+  },
 
   // Save project
   saveProject: async (name, userId = 'demo-user') => {
@@ -91,6 +117,8 @@ export const createUISlice = (set, get) => ({
           currentProjectId: result.data.id,
           projectName: result.data.name,
         })
+        // Refresh recent designs tray
+        get().loadRecentDesigns(userId)
         return result.data
       } else {
         set({ saveError: result.error || 'Failed to save project' })
@@ -149,12 +177,16 @@ export const createUISlice = (set, get) => ({
         templates: false,
         platforms: false,
         videoExport: false,
+        multiPlatformExport: false,
+        variants: false,
         save: false,
       },
       currentProjectId: null,
       projectName: '',
       isSaving: false,
       saveError: null,
+      recentDesigns: [],
+      isLoadingRecentDesigns: false,
     })
   },
 })
