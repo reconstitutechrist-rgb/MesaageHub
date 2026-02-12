@@ -1804,7 +1804,9 @@ export default function PhoneSettingsPage() {
       }))
 
       // Dispatch event for PhoneLayout to react
-      window.dispatchEvent(new CustomEvent('layout-theme-changed'))
+      window.dispatchEvent(new CustomEvent('layout-theme-changed', {
+        detail: { theme: themeKey },
+      }))
 
       triggerHaptic('medium')
       toast.success('Theme updated')
