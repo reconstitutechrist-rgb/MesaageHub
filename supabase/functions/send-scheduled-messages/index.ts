@@ -65,11 +65,24 @@ serve(async (req) => {
         .eq('id', message.id)
 
       try {
+        // Look up the user's dedicated Twilio number
+        let fromNumber = twilioPhoneNumber
+        if (message.user_id) {
+          const { data: sub } = await supabase
+            .from('user_subscriptions')
+            .select('twilio_phone_number')
+            .eq('user_id', message.user_id)
+            .single()
+          if (sub?.twilio_phone_number) {
+            fromNumber = sub.twilio_phone_number
+          }
+        }
+
         // Send via Twilio
         const twilioResponse = await sendTwilioMessage(
           twilioAccountSid,
           twilioAuthToken,
-          twilioPhoneNumber,
+          fromNumber,
           message.phone,
           message.message_body
         )

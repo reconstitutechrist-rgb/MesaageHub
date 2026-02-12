@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { supabase } from '@/lib/supabase'
 
 const registerSchema = z
   .object({
@@ -24,6 +25,24 @@ const registerSchema = z
     message: "Passwords don't match",
     path: ['confirmPassword'],
   })
+
+/**
+ * Provision a dedicated Twilio phone number for the new user.
+ * Fire-and-forget: registration succeeds regardless of this outcome.
+ */
+async function assignPhoneNumber() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) return
+
+    await supabase.functions.invoke('assign-phone-number', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+  } catch (err) {
+    // Non-blocking — number can be retried from profile/settings later
+    console.error('Phone number assignment failed (will retry):', err)
+  }
+}
 
 export function RegisterForm({ onSuccess, onError }) {
   const [isLoading, setIsLoading] = useState(false)
@@ -48,6 +67,8 @@ export function RegisterForm({ onSuccess, onError }) {
         password: data.password,
       })
       if (result.success) {
+        // Assign a dedicated Twilio number in the background
+        assignPhoneNumber()
         onSuccess?.()
       } else {
         onError?.(result.error || 'Failed to register')
@@ -58,6 +79,7 @@ export function RegisterForm({ onSuccess, onError }) {
       setIsLoading(false)
     }
   }
+
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
