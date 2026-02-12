@@ -3,7 +3,7 @@
  * Phase 4: Performance & Production Scaling
  */
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 // Tier configuration with limits and pricing
 const TIER_CONFIG = {
@@ -56,7 +56,7 @@ class SubscriptionService {
    * Get current user's subscription
    */
   async getSubscription(userId) {
-    if (!isSupabaseConfigured || !userId) {
+    if (!userId) {
       return this._getDefaultSubscription()
     }
 
@@ -104,8 +104,8 @@ class SubscriptionService {
    * Create a new subscription for a user (called on registration)
    */
   async createSubscription(userId, tier = 'free') {
-    if (!isSupabaseConfigured || !userId) {
-      return { success: true, data: this._getDefaultSubscription().data }
+    if (!userId) {
+      return { success: false, error: 'User ID required' }
     }
 
     const config = TIER_CONFIG[tier] || TIER_CONFIG.free

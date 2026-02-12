@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 /**
  * DesignProjectService - Handles design project storage and management
@@ -6,46 +6,6 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase'
  */
 
 const TABLE_NAME = 'design_projects'
-
-// Mock data for demo mode when Supabase is not configured
-const mockProjects = [
-  {
-    id: 'mock-project-1',
-    user_id: 'demo-user',
-    name: 'Summer Sale Banner',
-    platform_preset: 'instagram-post',
-    layers: [],
-    background: { type: 'gradient', value: ['#ff6b6b', '#feca57'] },
-    text_overlay: {
-      text: 'SUMMER SALE',
-      x: 540,
-      y: 540,
-      color: '#ffffff',
-      fontSize: 72,
-    },
-    thumbnail_url: null,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: 'mock-project-2',
-    user_id: 'demo-user',
-    name: 'Product Launch',
-    platform_preset: 'instagram-story',
-    layers: [],
-    background: { type: 'solid', value: '#1a1a2e' },
-    text_overlay: {
-      text: 'NEW ARRIVAL',
-      x: 540,
-      y: 960,
-      color: '#00d4ff',
-      fontSize: 56,
-    },
-    thumbnail_url: null,
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-    updated_at: new Date(Date.now() - 172800000).toISOString(),
-  },
-]
 
 class DesignProjectService {
   /**
@@ -57,45 +17,6 @@ class DesignProjectService {
   async saveProject(projectData, userId = 'demo-user') {
     const { id, name, platform_preset, layers, background, text_overlay, thumbnail_url } =
       projectData
-
-    if (!isSupabaseConfigured) {
-      // Demo mode - create or update mock entry
-      const now = new Date().toISOString()
-
-      if (id) {
-        // Update existing
-        const index = mockProjects.findIndex((p) => p.id === id)
-        if (index !== -1) {
-          mockProjects[index] = {
-            ...mockProjects[index],
-            name: name || mockProjects[index].name,
-            platform_preset: platform_preset || mockProjects[index].platform_preset,
-            layers: layers || mockProjects[index].layers,
-            background: background || mockProjects[index].background,
-            text_overlay: text_overlay || mockProjects[index].text_overlay,
-            thumbnail_url: thumbnail_url || mockProjects[index].thumbnail_url,
-            updated_at: now,
-          }
-          return { success: true, data: mockProjects[index] }
-        }
-      }
-
-      // Create new
-      const newProject = {
-        id: `mock-project-${Date.now()}`,
-        user_id: userId,
-        name: name || 'Untitled Design',
-        platform_preset: platform_preset || 'instagram-post',
-        layers: layers || [],
-        background: background || { type: 'solid', value: null },
-        text_overlay: text_overlay || null,
-        thumbnail_url: thumbnail_url || null,
-        created_at: now,
-        updated_at: now,
-      }
-      mockProjects.unshift(newProject)
-      return { success: true, data: newProject }
-    }
 
     try {
       const now = new Date().toISOString()
@@ -143,15 +64,6 @@ class DesignProjectService {
    * @returns {Promise<object>} - Result with success status and data
    */
   async loadProject(projectId, userId = 'demo-user') {
-    if (!isSupabaseConfigured) {
-      // Demo mode - find mock project
-      const project = mockProjects.find((p) => p.id === projectId && p.user_id === userId)
-      if (project) {
-        return { success: true, data: project }
-      }
-      return { success: false, error: 'Project not found' }
-    }
-
     try {
       const { data, error } = await supabase
         .from(TABLE_NAME)
@@ -175,16 +87,6 @@ class DesignProjectService {
    * @returns {Promise<object>} - Result with success status and data array
    */
   async listProjects(userId = 'demo-user', { limit = 20, offset = 0 } = {}) {
-    if (!isSupabaseConfigured) {
-      // Demo mode - return mock projects
-      const userProjects = mockProjects.filter((p) => p.user_id === userId)
-      return {
-        success: true,
-        data: userProjects.slice(offset, offset + limit),
-        total: userProjects.length,
-      }
-    }
-
     try {
       const { data, error, count } = await supabase
         .from(TABLE_NAME)
@@ -212,16 +114,6 @@ class DesignProjectService {
    * @returns {Promise<object>} - Result with success status
    */
   async deleteProject(projectId, userId = 'demo-user') {
-    if (!isSupabaseConfigured) {
-      // Demo mode - remove mock project
-      const index = mockProjects.findIndex((p) => p.id === projectId && p.user_id === userId)
-      if (index !== -1) {
-        mockProjects.splice(index, 1)
-        return { success: true }
-      }
-      return { success: false, error: 'Project not found' }
-    }
-
     try {
       const { error } = await supabase
         .from(TABLE_NAME)

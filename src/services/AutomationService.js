@@ -1,4 +1,5 @@
 import { dbService } from './DatabaseService'
+import { twilioService } from './TwilioService'
 
 class AutomationService {
   // --- Automation Rules ---
@@ -114,6 +115,105 @@ class AutomationService {
       .replace(/{phone}/g, contact.phone || '')
       .replace(/{email}/g, contact.email || '')
       .replace(/{year}/g, new Date().getFullYear().toString())
+  }
+
+  // --- Startup Automation ---
+
+  async processAllBirthdayRules() {
+    try {
+      const rules = await this.getAutomationRules()
+      const activeRules = rules.filter((r) => r.is_active)
+
+      let totalQueued = 0
+      for (const rule of activeRules) {
+        const result = await this.queueBirthdayMessages(rule.id)
+        if (result.success) {
+          totalQueued += result.queued
+        }
+      }
+
+      if (totalQueued > 0) {
+        console.log(`Birthday automation: queued ${totalQueued} messages`)
+      }
+
+      return { success: true, queued: totalQueued }
+    } catch (error) {
+      console.error('Error processing birthday rules:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  async processScheduledMessageQueue() {
+    try {
+      const pendingMessages = await this.getScheduledMessages({ status: 'pending' })
+      const now = new Date()
+
+      const readyMessages = pendingMessages.filter(
+        (m) => new Date(m.scheduled_for) <= now
+      )
+
+      if (readyMessages.length === 0) return { sent: 0, failed: 0 }
+
+      let sent = 0
+      let failed = 0
+
+      for (const message of readyMessages) {
+        // Mark as processing
+        await dbService.saveScheduledMessage({
+          ...message,
+          status: 'processing',
+          attempts: (message.attempts || 0) + 1,
+        })
+
+        try {
+          await twilioService.sendMessage(message.phone, message.message_body)
+
+          // Mark as sent
+          await dbService.saveScheduledMessage({
+            ...message,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            attempts: (message.attempts || 0) + 1,
+          })
+
+          sent++
+          console.log(`Sent scheduled message to ${message.phone}`)
+        } catch (sendError) {
+          const newAttempts = (message.attempts || 0) + 1
+          const newStatus = newAttempts >= 3 ? 'failed' : 'pending'
+
+          await dbService.saveScheduledMessage({
+            ...message,
+            status: newStatus,
+            error_message: sendError.message,
+            attempts: newAttempts,
+          })
+
+          if (newStatus === 'failed') failed++
+          console.error(`Failed to send message to ${message.phone}:`, sendError.message)
+        }
+      }
+
+      return { sent, failed }
+    } catch (error) {
+      console.error('Error processing scheduled message queue:', error)
+      return { sent: 0, failed: 0 }
+    }
+  }
+
+  runStartupAutomation() {
+    // Queue birthday messages and process queue on startup
+    this.processAllBirthdayRules().then(() => {
+      this.processScheduledMessageQueue()
+    })
+
+    // Check queue every 5 minutes
+    const intervalId = setInterval(() => {
+      this.processScheduledMessageQueue()
+    }, 5 * 60 * 1000)
+
+    // Return cleanup function
+    return () => clearInterval(intervalId)
   }
 
   // --- Stats ---

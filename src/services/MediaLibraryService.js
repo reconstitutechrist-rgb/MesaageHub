@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 /**
  * MediaLibraryService - Handles media asset storage and management
@@ -7,43 +7,6 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 const STORAGE_BUCKET = 'media-assets'
 const TABLE_NAME = 'media_assets'
-
-// Mock data for demo mode when Supabase is not configured
-let mockMediaLibrary = [
-  {
-    id: 'mock-1',
-    user_id: 'demo-user',
-    url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400',
-    thumbnail_url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=150',
-    type: 'image',
-    source: 'ai-studio',
-    file_name: 'promo-banner.png',
-    file_size: 245000,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: 'mock-2',
-    user_id: 'demo-user',
-    url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',
-    thumbnail_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=150',
-    type: 'image',
-    source: 'upload',
-    file_name: 'product-photo.jpg',
-    file_size: 189000,
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: 'mock-3',
-    user_id: 'demo-user',
-    url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
-    thumbnail_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=150',
-    type: 'image',
-    source: 'ai-studio',
-    file_name: 'shoe-ad.png',
-    file_size: 312000,
-    created_at: new Date(Date.now() - 259200000).toISOString(),
-  },
-]
 
 class MediaLibraryService {
   /**
@@ -54,23 +17,6 @@ class MediaLibraryService {
    * @returns {Promise<object>} - The saved media asset record
    */
   async uploadMedia(file, source = 'upload', userId = 'demo-user') {
-    if (!isSupabaseConfigured) {
-      // Demo mode - create mock entry
-      const mockAsset = {
-        id: `mock-${Date.now()}`,
-        user_id: userId,
-        url: URL.createObjectURL(file),
-        thumbnail_url: URL.createObjectURL(file),
-        type: file.type.startsWith('video/') ? 'video' : 'image',
-        source,
-        file_name: file.name || `${source}-${Date.now()}.${file.type.split('/')[1] || 'png'}`,
-        file_size: file.size,
-        created_at: new Date().toISOString(),
-      }
-      mockMediaLibrary.unshift(mockAsset)
-      return { success: true, data: mockAsset }
-    }
-
     try {
       // Generate unique file path
       const fileExt =
@@ -131,12 +77,7 @@ class MediaLibraryService {
    * @param {string} userId - The user ID
    * @returns {Promise<object>} - The saved media asset record
    */
-  async uploadFromDataUrl(
-    dataUrl,
-    fileName = 'export.png',
-    source = 'ai-studio',
-    userId = 'demo-user'
-  ) {
+  async uploadFromDataUrl(dataUrl, fileName = 'export.png', source = 'ai-studio', userId = 'demo-user') {
     try {
       // Convert data URL to Blob
       const response = await fetch(dataUrl)
@@ -161,14 +102,6 @@ class MediaLibraryService {
   async getMediaLibrary(userId = 'demo-user', options = {}) {
     const { type, source, limit = 50 } = options
 
-    if (!isSupabaseConfigured) {
-      // Demo mode - return mock data
-      let filtered = [...mockMediaLibrary]
-      if (type) filtered = filtered.filter((m) => m.type === type)
-      if (source) filtered = filtered.filter((m) => m.source === source)
-      return { success: true, data: filtered.slice(0, limit) }
-    }
-
     try {
       let query = supabase
         .from(TABLE_NAME)
@@ -182,24 +115,12 @@ class MediaLibraryService {
 
       const { data, error } = await query
 
-      // If table doesn't exist (PGRST205), fall back to mock data
-      if (error?.code === 'PGRST205') {
-        let filtered = [...mockMediaLibrary]
-        if (type) filtered = filtered.filter((m) => m.type === type)
-        if (source) filtered = filtered.filter((m) => m.source === source)
-        return { success: true, data: filtered.slice(0, limit) }
-      }
-
       if (error) throw error
 
       return { success: true, data }
     } catch (error) {
       console.error('Error fetching media library:', error)
-      // Fall back to mock data on any error
-      let filtered = [...mockMediaLibrary]
-      if (type) filtered = filtered.filter((m) => m.type === type)
-      if (source) filtered = filtered.filter((m) => m.source === source)
-      return { success: true, data: filtered.slice(0, limit) }
+      return { success: false, error: error.message, data: [] }
     }
   }
 
@@ -210,12 +131,6 @@ class MediaLibraryService {
    * @returns {Promise<object>} - Result of deletion
    */
   async deleteMedia(id, storagePath = null) {
-    if (!isSupabaseConfigured) {
-      // Demo mode - remove from mock data
-      mockMediaLibrary = mockMediaLibrary.filter((m) => m.id !== id)
-      return { success: true }
-    }
-
     try {
       // Delete from storage if path provided
       if (storagePath) {
@@ -240,11 +155,6 @@ class MediaLibraryService {
    * @returns {Promise<object>} - The media asset
    */
   async getMediaById(id) {
-    if (!isSupabaseConfigured) {
-      const asset = mockMediaLibrary.find((m) => m.id === id)
-      return asset ? { success: true, data: asset } : { success: false, error: 'Not found' }
-    }
-
     try {
       const { data, error } = await supabase.from(TABLE_NAME).select('*').eq('id', id).single()
 
@@ -264,10 +174,6 @@ class MediaLibraryService {
    * @returns {Promise<string>} - Signed URL
    */
   async getSignedUrl(storagePath, expiresIn = 3600) {
-    if (!isSupabaseConfigured) {
-      return { success: false, error: 'Supabase not configured' }
-    }
-
     try {
       const { data, error } = await supabase.storage
         .from(STORAGE_BUCKET)
@@ -295,15 +201,6 @@ class MediaLibraryService {
    * @returns {Promise<object>} - CDN URL and storage path
    */
   async persistAIImageToCDN(base64Data, aiModel = 'unknown', userId = 'demo-user') {
-    if (!isSupabaseConfigured) {
-      // Demo mode - return mock CDN URL
-      return {
-        success: true,
-        cdnUrl: `data:image/png;base64,${base64Data.replace(/^data:image\/\w+;base64,/, '')}`,
-        storagePath: `mock/${userId}/ai-generated/${aiModel}/${Date.now()}.png`,
-      }
-    }
-
     try {
       // Strip data URL prefix if present
       const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, '')
@@ -356,15 +253,6 @@ class MediaLibraryService {
    * @returns {Promise<object>} - CDN URL and storage path
    */
   async copyVideoToCDN(externalUrl, aiModel = 'unknown', userId = 'demo-user') {
-    if (!isSupabaseConfigured) {
-      // Demo mode - return original URL
-      return {
-        success: true,
-        cdnUrl: externalUrl,
-        storagePath: `mock/${userId}/ai-videos/${aiModel}/${Date.now()}.mp4`,
-      }
-    }
-
     try {
       // Fetch video from external URL
       const response = await fetch(externalUrl)
@@ -413,10 +301,6 @@ class MediaLibraryService {
   getCDNUrl(storagePath, options = {}) {
     const { width, height, quality, format } = options
 
-    if (!isSupabaseConfigured) {
-      return storagePath // Return as-is in demo mode
-    }
-
     const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath)
 
     let url = data.publicUrl
@@ -441,22 +325,6 @@ class MediaLibraryService {
    * @returns {Promise<object>} - Stats object
    */
   async getStats(userId = 'demo-user') {
-    if (!isSupabaseConfigured) {
-      const images = mockMediaLibrary.filter((m) => m.type === 'image').length
-      const videos = mockMediaLibrary.filter((m) => m.type === 'video').length
-      const aiGenerated = mockMediaLibrary.filter((m) => m.source === 'ai-studio').length
-      return {
-        success: true,
-        data: {
-          total: mockMediaLibrary.length,
-          images,
-          videos,
-          aiGenerated,
-          totalSize: mockMediaLibrary.reduce((acc, m) => acc + m.file_size, 0),
-        },
-      }
-    }
-
     try {
       const { data, error } = await supabase
         .from(TABLE_NAME)

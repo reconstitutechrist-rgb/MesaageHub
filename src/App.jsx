@@ -11,6 +11,7 @@ import { PhoneThemeProvider } from '@/context/PhoneThemeContext'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { AppRoutes } from '@/config/routes'
 import { syncService } from '@/services/SyncService'
+import { automationService } from '@/services/AutomationService'
 
 function ThemeManager({ children }) {
   useEffect(() => {
@@ -18,7 +19,14 @@ function ThemeManager({ children }) {
     syncService.initialize().catch(() => {
       // SyncService requires Capacitor - ignore in web mode
     })
-    return () => syncService.destroy()
+
+    // Start birthday automation (queue + send scheduled messages)
+    const cleanupAutomation = automationService.runStartupAutomation()
+
+    return () => {
+      syncService.destroy()
+      cleanupAutomation()
+    }
   }, [])
 
   useEffect(() => {

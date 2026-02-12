@@ -3,7 +3,7 @@
  * Phase 4: Performance & Production Scaling
  */
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 class AnalyticsService {
   /**
@@ -23,10 +23,6 @@ class AnalyticsService {
       generationCost = 0,
     }
   ) {
-    if (!isSupabaseConfigured) {
-      return { success: true, data: { id: 'mock-analytics-id' } }
-    }
-
     try {
       const { data, error } = await supabase
         .from('campaign_analytics')
@@ -58,10 +54,6 @@ class AnalyticsService {
    * Called from Twilio webhook when message delivery status changes
    */
   async updateDeliveryMetrics(campaignId, { delivered = 0, failed = 0 }) {
-    if (!isSupabaseConfigured) {
-      return { success: true }
-    }
-
     try {
       const { error } = await supabase.rpc('update_campaign_delivery', {
         p_campaign_id: campaignId,
@@ -82,10 +74,6 @@ class AnalyticsService {
    * Called from Twilio webhook for clicks, replies, unsubscribes
    */
   async updateEngagementMetrics(campaignId, { clicked = 0, replied = 0, unsubscribed = 0 }) {
-    if (!isSupabaseConfigured) {
-      return { success: true }
-    }
-
     try {
       const { error } = await supabase.rpc('update_campaign_engagement', {
         p_campaign_id: campaignId,
@@ -107,10 +95,6 @@ class AnalyticsService {
    * Returns aggregated engagement metrics by AI model and style
    */
   async getAIModelPerformance(_userId = null) {
-    if (!isSupabaseConfigured) {
-      return { success: true, data: this._getMockPerformanceData() }
-    }
-
     try {
       const query = supabase.from('ai_model_performance').select('*')
 
@@ -123,7 +107,7 @@ class AnalyticsService {
       return { success: true, data: data || [] }
     } catch (error) {
       console.error('Failed to get AI model performance:', error)
-      return { success: true, data: this._getMockPerformanceData() }
+      return { success: false, error: error.message, data: [] }
     }
   }
 
@@ -131,10 +115,6 @@ class AnalyticsService {
    * Get campaign analytics for a user
    */
   async getCampaignAnalytics(userId, { limit = 20, offset = 0, startDate, endDate } = {}) {
-    if (!isSupabaseConfigured) {
-      return { success: true, data: [] }
-    }
-
     try {
       let query = supabase
         .from('campaign_analytics')
@@ -164,10 +144,6 @@ class AnalyticsService {
    * Get top performing campaigns
    */
   async getTopPerformingCampaigns(userId, { limit = 10 } = {}) {
-    if (!isSupabaseConfigured) {
-      return { success: true, data: [] }
-    }
-
     try {
       const { data, error } = await supabase
         .from('campaign_analytics')
@@ -189,10 +165,6 @@ class AnalyticsService {
    * Get user's cost summary
    */
   async getUserCostSummary(userId, { months = 3 } = {}) {
-    if (!isSupabaseConfigured) {
-      return { success: true, data: [] }
-    }
-
     try {
       const startDate = new Date()
       startDate.setMonth(startDate.getMonth() - months)
@@ -236,19 +208,6 @@ class AnalyticsService {
    * Get analytics summary for dashboard
    */
   async getDashboardSummary(userId) {
-    if (!isSupabaseConfigured) {
-      return {
-        success: true,
-        data: {
-          totalCampaigns: 0,
-          avgDeliveryRate: 0,
-          avgEngagementRate: 0,
-          totalReach: 0,
-          topModel: null,
-        },
-      }
-    }
-
     try {
       // Get campaign stats
       const { data: campaigns, error: campaignsError } = await supabase
@@ -302,41 +261,6 @@ class AnalyticsService {
       console.error('Failed to get dashboard summary:', error)
       return { success: false, error: error.message }
     }
-  }
-
-  /**
-   * Mock performance data for demo mode
-   */
-  _getMockPerformanceData() {
-    return [
-      {
-        ai_model: 'imagen-4.0',
-        ai_style: 'photorealistic',
-        asset_type: 'image',
-        total_campaigns: 45,
-        total_reach: 12500,
-        avg_delivery_rate: 0.95,
-        avg_engagement_rate: 0.042,
-      },
-      {
-        ai_model: 'veo-3.1',
-        ai_style: 'cinematic',
-        asset_type: 'video',
-        total_campaigns: 12,
-        total_reach: 3200,
-        avg_delivery_rate: 0.93,
-        avg_engagement_rate: 0.068,
-      },
-      {
-        ai_model: 'sora-2',
-        ai_style: 'dynamic',
-        asset_type: 'video',
-        total_campaigns: 8,
-        total_reach: 2100,
-        avg_delivery_rate: 0.94,
-        avg_engagement_rate: 0.072,
-      },
-    ]
   }
 }
 

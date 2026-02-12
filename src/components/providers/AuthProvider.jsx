@@ -1,18 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { STORAGE_KEYS } from '@/lib/constants'
 import { loginRateLimiter } from '@/lib/rateLimiter'
 
 const AuthContext = createContext(null)
-
-// Demo mode user for development without Supabase
-const DEMO_USER = {
-  id: 'demo-user-id',
-  email: 'demo@messagehub.app',
-  name: 'Demo User',
-  avatar: null,
-  created_at: new Date().toISOString(),
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -36,46 +27,32 @@ export function AuthProvider({ children }) {
     let subscription = null
 
     const initAuth = async () => {
-      if (isSupabaseConfigured && supabase) {
-        // Get existing session from Supabase
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
+      // Get existing session from Supabase
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
+      if (session?.user) {
+        const appUser = transformUser(session.user)
+        setUser(appUser)
+        setIsAuthenticated(true)
+      }
+
+      // Listen for auth state changes
+      const {
+        data: { subscription: authSubscription },
+      } = supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user) {
           const appUser = transformUser(session.user)
           setUser(appUser)
           setIsAuthenticated(true)
+        } else {
+          setUser(null)
+          setIsAuthenticated(false)
         }
+      })
 
-        // Listen for auth state changes
-        const {
-          data: { subscription: authSubscription },
-        } = supabase.auth.onAuthStateChange(async (_event, session) => {
-          if (session?.user) {
-            const appUser = transformUser(session.user)
-            setUser(appUser)
-            setIsAuthenticated(true)
-          } else {
-            setUser(null)
-            setIsAuthenticated(false)
-          }
-        })
-
-        subscription = authSubscription
-      } else {
-        // Demo mode: check sessionStorage (more secure than localStorage)
-        const storedUser = sessionStorage.getItem(STORAGE_KEYS.USER)
-        if (storedUser) {
-          try {
-            const parsedUser = JSON.parse(storedUser)
-            setUser(parsedUser)
-            setIsAuthenticated(true)
-          } catch {
-            sessionStorage.removeItem(STORAGE_KEYS.USER)
-          }
-        }
-      }
+      subscription = authSubscription
 
       setIsLoading(false)
     }
@@ -100,113 +77,68 @@ export function AuthProvider({ children }) {
       }
     }
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: credentials.email,
-          password: credentials.password,
-        })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      })
 
-        if (error) {
-          return { success: false, error: error.message }
-        }
-
-        // Reset rate limit on successful login
-        loginRateLimiter.reset(rateLimitKey)
-        const appUser = transformUser(data.user)
-        setUser(appUser)
-        setIsAuthenticated(true)
-        return { success: true }
-      } catch {
-        return { success: false, error: 'Login failed' }
-      }
-    } else {
-      // Demo mode: require demo credentials for security
-      // Accept demo@messagehub.app / demo123 OR any email with password "demo123"
-      const isDemoCredentials =
-        credentials.password === 'demo123' &&
-        (credentials.email === 'demo@messagehub.app' || credentials.email.includes('@'))
-
-      if (!isDemoCredentials) {
-        return {
-          success: false,
-          error: 'Invalid credentials. Use demo@messagehub.app / demo123',
-        }
+      if (error) {
+        return { success: false, error: error.message }
       }
 
       // Reset rate limit on successful login
       loginRateLimiter.reset(rateLimitKey)
-
-      const demoUser = {
-        ...DEMO_USER,
-        email: credentials.email,
-        name: credentials.email.split('@')[0],
-      }
-      setUser(demoUser)
+      const appUser = transformUser(data.user)
+      setUser(appUser)
       setIsAuthenticated(true)
-      // Use sessionStorage instead of localStorage for demo mode (more secure)
-      sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser))
       return { success: true }
+    } catch {
+      return { success: false, error: 'Login failed' }
     }
   }
 
   // Register function
   const register = async (userData) => {
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase.auth.signUp({
-          email: userData.email,
-          password: userData.password,
-          options: {
-            data: {
-              name: userData.name,
-            },
-          },
-        })
-
-        if (error) {
-          return { success: false, error: error.message }
-        }
-
-        // Check if email confirmation is required
-        if (data.user && !data.session) {
-          return {
-            success: true,
-            message: 'Please check your email to confirm your account',
-          }
-        }
-
-        const appUser = transformUser(data.user)
-        setUser(appUser)
-        setIsAuthenticated(true)
-        return { success: true }
-      } catch {
-        return { success: false, error: 'Registration failed' }
-      }
-    } else {
-      // Demo mode: simulate registration with sessionStorage
-      const demoUser = {
-        ...DEMO_USER,
-        name: userData.name,
+    try {
+      const { data, error } = await supabase.auth.signUp({
         email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+          },
+        },
+      })
+
+      if (error) {
+        return { success: false, error: error.message }
       }
-      setUser(demoUser)
+
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        return {
+          success: true,
+          message: 'Please check your email to confirm your account',
+        }
+      }
+
+      const appUser = transformUser(data.user)
+      setUser(appUser)
       setIsAuthenticated(true)
-      sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser))
       return { success: true }
+    } catch {
+      return { success: false, error: 'Registration failed' }
     }
   }
 
   // Logout function
   const logout = async () => {
-    if (isSupabaseConfigured && supabase) {
-      await supabase.auth.signOut()
-    }
+    await supabase.auth.signOut()
 
     // Clear local state and storage
     setUser(null)
     setIsAuthenticated(false)
-    // Clear both storage types to ensure complete logout
     localStorage.removeItem(STORAGE_KEYS.USER)
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
     sessionStorage.removeItem(STORAGE_KEYS.USER)
@@ -214,28 +146,20 @@ export function AuthProvider({ children }) {
 
   // Update profile function
   const updateProfile = async (profileData) => {
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase.auth.updateUser({
-          data: profileData,
-        })
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: profileData,
+      })
 
-        if (error) {
-          return { success: false, error: error.message }
-        }
-
-        const appUser = transformUser(data.user)
-        setUser(appUser)
-        return { success: true }
-      } catch {
-        return { success: false, error: 'Profile update failed' }
+      if (error) {
+        return { success: false, error: error.message }
       }
-    } else {
-      // Demo mode: update session storage
-      const updatedUser = { ...user, ...profileData }
-      setUser(updatedUser)
-      sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser))
+
+      const appUser = transformUser(data.user)
+      setUser(appUser)
       return { success: true }
+    } catch {
+      return { success: false, error: 'Profile update failed' }
     }
   }
 
@@ -247,7 +171,6 @@ export function AuthProvider({ children }) {
     logout,
     register,
     updateProfile,
-    isSupabaseConfigured, // Expose for UI to show demo mode indicator
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

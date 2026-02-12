@@ -8,7 +8,6 @@ class AIService {
   constructor() {
     this.baseUrl = import.meta.env.VITE_SUPABASE_URL
     this.anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-    this.useMock = !this.baseUrl || !this.anonKey
   }
 
   /**
@@ -19,10 +18,6 @@ class AIService {
    * @param {number} timeoutMs - Request timeout in milliseconds (default: 30000)
    */
   async _callEdgeFunction(action, payload, timeoutMs = 30000) {
-    if (this.useMock) {
-      throw new Error('Edge Functions not configured - using mock')
-    }
-
     // Create AbortController for timeout
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
@@ -67,20 +62,14 @@ class AIService {
    * @param {string} prompt - User's description of what they're selling
    * @param {string|null} imageBase64 - Optional base64 image for multimodal generation
    * @param {object} context - Additional context (platform, tone)
-   * @returns {Promise<{text: string, fallback: boolean}>}
+   * @returns {Promise<{text: string}>}
    */
   async generateMarketingCopy(prompt, imageBase64 = null, context = {}) {
-    try {
-      const result = await this._callEdgeFunction('generate-copy', {
-        prompt,
-        imageBase64,
-        context,
-      })
-      return result
-    } catch (error) {
-      console.warn('Edge Function failed, using mock:', error.message)
-      return this._mockGenerateCopy(prompt, context)
-    }
+    return this._callEdgeFunction('generate-copy', {
+      prompt,
+      imageBase64,
+      context,
+    })
   }
 
   /**
@@ -90,15 +79,9 @@ class AIService {
    * @returns {Promise<object>} - Scene metadata, subject info, copy suggestions, typography
    */
   async analyzeImage(imageBase64) {
-    try {
-      const result = await this._callEdgeFunction('analyze-image', {
-        imageBase64,
-      })
-      return result
-    } catch (error) {
-      console.warn('Image analysis failed, using mock:', error.message)
-      return this._mockAnalyzeImage(imageBase64)
-    }
+    return this._callEdgeFunction('analyze-image', {
+      imageBase64,
+    })
   }
 
   /**
@@ -109,21 +92,10 @@ class AIService {
    * @returns {Promise<object>} - Key moments, narrative, CTA suggestions
    */
   async analyzeVideo(videoBase64, mimeType = 'video/mp4') {
-    try {
-      const result = await this._callEdgeFunction('analyze-video', {
-        videoBase64,
-        mimeType,
-      })
-      return result
-    } catch (error) {
-      console.warn('Video analysis failed, using mock:', error.message)
-      return {
-        keyMoments: [],
-        narrative: 'Video analysis unavailable',
-        recommendedCTA: 'Learn More',
-        fallback: true,
-      }
-    }
+    return this._callEdgeFunction('analyze-video', {
+      videoBase64,
+      mimeType,
+    })
   }
 
   /**
@@ -131,39 +103,27 @@ class AIService {
    * Uses Imagen 4.0 via Edge Function (Vertex AI)
    * @param {string} prompt - Description of the background
    * @param {object} options - Generation options (width, height, style)
-   * @returns {Promise<{imageBase64: string|null, fallback: boolean}>}
+   * @returns {Promise<{imageBase64: string}>}
    */
   async generateBackground(prompt, options = {}) {
-    try {
-      const result = await this._callEdgeFunction('generate-background', {
-        prompt,
-        width: options.width || 1080,
-        height: options.height || 1080,
-        style: options.style || 'photorealistic',
-      })
-      return result
-    } catch (error) {
-      console.warn('Background generation failed:', error.message)
-      return { imageBase64: null, fallback: true, error: error.message }
-    }
+    return this._callEdgeFunction('generate-background', {
+      prompt,
+      width: options.width || 1080,
+      height: options.height || 1080,
+      style: options.style || 'photorealistic',
+    })
   }
 
   /**
    * Remove background from an image
    * Uses remove.bg API or falls back to Gemini Vision bounds detection
    * @param {string} imageBase64 - Base64 encoded image
-   * @returns {Promise<{subjectBase64: string|null, bounds: object|null, fallback: boolean}>}
+   * @returns {Promise<{subjectBase64: string, bounds: object}>}
    */
   async removeBackground(imageBase64) {
-    try {
-      const result = await this._callEdgeFunction('remove-background', {
-        imageBase64,
-      })
-      return result
-    } catch (error) {
-      console.warn('Background removal failed:', error.message)
-      return { subjectBase64: null, bounds: null, fallback: true }
-    }
+    return this._callEdgeFunction('remove-background', {
+      imageBase64,
+    })
   }
 
   /**
@@ -175,19 +135,13 @@ class AIService {
    * @returns {Promise<object>} - Typography suggestions
    */
   async suggestTypography(imageBase64, textContent, options = {}) {
-    try {
-      const result = await this._callEdgeFunction('suggest-typography', {
-        imageBase64,
-        textContent,
-        subjectBounds: options.subjectBounds,
-        canvasWidth: options.canvasWidth || 1080,
-        canvasHeight: options.canvasHeight || 1080,
-      })
-      return result
-    } catch (error) {
-      console.warn('Typography suggestion failed:', error.message)
-      return this._mockTypographySuggestion(textContent, options)
-    }
+    return this._callEdgeFunction('suggest-typography', {
+      imageBase64,
+      textContent,
+      subjectBounds: options.subjectBounds,
+      canvasWidth: options.canvasWidth || 1080,
+      canvasHeight: options.canvasHeight || 1080,
+    })
   }
 
   /**
@@ -197,25 +151,10 @@ class AIService {
    * @returns {Promise<object>} - Color adjustment suggestions
    */
   async autoLevel(subjectBase64, backgroundBase64) {
-    try {
-      const result = await this._callEdgeFunction('auto-level', {
-        subjectBase64,
-        backgroundBase64,
-      })
-      return result
-    } catch (error) {
-      console.warn('Auto-level failed:', error.message)
-      return {
-        brightness: 0,
-        contrast: 0,
-        saturation: 0,
-        warmth: 0,
-        shadowOpacity: 0.3,
-        shadowBlur: 20,
-        shadowOffsetY: 10,
-        fallback: true,
-      }
-    }
+    return this._callEdgeFunction('auto-level', {
+      subjectBase64,
+      backgroundBase64,
+    })
   }
 
   // ============================================================================
@@ -230,24 +169,18 @@ class AIService {
    * @param {string} options.aspectRatio - '16:9', '9:16', or '1:1'
    * @param {number} options.duration - Duration in seconds (default 8)
    * @param {string} options.style - 'cinematic', 'dynamic', or 'calm'
-   * @returns {Promise<{jobId: string|null, model: string, fallback: boolean}>}
+   * @returns {Promise<{jobId: string, model: string}>}
    */
   async generateVideo(prompt, options = {}) {
     const { model = 'veo-3.1', aspectRatio = '16:9', duration = 8, style = 'cinematic' } = options
 
-    try {
-      const result = await this._callEdgeFunction('generate-video', {
-        prompt,
-        model,
-        aspectRatio,
-        duration,
-        style,
-      })
-      return result
-    } catch (error) {
-      console.warn('Video generation failed:', error.message)
-      return { jobId: null, error: error.message, fallback: true }
-    }
+    return this._callEdgeFunction('generate-video', {
+      prompt,
+      model,
+      aspectRatio,
+      duration,
+      style,
+    })
   }
 
   /**
@@ -257,16 +190,10 @@ class AIService {
    * @returns {Promise<{status: string, progress: number, videoUrl?: string}>}
    */
   async getVideoStatus(jobId, model) {
-    try {
-      const result = await this._callEdgeFunction('get-video-status', {
-        jobId,
-        model,
-      })
-      return result
-    } catch (error) {
-      console.warn('Video status check failed:', error.message)
-      return { status: 'failed', error: error.message }
-    }
+    return this._callEdgeFunction('get-video-status', {
+      jobId,
+      model,
+    })
   }
 
   /**
@@ -313,21 +240,15 @@ class AIService {
    * @param {object} options - Rendering options
    * @param {string} options.outputFormat - 'mp4' or 'webm'
    * @param {string} options.resolution - '1080p' or '4k'
-   * @returns {Promise<{renderJobId: string|null, status: string, fallback: boolean}>}
+   * @returns {Promise<{renderJobId: string, status: string}>}
    */
   async renderVideoWithOverlays(videoUrl, overlays, options = {}) {
-    try {
-      const result = await this._callEdgeFunction('render-video-overlays', {
-        videoUrl,
-        overlays,
-        outputFormat: options.outputFormat || 'mp4',
-        resolution: options.resolution || '1080p',
-      })
-      return result
-    } catch (error) {
-      console.warn('Video overlay rendering failed:', error.message)
-      return { renderJobId: null, error: error.message, fallback: true }
-    }
+    return this._callEdgeFunction('render-video-overlays', {
+      videoUrl,
+      overlays,
+      outputFormat: options.outputFormat || 'mp4',
+      resolution: options.resolution || '1080p',
+    })
   }
 
   /**
@@ -360,25 +281,6 @@ class AIService {
   }
 
   /**
-   * Mock typography suggestion (fallback)
-   * @private
-   */
-  _mockTypographySuggestion(textContent, options = {}) {
-    const { subjectBounds } = options
-    // Place text above subject if subject is in bottom half, otherwise below
-    const defaultY = subjectBounds ? (subjectBounds.y > 50 ? 15 : 85) : 50
-    return {
-      position: { x: 50, y: defaultY },
-      fontSize: 'large',
-      fontWeight: '700',
-      color: '#ffffff',
-      textAlign: 'center',
-      shadow: true,
-      fallback: true,
-    }
-  }
-
-  /**
    * Legacy method - Generate marketing copy (old interface)
    * Maintained for backwards compatibility with existing code
    * @param {string} productName - Name/description of the product
@@ -388,93 +290,34 @@ class AIService {
   async analyzeProductImage(productName, options = {}) {
     // If we have an actual image, use the new image analysis
     if (options.imageBase64) {
-      try {
-        const analysis = await this.analyzeImage(options.imageBase64)
-        return {
-          success: true,
-          data: {
-            headlines: [
-              analysis.copy?.headline || `Discover ${productName}`,
-              analysis.copy?.subheadline || 'Limited time offer',
-              analysis.copy?.cta || 'Shop Now',
-            ],
-            suggestedColor: '#ffffff',
-            suggestedShadow: '#000000',
-            suggestedPosition: {
-              x: analysis.typography?.placement === 'top' ? 50 : 50,
-              y: analysis.typography?.placement === 'top' ? 20 : 80,
-            },
-            scene: analysis.scene,
-            subject: analysis.subject,
-            typography: analysis.typography,
+      const analysis = await this.analyzeImage(options.imageBase64)
+      return {
+        success: true,
+        data: {
+          headlines: [
+            analysis.copy?.headline || `Discover ${productName}`,
+            analysis.copy?.subheadline || 'Limited time offer',
+            analysis.copy?.cta || 'Shop Now',
+          ],
+          suggestedColor: '#ffffff',
+          suggestedShadow: '#000000',
+          suggestedPosition: {
+            x: analysis.typography?.placement === 'top' ? 50 : 50,
+            y: analysis.typography?.placement === 'top' ? 20 : 80,
           },
-        }
-      } catch {
-        // Fall through to mock
+          scene: analysis.scene,
+          subject: analysis.subject,
+          typography: analysis.typography,
+        },
       }
     }
 
-    // Fall back to mock for legacy usage
-    return this._mockAnalyzeImageLegacy(productName, options)
-  }
-
-  /**
-   * Mock implementation for copy generation (fallback)
-   * @private
-   */
-  _mockGenerateCopy(prompt, _context = {}) {
-    const lowerPrompt = prompt.toLowerCase()
-    let text = prompt.toUpperCase()
-
-    // Pattern matching for common marketing scenarios
-    if (lowerPrompt.includes('sale')) {
-      text = 'MEGA SALE - 50% OFF EVERYTHING!'
-    } else if (lowerPrompt.includes('new')) {
-      text = 'NEW ARRIVAL - BE THE FIRST TO DISCOVER'
-    } else if (lowerPrompt.includes('summer')) {
-      text = 'SUMMER COLLECTION - HOT STYLES FOR HOT DAYS'
-    } else if (lowerPrompt.includes('holiday') || lowerPrompt.includes('christmas')) {
-      text = 'HOLIDAY SPECIAL - SPREAD THE JOY THIS SEASON'
-    } else if (lowerPrompt.includes('limited') || lowerPrompt.includes('exclusive')) {
-      text = 'EXCLUSIVE OFFER - ONLY WHILE SUPPLIES LAST'
-    }
-
-    return { text, fallback: true }
-  }
-
-  /**
-   * Mock implementation for image analysis (fallback)
-   * @private
-   */
-  _mockAnalyzeImage(_imageBase64) {
-    return {
-      scene: { lighting: 'natural', mood: 'professional', colors: ['#ffffff', '#000000'] },
-      subject: { type: 'product', material: 'unknown', primaryColor: '#ffffff' },
-      copy: {
-        headline: 'Your Product Here',
-        subheadline: 'Quality you can trust',
-        cta: 'Shop Now',
-      },
-      typography: { fontStyle: 'sans', placement: 'bottom', suggestedSize: 'large' },
-      fallback: true,
-    }
-  }
-
-  /**
-   * Mock implementation for legacy analyzeProductImage (fallback)
-   * @private
-   */
-  _mockAnalyzeImageLegacy(productName, _options = {}) {
-    const name = productName || 'Product'
-
+    // Use copy generation for text-only requests
+    const result = await this.generateMarketingCopy(productName)
     return {
       success: true,
       data: {
-        headlines: [
-          `Summer Sale: ${name}`,
-          `Limited Time Offer on ${name}`,
-          `Get your ${name} Today!`,
-        ],
+        headlines: [result.text || `Discover ${productName}`],
         suggestedColor: '#ffffff',
         suggestedShadow: '#000000',
         suggestedPosition: { x: 50, y: 80 },
@@ -492,44 +335,27 @@ class AIService {
    * @param {string} subjectBase64 - Base64 encoded subject image
    * @param {object} lightingSettings - Lighting preset settings
    * @param {string|null} backgroundBase64 - Optional background for reference
-   * @returns {Promise<{imageBase64: string|null, adjustments: object, fallback: boolean}>}
+   * @returns {Promise<{imageBase64: string, adjustments: object}>}
    */
   async applyRelighting(subjectBase64, lightingSettings, backgroundBase64 = null) {
-    try {
-      const result = await this._callEdgeFunction('apply-relighting', {
-        subjectBase64,
-        lightingSettings,
-        backgroundBase64,
-      })
-      return result
-    } catch (error) {
-      console.warn('Re-lighting failed:', error.message)
-      // Return mock adjustments for CSS-based fallback
-      return {
-        imageBase64: null,
-        adjustments: this._mockRelightingAdjustments(lightingSettings),
-        fallback: true,
-      }
-    }
+    return this._callEdgeFunction('apply-relighting', {
+      subjectBase64,
+      lightingSettings,
+      backgroundBase64,
+    })
   }
 
   /**
    * Remove objects from an image using AI inpainting
    * @param {string} imageBase64 - Base64 encoded image
    * @param {string} maskBase64 - Base64 encoded mask (white = remove)
-   * @returns {Promise<{imageBase64: string|null, fallback: boolean}>}
+   * @returns {Promise<{imageBase64: string}>}
    */
   async removeObjects(imageBase64, maskBase64) {
-    try {
-      const result = await this._callEdgeFunction('remove-objects', {
-        imageBase64,
-        maskBase64,
-      })
-      return result
-    } catch (error) {
-      console.warn('Object removal failed:', error.message)
-      return { imageBase64: null, fallback: true, error: error.message }
-    }
+    return this._callEdgeFunction('remove-objects', {
+      imageBase64,
+      maskBase64,
+    })
   }
 
   /**
@@ -537,23 +363,14 @@ class AIService {
    * @param {string} originalHeadline - Current headline text
    * @param {object} context - Context for generation (product, tone, platform)
    * @param {number} count - Number of variations to generate
-   * @returns {Promise<{variations: string[], fallback: boolean}>}
+   * @returns {Promise<{variations: string[]}>}
    */
   async generateHeadlineVariants(originalHeadline, context = {}, count = 5) {
-    try {
-      const result = await this._callEdgeFunction('generate-headline-variants', {
-        originalHeadline,
-        context,
-        count,
-      })
-      return result
-    } catch (error) {
-      console.warn('Headline generation failed:', error.message)
-      return {
-        variations: this._mockHeadlineVariants(originalHeadline, count),
-        fallback: true,
-      }
-    }
+    return this._callEdgeFunction('generate-headline-variants', {
+      originalHeadline,
+      context,
+      count,
+    })
   }
 
   /**
@@ -561,23 +378,14 @@ class AIService {
    * @param {object} currentColors - Current color palette
    * @param {string} style - Variation style ('complementary', 'analogous', 'triadic')
    * @param {number} count - Number of variations
-   * @returns {Promise<{variations: object[], fallback: boolean}>}
+   * @returns {Promise<{variations: object[]}>}
    */
   async generateColorVariants(currentColors, style = 'complementary', count = 5) {
-    try {
-      const result = await this._callEdgeFunction('generate-color-variants', {
-        currentColors,
-        style,
-        count,
-      })
-      return result
-    } catch (error) {
-      console.warn('Color variant generation failed:', error.message)
-      return {
-        variations: this._mockColorVariants(currentColors, count),
-        fallback: true,
-      }
-    }
+    return this._callEdgeFunction('generate-color-variants', {
+      currentColors,
+      style,
+      count,
+    })
   }
 
   /**
@@ -585,171 +393,14 @@ class AIService {
    * @param {object} currentDesign - Current design state
    * @param {string[]} variantTypes - Types to generate ('headlines', 'colors', 'layouts')
    * @param {number} count - Number of variants per type
-   * @returns {Promise<{variants: object[], fallback: boolean}>}
+   * @returns {Promise<{variants: object[]}>}
    */
   async generateDesignVariants(currentDesign, variantTypes = ['headlines'], count = 5) {
-    try {
-      const result = await this._callEdgeFunction('generate-design-variants', {
-        currentDesign,
-        variantTypes,
-        count,
-      })
-      return result
-    } catch (error) {
-      console.warn('Design variant generation failed:', error.message)
-      return {
-        variants: this._mockDesignVariants(currentDesign, variantTypes, count),
-        fallback: true,
-      }
-    }
-  }
-
-  /**
-   * Mock re-lighting adjustments for CSS filter fallback
-   * @private
-   */
-  _mockRelightingAdjustments(settings) {
-    const temp = settings.temperature || 5600
-    const warmth = temp < 5000 ? (5000 - temp) / 100 : -(temp - 5000) / 200
-
-    return {
-      brightness: (settings.intensity || 1) * 100,
-      contrast: settings.shadowSoftness < 0.5 ? 115 : 100,
-      saturate: settings.highlightIntensity > 0.5 ? 110 : 100,
-      sepia: warmth > 0 ? Math.min(warmth * 10, 30) : 0,
-      hueRotate: warmth < 0 ? Math.max(warmth * 5, -15) : 0,
-    }
-  }
-
-  /**
-   * Mock headline variants for fallback
-   * @private
-   */
-  _mockHeadlineVariants(original, count) {
-    const templates = [
-      (text) => text.toUpperCase(),
-      (text) => `🔥 ${text}`,
-      (text) => `${text} - Limited Time!`,
-      (text) => `Don't Miss: ${text}`,
-      (text) => `NEW: ${text}`,
-      (text) => `${text} | Shop Now`,
-      (text) => `Exclusive: ${text}`,
-    ]
-
-    const variations = []
-    for (let i = 0; i < count && i < templates.length; i++) {
-      variations.push(templates[i](original))
-    }
-    return variations
-  }
-
-  /**
-   * Mock color variants for fallback
-   * @private
-   */
-  _mockColorVariants(currentColors, count) {
-    const primary = currentColors.primary || '#3b82f6'
-    const variations = []
-
-    // Generate simple hue-shifted variants
-    const baseHue = this._hexToHsl(primary).h
-    for (let i = 0; i < count; i++) {
-      const hueShift = (360 / count) * i
-      const newHue = (baseHue + hueShift) % 360
-      variations.push({
-        primary: this._hslToHex(newHue, 70, 50),
-        secondary: this._hslToHex((newHue + 30) % 360, 60, 45),
-        accent: this._hslToHex((newHue + 180) % 360, 80, 55),
-        text: '#ffffff',
-        background: '#1a1a2e',
-      })
-    }
-    return variations
-  }
-
-  /**
-   * Mock design variants for fallback
-   * @private
-   */
-  _mockDesignVariants(currentDesign, variantTypes, count) {
-    const variants = []
-    const headlines = currentDesign.headlines || ['Your Product Here']
-
-    for (let i = 0; i < count; i++) {
-      const variant = { id: `variant-${i + 1}`, label: `Variant ${String.fromCharCode(65 + i)}` }
-
-      if (variantTypes.includes('headlines')) {
-        variant.headline = this._mockHeadlineVariants(headlines[0], 1)[0]
-      }
-      if (variantTypes.includes('colors')) {
-        const colors = this._mockColorVariants(currentDesign.colors || {}, count)
-        variant.colors = colors[i] || colors[0]
-      }
-      if (variantTypes.includes('layouts')) {
-        variant.layout = {
-          textPosition: i % 2 === 0 ? 'top' : 'bottom',
-          textAlign: ['left', 'center', 'right'][i % 3],
-        }
-      }
-
-      variants.push(variant)
-    }
-    return variants
-  }
-
-  /**
-   * Convert hex to HSL
-   * @private
-   */
-  _hexToHsl(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-    if (!result) return { h: 0, s: 50, l: 50 }
-
-    const r = parseInt(result[1], 16) / 255
-    const g = parseInt(result[2], 16) / 255
-    const b = parseInt(result[3], 16) / 255
-
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
-    let h = 0
-    let s = 0
-    const l = (max + min) / 2
-
-    if (max !== min) {
-      const d = max - min
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-      switch (max) {
-        case r:
-          h = ((g - b) / d + (g < b ? 6 : 0)) / 6
-          break
-        case g:
-          h = ((b - r) / d + 2) / 6
-          break
-        case b:
-          h = ((r - g) / d + 4) / 6
-          break
-      }
-    }
-
-    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
-  }
-
-  /**
-   * Convert HSL to hex
-   * @private
-   */
-  _hslToHex(h, s, l) {
-    s /= 100
-    l /= 100
-    const a = s * Math.min(l, 1 - l)
-    const f = (n) => {
-      const k = (n + h / 30) % 12
-      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)
-      return Math.round(255 * color)
-        .toString(16)
-        .padStart(2, '0')
-    }
-    return `#${f(0)}${f(8)}${f(4)}`
+    return this._callEdgeFunction('generate-design-variants', {
+      currentDesign,
+      variantTypes,
+      count,
+    })
   }
 }
 

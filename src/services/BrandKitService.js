@@ -145,65 +145,11 @@ export function transformBrandKits(records) {
   return records.map(transformBrandKit)
 }
 
-/**
- * Save brand kit to local storage (fallback/offline)
- */
-export function saveBrandKitLocally(brandKit) {
-  try {
-    const existing = JSON.parse(localStorage.getItem('ai_studio_brand_kits') || '[]')
-    const updated = existing.filter((kit) => kit.id !== brandKit.id)
-    updated.unshift(brandKit)
-    localStorage.setItem('ai_studio_brand_kits', JSON.stringify(updated.slice(0, 10)))
-    return true
-  } catch (error) {
-    console.error('Failed to save brand kit locally:', error)
-    return false
-  }
-}
-
-/**
- * Load brand kits from local storage
- */
-export function loadLocalBrandKits() {
-  try {
-    return JSON.parse(localStorage.getItem('ai_studio_brand_kits') || '[]')
-  } catch {
-    return []
-  }
-}
-
-/**
- * Get the default/active brand kit from local storage
- */
-export function getActiveBrandKitLocally() {
-  try {
-    return JSON.parse(localStorage.getItem('ai_studio_active_brand_kit') || 'null')
-  } catch {
-    return null
-  }
-}
-
-/**
- * Save active brand kit to local storage
- */
-export function saveActiveBrandKitLocally(brandKit) {
-  try {
-    localStorage.setItem('ai_studio_active_brand_kit', JSON.stringify(brandKit))
-    return true
-  } catch {
-    return false
-  }
-}
-
 export default {
   getUserBrandKits,
   getBrandKit,
   createBrandKit,
   updateBrandKit,
   deleteBrandKit,
-  saveBrandKitLocally,
-  loadLocalBrandKits,
-  getActiveBrandKitLocally,
-  saveActiveBrandKitLocally,
   transformBrandKits,
 }

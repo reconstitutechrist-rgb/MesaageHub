@@ -1,5 +1,5 @@
 // Re-export Supabase client for API operations
-export { supabase, isSupabaseConfigured } from './supabase'
+export { supabase } from './supabase'
 
 // Export common API utilities
 export const api = {

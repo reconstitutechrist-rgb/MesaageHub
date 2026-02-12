@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { MediaAttachmentSheet } from '@/components/common/MediaAttachmentSheet'
 import { VirtualList } from '@/components/common/VirtualList'
-import { useToggle, useWindowSize } from '@/hooks'
+import { useToggle, useWindowSize, useLocalStorage, useInterestMatch } from '@/hooks'
+import { initialContacts } from '@/data/mockData'
 import { useScheduledMessages, useCancelScheduledMessage } from '@/hooks/queries'
 import { toast } from 'sonner'
 import { triggerHaptic } from '@/lib/haptics'
@@ -576,8 +577,26 @@ function ComposeModal({ open, onClose, theme: t, contacts, mode, onSend }) {
   const [isRecording, , { setTrue: startRecording, setFalse: stopRecording }] = useToggle(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [attachments, setAttachments] = useState([])
+  const [dismissedIds, setDismissedIds] = useState(new Set())
   const fileInputRef = useRef(null)
   const recordingInterval = useRef(null)
+
+  // Interest-based auto-matching
+  const { matchedContacts } = useInterestMatch(message, contacts, recipients, dismissedIds)
+
+  // Auto-add matched contacts to recipients
+  useEffect(() => {
+    if (matchedContacts.length > 0) {
+      setRecipients((prev) => [...prev, ...matchedContacts])
+    }
+  }, [matchedContacts])
+
+  // Clear dismissals for contacts whose interest words are no longer in the message
+  useEffect(() => {
+    if (!message.trim()) {
+      setDismissedIds(new Set())
+    }
+  }, [message])
 
   // Cleanup recording interval on unmount to prevent memory leak
   useEffect(() => {
@@ -625,11 +644,13 @@ function ComposeModal({ open, onClose, theme: t, contacts, mode, onSend }) {
 
   const handleSendMessage = () => {
     if (!message.trim() || recipients.length === 0) return
-    onSend({ message, recipients, scheduledDate, attachments, mode })
+    const cleanRecipients = recipients.map(({ _autoMatched, _matchedInterest, ...rest }) => rest)
+    onSend({ message, recipients: cleanRecipients, scheduledDate, attachments, mode })
     setMessage('')
     setRecipients([])
     setScheduledDate('')
     setAttachments([])
+    setDismissedIds(new Set())
     onClose()
   }
 
@@ -702,8 +723,8 @@ function ComposeModal({ open, onClose, theme: t, contacts, mode, onSend }) {
             <span
               key={r.id}
               style={{
-                background: t.cardBg,
-                border: `1px solid ${t.cardBorder}`,
+                background: r._autoMatched ? `${t.accent}15` : t.cardBg,
+                border: `1px solid ${r._autoMatched ? `${t.accent}44` : t.cardBorder}`,
                 borderRadius: '16px',
                 padding: '4px 10px',
                 fontSize: '13px',
@@ -714,8 +735,25 @@ function ComposeModal({ open, onClose, theme: t, contacts, mode, onSend }) {
               }}
             >
               {r.name}
+              {r._autoMatched && r._matchedInterest && (
+                <span style={{
+                  fontSize: '10px',
+                  color: t.accent,
+                  background: `${t.accent}20`,
+                  padding: '1px 6px',
+                  borderRadius: '8px',
+                  fontWeight: '500',
+                }}>
+                  {r._matchedInterest}
+                </span>
+              )}
               <button
-                onClick={() => setRecipients((prev) => prev.filter((p) => p.id !== r.id))}
+                onClick={() => {
+                  if (r._autoMatched) {
+                    setDismissedIds((prev) => new Set([...prev, r.id]))
+                  }
+                  setRecipients((prev) => prev.filter((p) => p.id !== r.id))
+                }}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -1181,10 +1219,12 @@ export default function PhoneChatsPage() {
   const selectedConversation = conversations.find((c) => c.id === selectedChat)
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0)
 
-  // Mock contacts for compose
-  const mockContacts = conversations
-    .filter((c) => !c.isCampaign)
-    .map((c) => ({ id: c.id, name: c.name, phone: c.phone }))
+  // Contacts from localStorage (includes interests for auto-matching)
+  const [allContacts] = useLocalStorage('contacts', initialContacts)
+  const composeContacts = useMemo(
+    () => allContacts.filter((c) => !c.isBlocked),
+    [allContacts]
+  )
 
   useEffect(() => {
     if (selectedChat) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -1329,7 +1369,7 @@ export default function PhoneChatsPage() {
         open={showCompose}
         onClose={closeComposeModal}
         theme={t}
-        contacts={mockContacts}
+        contacts={composeContacts}
         mode={composeMode}
         onSend={handleComposeSend}
       />

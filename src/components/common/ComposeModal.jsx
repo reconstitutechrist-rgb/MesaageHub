@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { modalSlideUp, modalSlideTransition } from '@/lib/animations'
 import { MediaAttachmentSheet } from './MediaAttachmentSheet'
+import { useInterestMatch } from '@/hooks'
 
 /**
  * ComposeModal - Shared component for composing messages and campaigns
@@ -116,8 +117,26 @@ export function ComposeModal({
   const [recordingTime, setRecordingTime] = useState(0)
   const [attachments, setAttachments] = useState(initialAttachments)
   const [showMediaSheet, setShowMediaSheet] = useState(false)
+  const [dismissedIds, setDismissedIds] = useState(new Set())
   const fileInputRef = useRef(null)
   const recordingInterval = useRef(null)
+
+  // Interest-based auto-matching
+  const { matchedContacts } = useInterestMatch(message, contacts, recipients, dismissedIds)
+
+  // Auto-add matched contacts to recipients
+  useEffect(() => {
+    if (matchedContacts.length > 0) {
+      setRecipients((prev) => [...prev, ...matchedContacts])
+    }
+  }, [matchedContacts])
+
+  // Clear dismissals when message is cleared
+  useEffect(() => {
+    if (!message.trim()) {
+      setDismissedIds(new Set())
+    }
+  }, [message])
 
   // Cleanup recording interval on unmount or modal close
   useEffect(() => {
@@ -181,11 +200,13 @@ export function ComposeModal({
 
   const handleSendMessage = () => {
     if (!message.trim() || recipients.length === 0) return
-    onSend?.({ message, recipients, scheduledDate, attachments, mode })
+    const cleanRecipients = recipients.map(({ _autoMatched, _matchedInterest, ...rest }) => rest)
+    onSend?.({ message, recipients: cleanRecipients, scheduledDate, attachments, mode })
     setMessage('')
     setRecipients([])
     setScheduledDate('')
     setAttachments([])
+    setDismissedIds(new Set())
     onClose()
   }
 
@@ -263,8 +284,8 @@ export function ComposeModal({
                 <span
                   key={r.id}
                   style={{
-                    background: t.cardBg,
-                    border: `1px solid ${t.cardBorder}`,
+                    background: r._autoMatched ? `${t.accent}15` : t.cardBg,
+                    border: `1px solid ${r._autoMatched ? `${t.accent}44` : t.cardBorder}`,
                     borderRadius: '16px',
                     padding: '4px 10px',
                     fontSize: '13px',
@@ -275,8 +296,25 @@ export function ComposeModal({
                   }}
                 >
                   {r.name}
+                  {r._autoMatched && r._matchedInterest && (
+                    <span style={{
+                      fontSize: '10px',
+                      color: t.accent,
+                      background: `${t.accent}20`,
+                      padding: '1px 6px',
+                      borderRadius: '8px',
+                      fontWeight: '500',
+                    }}>
+                      {r._matchedInterest}
+                    </span>
+                  )}
                   <button
-                    onClick={() => setRecipients((prev) => prev.filter((p) => p.id !== r.id))}
+                    onClick={() => {
+                      if (r._autoMatched) {
+                        setDismissedIds((prev) => new Set([...prev, r.id]))
+                      }
+                      setRecipients((prev) => prev.filter((p) => p.id !== r.id))
+                    }}
                     style={{
                       background: 'none',
                       border: 'none',
