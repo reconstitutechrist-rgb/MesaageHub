@@ -17,68 +17,65 @@ export function CyanPhoneLayout() {
   return (
     <div
       className={cn(
-        'min-h-screen w-full flex flex-col transition-colors duration-300',
+        'min-h-screen w-full flex flex-col transition-colors duration-300 bg-noise',
         isDark
-          ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950'
-          : 'bg-gradient-to-br from-slate-100 via-slate-50 to-white'
+          ? 'bg-gradient-to-br from-slate-950 via-[#0a0f1e] to-slate-950'
+          : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'
       )}
     >
-      {/* Ambient glow effect - reduced blur for mobile crispness */}
+      {/* Ambient glow effect - Enhanced for volume */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div
           className={cn(
-            'absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-2xl',
-            isDark ? 'bg-cyan-500/5' : 'bg-cyan-500/10'
+            'absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full blur-[100px] opacity-40',
+            isDark ? 'bg-cyan-500/20' : 'bg-cyan-400/20'
           )}
         />
         <div
           className={cn(
-            'absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-2xl',
-            isDark ? 'bg-cyan-500/5' : 'bg-cyan-500/10'
+            'absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[100px] opacity-40',
+            isDark ? 'bg-cyan-600/10' : 'bg-cyan-500/20'
+          )}
+        />
+        {/* Central spotlight for depth */}
+        <div 
+          className={cn(
+             'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[120px] opacity-20',
+             isDark ? 'bg-white/5' : 'bg-white/40'
           )}
         />
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin relative z-10 pb-20">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin relative z-10 pb-28 phone-scroll-container">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation - Glassmorphism Style */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-safe bg-gradient-to-t from-background to-transparent pointer-events-none">
+      {/* Bottom Navigation - Volumetric Dock */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-safe pt-2 pointer-events-none">
         <div
           className={cn(
-            'mx-auto mb-4 md:mb-6 max-w-md backdrop-blur-md rounded-2xl border transition-all duration-300 pointer-events-auto',
-            isDark
-              ? 'bg-slate-800/70 border-slate-700/50'
-              : 'bg-white/85 border-slate-200 shadow-lg'
+            'mx-auto mb-4 md:mb-6 max-w-md dock-3d transition-all duration-300 pointer-events-auto',
+            /* Specific border color override for Cyan theme to blend with dock-3d */
+            isDark ? 'border-white/10' : 'border-white/40'
           )}
-          style={{
-            boxShadow: isDark
-              ? 'inset 0 1px 1px rgba(255,255,255,0.05), 0 4px 16px -4px rgba(0,0,0,0.5)'
-              : 'inset 0 1px 1px rgba(255,255,255,0.9), 0 4px 16px -4px rgba(6,182,212,0.15)',
-          }}
         >
-          <div className="flex items-center justify-around h-16 px-2">
+          <div className="flex items-center justify-around h-20 px-2"> {/* Increased height for floating feel */}
             {navItems.map((item) => (
               <NavLink
                 key={item.href}
                 to={item.href}
                 className={({ isActive }) =>
                   cn(
-                    'relative flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all duration-200 touch-manipulation transform hover:scale-105 active:scale-95',
-                    isActive
-                      ? isDark
-                        ? 'bg-cyan-500/20 text-cyan-400 shadow-lg shadow-cyan-500/20'
-                        : 'bg-cyan-500/10 text-cyan-600 shadow-md shadow-cyan-200/50'
-                      : isDark
-                        ? 'text-slate-500 hover:text-cyan-300'
-                        : 'text-slate-400 hover:text-cyan-500'
+                    'nav-btn-3d flex flex-col items-center justify-center w-16 h-16 rounded-xl touch-manipulation',
+                    isActive 
+                      ? 'active text-cyan-500 dark:text-cyan-400' 
+                      : 'text-slate-400 dark:text-slate-500 hover:text-cyan-500 dark:hover:text-cyan-300'
                   )
                 }
               >
-                <item.icon className="w-5 h-5" />
-                <span className="text-xs mt-1 font-medium">{item.label}</span>
+                <item.icon className="w-6 h-6 mb-1 transition-transform duration-300" />
+                <span className="text-[10px] font-bold tracking-wide uppercase text-sharp opacity-90">{item.label}</span>
               </NavLink>
             ))}
           </div>
