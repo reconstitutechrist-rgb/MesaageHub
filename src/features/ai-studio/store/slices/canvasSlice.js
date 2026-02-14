@@ -5,6 +5,7 @@
 import { platformPresets } from '@/lib/platformTemplates'
 import { CANVAS_CONSTRAINTS } from '../../utils/studioConstants'
 import { scaleToFit, computeCanvasDimensions } from '../../utils/canvasLogic'
+import { createTextLayer } from './layerSlice'
 
 // Re-export for backwards compatibility
 export { computeCanvasDimensions }
@@ -78,27 +79,50 @@ export const createCanvasSlice = (set, get) => ({
     })
   },
 
-  // Set active template (clears background)
+  // Set active template — converts elements into interactive layers
   setActiveTemplate: (template) => {
-    set({
-      activeTemplate: template,
-      background: { type: 'solid', value: null },
-    })
+    if (!template || !template.elements) {
+      set({ activeTemplate: null })
+      return
+    }
 
-    // Apply template's main text to text overlay
-    if (template?.elements) {
-      const mainText = template.elements.find((e) => e.type === 'text' && e.fontSize > 60)
-      if (mainText) {
-        const textOverlay = get().textOverlay
-        set({
-          textOverlay: {
-            ...textOverlay,
-            text: mainText.content,
-            color: mainText.color || '#ffffff',
-          },
-        })
+    // 1. Extract and apply background from template
+    const bgElement = template.elements.find((e) => e.type === 'background')
+    if (bgElement) {
+      if (bgElement.style === 'gradient' && bgElement.colors) {
+        set({ background: { type: 'gradient', value: bgElement.colors } })
+      } else if (bgElement.style === 'solid' && bgElement.color) {
+        set({ background: { type: 'solid', value: bgElement.color } })
       }
     }
+
+    // 2. Convert text elements into layers
+    const textElements = template.elements.filter((e) => e.type === 'text')
+    const currentMaxZ = Math.max(100, ...get().layers.map((l) => l.zIndex))
+
+    textElements.forEach((el, index) => {
+      // Convert position: 'center' -> 50, percentage string -> number
+      const xPos = el.position?.x === 'center' ? 50 : parseFloat(el.position?.x) || 50
+      const yPos = parseFloat(el.position?.y) || 50
+
+      const layer = createTextLayer({
+        name: el.content || 'Template Text',
+        zIndex: currentMaxZ + index + 1,
+        data: {
+          text: el.content || '',
+          x: xPos,
+          y: yPos,
+          color: el.color || '#ffffff',
+          fontSize: el.fontSize || 48,
+          fontWeight: el.fontWeight || 'bold',
+        },
+      })
+
+      get().addLayer(layer)
+    })
+
+    // 3. Clear activeTemplate — layers now represent the template content
+    set({ activeTemplate: null })
   },
 
   // Clear template

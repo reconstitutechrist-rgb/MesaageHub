@@ -5,7 +5,6 @@ import {
   drawBackground,
   drawText,
   drawImage,
-  drawTemplateElements,
   drawGrid,
   drawSelectionIndicator,
   getTextBounds,
@@ -23,7 +22,6 @@ import {
   useImageFile,
   useSortedLayers,
   useTextOverlay,
-  useActiveTemplate,
   useSelectedLayerId,
   useLayerActions,
   useTextOverlayActions,
@@ -42,7 +40,6 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   const imageFile = useImageFile()
   const layers = useSortedLayers()
   const primaryTextOverlay = useTextOverlay()
-  const activeTemplate = useActiveTemplate()
   const selectedLayerId = useSelectedLayerId()
 
   // Get actions from Zustand store
@@ -144,18 +141,13 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
     // 1. Draw background
     drawBackground(ctx, background, w, h, fallbackBg)
 
-    // 2. Draw template elements (if no image)
-    if (activeTemplate && !imageRef.current) {
-      drawTemplateElements(ctx, activeTemplate, w, h)
-    }
-
-    // 3. Draw uploaded image
+    // 2. Draw uploaded image
     if (imageRef.current) {
       drawImage(ctx, imageRef.current, w, h, 'contain')
     }
 
-    // 4. Draw grid if empty (no image and no template)
-    if (!imageRef.current && !activeTemplate) {
+    // 3. Draw grid if empty (no image and no layers)
+    if (!imageRef.current && layers.length === 0) {
       drawGrid(ctx, w, h, gridColor, 40)
     }
 
@@ -245,7 +237,6 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
     })
   }, [
     background,
-    activeTemplate,
     primaryTextOverlay,
     layers,
     selectedLayerId,
@@ -511,11 +502,6 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
             // Draw background
             drawBackground(ctx, background, w, h, fallbackBg)
 
-            // Draw template
-            if (activeTemplate && !imageRef.current) {
-              drawTemplateElements(ctx, activeTemplate, w, h)
-            }
-
             // Draw image
             if (imageRef.current) {
               drawImage(ctx, imageRef.current, w, h, 'contain')
@@ -610,10 +596,6 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
             // Same drawing logic as exportAsDataUrl
             drawBackground(ctx, background, w, h, fallbackBg)
 
-            if (activeTemplate && !imageRef.current) {
-              drawTemplateElements(ctx, activeTemplate, w, h)
-            }
-
             if (imageRef.current) {
               drawImage(ctx, imageRef.current, w, h, 'contain')
             }
@@ -697,7 +679,6 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
       exportHeight,
       background,
       fallbackBg,
-      activeTemplate,
       primaryTextOverlay,
       layers,
     ]
