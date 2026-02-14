@@ -63,6 +63,9 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   const fallbackBg = isDark ? FALLBACK_COLORS.dark : FALLBACK_COLORS.light
   const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
 
+  // Device pixel ratio for crisp rendering on high-DPI screens (e.g. S24 Ultra = ~3x)
+  const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1
+
   // Stable ref to render — assigned after render is defined below.
   // Used by the image load effect so it doesn't re-run on every render dep change.
   const renderRef = useRef(null)
@@ -94,20 +97,46 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
   }, [imageFile])
 
   // Cache layer bounds for fast hit testing (avoids repeated measureText calls)
+  const promotionalTypes = [
+    'badge', 'cta', 'price', 'countdown', 'stock', 'qrcode', 'product-tag',
+  ]
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
     const ctx = canvas.getContext('2d')
-    const w = canvas.width
-    const h = canvas.height
+    // Use logical dimensions (not buffer dimensions which include DPR scaling)
+    const w = canvasWidth
+    const h = canvasHeight
+
+    // Apply DPR scaling so measureText and bounds use correct coordinates
+    ctx.save()
+    ctx.scale(dpr, dpr)
 
     // Clear old cache
     cachedBoundsRef.current.clear()
 
-    // Calculate and cache bounds for each text layer
+    // Calculate and cache bounds for each interactive layer
     layers.forEach((layer) => {
-      if (layer.type !== LayerType.TEXT || !layer.visible || !layer.data?.text) return
+      if (!layer.visible) return
+
+      // Cache promotional element bounds (simple bounding box)
+      if (promotionalTypes.includes(layer.type)) {
+        const layerX = (layer.data.x / 100) * w
+        const layerY = (layer.data.y / 100) * h
+        const size = layer.data.width || layer.data.size || 100
+        cachedBoundsRef.current.set(layer.id, {
+          bounds: { x: layerX - size / 2, y: layerY - size / 2, width: size, height: size },
+          visible: layer.visible,
+          locked: layer.locked,
+          zIndex: layer.zIndex,
+        })
+        return
+      }
+
+      // Cache text layer bounds
+      if (layer.type !== LayerType.TEXT || !layer.data?.text) return
 
       const layerX = (layer.data.x / 100) * w
       const layerY = (layer.data.y / 100) * h
@@ -127,7 +156,9 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
         zIndex: layer.zIndex,
       })
     })
-  }, [layers, canvasWidth, canvasHeight])
+
+    ctx.restore()
+  }, [layers, canvasWidth, canvasHeight, dpr])
 
   // Draw canvas
   const render = useCallback(() => {
@@ -135,8 +166,12 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
     if (!canvas) return
 
     const ctx = canvas.getContext('2d')
-    const w = canvas.width
-    const h = canvas.height
+    // Use logical dimensions for all drawing (DPR handled by ctx.scale)
+    const w = canvasWidth
+    const h = canvasHeight
+
+    // Reset transform and apply DPR scaling
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     // 1. Draw background
     drawBackground(ctx, background, w, h, fallbackBg)
@@ -171,15 +206,6 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
     }
 
     // 6. Draw additional layers (text and promotional elements)
-    const promotionalTypes = [
-      'badge',
-      'cta',
-      'price',
-      'countdown',
-      'stock',
-      'qrcode',
-      'product-tag',
-    ]
 
     layers.forEach((layer) => {
       if (!layer.visible) return
@@ -243,6 +269,9 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
     fallbackBg,
     gridColor,
     theme.accent,
+    canvasWidth,
+    canvasHeight,
+    dpr,
   ])
 
   // Keep renderRef in sync so the image load effect always calls the latest render
@@ -254,7 +283,7 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
     return () => cancelAnimationFrame(frameId)
   }, [render, canvasWidth, canvasHeight])
 
-  // Get canvas coordinates from event
+  // Get canvas coordinates from event (in logical space, not buffer space)
   // Note: getBoundingClientRect() already accounts for CSS transforms (zoom/pan)
   // on ancestor elements, so no manual zoom/pan correction is needed.
   const getCanvasCoords = useCallback((e) => {
@@ -262,8 +291,10 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
     if (!canvas) return { x: 0, y: 0 }
 
     const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
+    // Use logical dimensions (canvasWidth/Height) not buffer dimensions (canvas.width/height)
+    // so coordinates match the logical coordinate system used by drawing and hit-testing
+    const scaleX = canvasWidth / rect.width
+    const scaleY = canvasHeight / rect.height
 
     const clientX = e.touches ? e.touches[0].clientX : e.clientX
     const clientY = e.touches ? e.touches[0].clientY : e.clientY
@@ -272,7 +303,7 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
       x: (clientX - rect.left) * scaleX,
       y: (clientY - rect.top) * scaleY,
     }
-  }, [])
+  }, [canvasWidth, canvasHeight])
 
   // Check if point is near primary text overlay
   const isNearPrimaryText = useCallback(
@@ -294,7 +325,7 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
       // Check layers in reverse order (top first, by zIndex)
       // Sort by zIndex descending for hit testing
       const sortedLayers = [...layers]
-        .filter((l) => l.type === LayerType.TEXT && l.visible && l.data?.text)
+        .filter((l) => l.visible && !l.locked)
         .sort((a, b) => b.zIndex - a.zIndex)
 
       for (const layer of sortedLayers) {
@@ -363,9 +394,8 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
       if (layer) {
         isDraggingRef.current = true
         dragTargetRef.current = layer.id
-        const canvas = canvasRef.current
-        const layerX = (layer.data.x / 100) * canvas.width
-        const layerY = (layer.data.y / 100) * canvas.height
+        const layerX = (layer.data.x / 100) * canvasWidth
+        const layerY = (layer.data.y / 100) * canvasHeight
         dragOffsetRef.current = {
           x: coords.x - layerX,
           y: coords.y - layerY,
@@ -399,6 +429,8 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
       selectLayer,
       zoomLevel,
       panOffset,
+      canvasWidth,
+      canvasHeight,
     ]
   )
 
@@ -429,8 +461,7 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
       if (!isDraggingRef.current) return
 
       const coords = getCanvasCoords(e)
-      const canvas = canvasRef.current
-      if (!canvas) return
+      if (!canvasWidth || !canvasHeight) return
 
       if (dragTargetRef.current === 'primary') {
         // Update primary text overlay position (no history during drag)
@@ -444,15 +475,15 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
           dragTargetRef.current,
           {
             data: {
-              x: ((coords.x - dragOffsetRef.current.x) / canvas.width) * 100,
-              y: ((coords.y - dragOffsetRef.current.y) / canvas.height) * 100,
+              x: ((coords.x - dragOffsetRef.current.x) / canvasWidth) * 100,
+              y: ((coords.y - dragOffsetRef.current.y) / canvasHeight) * 100,
             },
           },
           true // skipHistory during drag
         )
       }
     },
-    [getCanvasCoords, setTextOverlay, updateLayer, zoomLevel]
+    [getCanvasCoords, setTextOverlay, updateLayer, zoomLevel, canvasWidth, canvasHeight]
   )
 
   const handlePointerUp = useCallback(() => {
@@ -710,9 +741,11 @@ const StudioCanvas = forwardRef(function StudioCanvas({ style, className }, ref)
       >
         <canvas
           ref={canvasRef}
-          width={canvasWidth}
-          height={canvasHeight}
+          width={canvasWidth * dpr}
+          height={canvasHeight * dpr}
           style={{
+            width: canvasWidth,
+            height: canvasHeight,
             cursor: isDraggingRef.current ? 'grabbing' : 'grab',
             touchAction: 'none',
             ...style,
