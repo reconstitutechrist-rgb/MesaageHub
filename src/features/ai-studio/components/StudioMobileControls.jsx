@@ -204,9 +204,7 @@ export function StudioMobileControls() {
     { id: 'upload', icon: StudioIcons.upload, label: 'Upload' },
     { id: 'ai', icon: StudioIcons.sparkles, label: 'AI' },
     { id: 'text', icon: StudioIcons.type, label: 'Text' },
-    { id: 'promo', icon: StudioIcons.badge, label: 'Promo' },
-    { id: 'brand', icon: StudioIcons.palette, label: 'Brand' },
-    { id: 'tags', icon: StudioIcons.tag, label: 'Tags' },
+    { id: 'shop', icon: StudioIcons.badge, label: 'Shop' },
     { id: 'video', icon: StudioIcons.video, label: 'Video' },
     { id: 'templates', icon: StudioIcons.layers, label: 'Templates' },
     { id: 'size', icon: StudioIcons.grid, label: 'Size' },
@@ -668,23 +666,11 @@ export function StudioMobileControls() {
           </div>
         )}
 
-        {/* Promo Tab */}
-        {activeTab === 'promo' && (
-          <div>
+        {/* Shop Tab (Promo + Brand + Tags consolidated) */}
+        {activeTab === 'shop' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <PromotionalElementsPanel />
-          </div>
-        )}
-
-        {/* Brand Tab */}
-        {activeTab === 'brand' && (
-          <div>
             <BrandKitPanel />
-          </div>
-        )}
-
-        {/* Tags Tab */}
-        {activeTab === 'tags' && (
-          <div>
             <ProductTaggingPanel />
           </div>
         )}
